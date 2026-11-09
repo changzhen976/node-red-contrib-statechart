@@ -2,12 +2,12 @@ const { test } = require('node:test')
 const assert = require('node:assert/strict')
 const { readFileSync } = require('node:fs')
 const { resolve } = require('node:path')
-const { parseSCXML, compile } = require('@tinyactors/scxmljs/trusted')
-const { DOMParser } = require('@xmldom/xmldom')
 
 const flows = JSON.parse(readFileSync(resolve(__dirname, '../examples/demo-suite.json'), 'utf8'))
 
 test('demo suite SCXML sources compile', async () => {
+  const { parseSCXML, compile } = await import('@tinyactors/scxmljs/trusted')
+  const { DOMParser } = await import('@xmldom/xmldom')
   const parser = new DOMParser()
   const machines = flows.filter((node) => node.type === 'scxml-machine' && node.source)
   assert.ok(machines.length >= 5, 'expected several source machines')

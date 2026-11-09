@@ -8,6 +8,7 @@
 import { execFileSync } from 'node:child_process'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
+import { patchVendoredFile } from './vendor-patch.mjs'
 import { fileURLToPath } from 'node:url'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -33,7 +34,7 @@ const date = execFileSync('git', ['-C', donorRoot, 'log', '-1', '--format=%ad', 
 
 await mkdir(target, { recursive: true })
 for (const file of files) {
-  const source = await readFile(resolve(donorCore, file), 'utf8')
+  const source = patchVendoredFile(file, await readFile(resolve(donorCore, file), 'utf8'))
   const header = `// vendored from scxml-creator@${commit} (${date}); do not edit\n`
   await writeFile(resolve(target, file), header + source)
   console.log(`sync ${file}`)
@@ -47,6 +48,7 @@ await writeFile(
     `- License: MIT (donor LICENSE; see ../scxml-creator/LICENSE)\n` +
     `- Synced by: \`npm run sync:vendor\`\n\n` +
     `Files: ${files.map((f) => `\`${f}\``).join(', ')}.\n\n` +
-    `Do not edit these files by hand. Update the donor and re-run the sync script.\n`,
+    `Do not edit these files by hand. Update the donor and re-run the sync script.\n` +
+    `Local patch: validator.ts uses dynamic import so Node 22.9 CJS does not require() an ESM entry.\n`,
 )
 console.log(`vendor synced at ${commit}`)

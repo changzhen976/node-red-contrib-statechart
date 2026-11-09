@@ -9,7 +9,6 @@
  * 校验结果弹窗（validation-dialog-plan）：失败时保留 problems 逐条
  * （issues）与序列化产物（source，供 XML 片段展示），不再只有拼接 message。
  */
-import { parseSCXML, compile } from '@tinyactors/scxmljs/trusted'
 import type { DOMParserLike } from '@tinyactors/scxmljs/trusted'
 import type { ProjectDoc } from './model'
 import type { ScriptActionHit } from './action-parse'
@@ -50,6 +49,8 @@ export async function validateScxml(
   domParser?: DOMParserLike,
 ): Promise<ValidationResult> {
   try {
+    // Node 22.9 cannot require() this ESM entry from CJS; load it lazily.
+    const { parseSCXML, compile } = await import('@tinyactors/scxmljs/trusted')
     const parsed = parseSCXML(source, domParser)
     await compile(parsed)
     return { ok: true, message: '校验通过：SCXML 语法与结构正确' }

@@ -2,6 +2,7 @@
 import { execFileSync } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
+import { patchVendoredFile } from './vendor-patch.mjs'
 import { fileURLToPath } from 'node:url'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -12,7 +13,7 @@ const files = ['model.ts', 'serializer.ts', 'action-parse.ts', 'validator.ts', '
 let failed = false
 for (const file of files) {
   const ours = await readFile(resolve(vendor, file), 'utf8')
-  const theirs = await readFile(resolve(donorRoot, 'src/core', file), 'utf8')
+  const theirs = patchVendoredFile(file, await readFile(resolve(donorRoot, 'src/core', file), 'utf8'))
   const stripped = ours.split('\n').slice(1).join('\n')
   if (stripped !== theirs) {
     console.error(`vendor drift: ${file}`)
