@@ -2,7 +2,7 @@
 
 > 在 Node-RED 流程中嵌入 SCXML 状态机：配置状态、变量和转移条件，以消息驱动，输出当前状态与变量。
 
-**当前阶段：P0 + P2.5 只读监控页完成（2026-11-09）。** 已实现包骨架、CJS 构建、最小 `scxml-machine` / `scxml-in` / `scxml-out`、编辑器表单、示例 flow，以及只读实时状态图（独立监控页 + 编辑器侧栏 iframe）。
+**当前阶段：P0 + P2.5 完成；P1 进行中（2026-11-09）。** 已实现包骨架、CJS 构建、最小三节点、编辑器表单、示例 flow、只读实时状态图；P1 已接入 vendor core、ProjectDoc、部署校验闸门和多状态机入口。
 
 **复核结论：有条件 Go。** 运行时路线已在 Node-RED 5.0.9 上跑通；G1（重部署不恢复活跃状态）已接受；G2 的 donor LICENSE 与 `license` 字段已补并提交（donor commit `b3dfef6`）。实时状态通过节点状态和 `scxml-out` 消息输出；图形化只读状态图已选 P2.5 方案 B（独立监控页 + 编辑器侧栏 iframe），不是可编辑画布。详见 [可行性计划](docs/feasibility-plan.md)。
 
@@ -31,9 +31,22 @@ node-red
 
 > 如果本机环境设置了 `NODE_ENV=production`，npm 会跳过 devDependencies；开发时用 `npm install --include=dev`。
 
-## P0 已实现
+## 新建多个状态机
+
+1. 在 flow 里添加一个 `scxml-in` 或 `scxml-out`；
+2. 在编辑窗口的 **Machine** 下拉右侧点 **＋**；
+3. 在弹出的 `Add new scxml-machine config node` 窗口填写名称和 SCXML/ProjectDoc；
+4. 每个 `scxml-machine` 是独立 config node，各自一个会话；侧栏监控页可以用选择器切换。
+
+旧 flow 的 `source` 字段仍兼容；新编辑器后续会把配置迁移到 `doc`（ProjectDoc JSON）。
+
+## 已实现（P0 + P1 核心）
 
 - config node 持有一个 SCXML 会话与事件总线，in/out 节点共享；
+- 多个 `scxml-machine` config node 各自独立会话，可同时存在；
+- `scxml-machine` 优先读取 `doc`（ProjectDoc JSON），回退旧 `source`（原始 SCXML）；
+- 启动前用 donor 的 `validateScxml` 做 parse + compile 校验；失败红状态、不反复重试；
+- vendor 了 scxml-creator core（model/serializer/action-parse/validator/naming/scxml-import）；
 - 懒加载 `@tinyactors/scxmljs`，CJS 节点内动态 `import()` 纯 ESM 引擎；
 - 使用 `@xmldom/xmldom` 解析 SCXML（支持 CDATA，替代 happy-dom）；
 - 状态输出支持单状态/并行多状态、变量快照、`changed` 标记；
@@ -41,14 +54,16 @@ node-red
 - 初始状态输出（`scxml-out` 挂载后补发一次）；
 - 部署后 `scxml-out` 的 `node.status()` 显示当前激活状态；
 - 编辑器三节点表单与帮助文本；
-- 测试覆盖初始状态、转移、`<send>`、并行、非法 SCXML、关闭无定时器泄漏；
+- 多状态机：`scxml-in`/`scxml-out` 的 Machine 使用 Node-RED 标准 config picker，带「+ Add」按钮，可直接新建 `scxml-machine`；
+- 测试覆盖初始状态、转移、`<send>`、并行、非法 SCXML、关闭无定时器泄漏、ProjectDoc、双机独立；
 - `npm pack` 产物在干净的 Node-RED 5.0.9 用户目录可安装并加载。
 
 ## P0 限制
 
 - `scxml-machine` 目前直接接收 SCXML 文本，还没有 `ProjectDoc` 表单/序列化（P1 vendor core，P2 三张表）；
-- 输入节点暂不支持 `msg.command = "set"` / `"reset"`（P1）；
-- 不做变量 context 持久化（P1）；
+- 输入节点暂不支持 `msg.command = "set"` / `"reset"`；
+- 不做输入队列、变量 context 持久化；
+- 编辑器仍是 SCXML/ProjectDoc 文本框，三张表表单 P2；
 - 不做可编辑画布（P4）；
 - 包仍为 `private: true`，未发布 npm。
 
@@ -187,7 +202,8 @@ msg.topic = "scxml/Traffic Light/evt/notify"
 - [x] G2：donor LICENSE、`package.json` 的 `license` 字段与提交均已完成（`b3dfef6`）
 - [x] P0：包骨架 + 最小三节点 + Node-RED 5 冒烟（2026-11-09）
 - [x] P2.5：只读实时状态图（独立监控页 + 编辑器侧栏 iframe，2026-11-09）
-- [ ] P1：运行时 MVP（vendor core、set/reset、变量持久化）
+- [x] P1（部分）：vendor core、ProjectDoc、部署校验闸门、多状态机 config picker
+- [ ] P1 剩余：set/reset、输入队列、变量持久化、历史/延时测试
 - [ ] P2：表单配置编辑器（三张表）
 - [ ] P3：测试矩阵、示例、发布
 

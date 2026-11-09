@@ -12,16 +12,7 @@
 </style>
 
 <script type="text/javascript">
-  function fillScxmlMachineSelect($select, current) {
-    $select.empty();
-    $select.append($('<option>').val('').text('-- select machine --'));
-    RED.nodes.eachConfig(function (n) {
-      if (n.type === 'scxml-machine') {
-        $select.append($('<option>').val(n.id).text(n.name || n.id));
-      }
-    });
-    $select.val(current || '');
-  }
+
 
   RED.nodes.registerType('scxml-machine', {
     category: 'config',
@@ -29,6 +20,7 @@
     defaults: {
       name: { value: 'state machine' },
       source: { value: '' },
+      doc: { value: '' },
       engine: { value: 'sandboxed' },
       scriptTimeoutMs: { value: 500, validate: RED.validators.number() },
       maxMicrosteps: { value: 10000, validate: RED.validators.number() },
@@ -70,10 +62,7 @@
       return this.name || 'scxml in';
     },
     inputs: 1,
-    outputs: 0,
-    oneditprepare: function () {
-      fillScxmlMachineSelect($('#node-input-machine'), this.machine);
-    }
+    outputs: 0
   });
 
   RED.nodes.registerType('scxml-out', {
@@ -90,10 +79,7 @@
       return this.name || 'scxml out';
     },
     inputs: 0,
-    outputs: 2,
-    oneditprepare: function () {
-      fillScxmlMachineSelect($('#node-input-machine'), this.machine);
-    }
+    outputs: 2
   });
 
   if (RED.sidebar && RED.sidebar.addTab) {
@@ -172,7 +158,7 @@
   </div>
   <div class="form-row">
     <label for="node-input-machine"><i class="fa fa-cog"></i> Machine</label>
-    <select id="node-input-machine"></select>
+    <input type="text" id="node-input-machine">
   </div>
   <div class="form-row">
     <label for="node-input-eventSource"><i class="fa fa-bolt"></i> Event name from</label>
@@ -206,7 +192,7 @@
   </div>
   <div class="form-row">
     <label for="node-input-machine"><i class="fa fa-cog"></i> Machine</label>
-    <select id="node-input-machine"></select>
+    <input type="text" id="node-input-machine">
   </div>
   <div class="form-row">
     <label for="node-input-includeVars"><i class="fa fa-table"></i> Include variables</label>

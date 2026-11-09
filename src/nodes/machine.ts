@@ -1,5 +1,8 @@
 import { EventBus, type MachineStateEvent } from '../runtime/bus'
-import { createMachineSession, type EngineMode } from '../runtime/engine'
+import { createMachineSession, getDomParser, type EngineMode } from '../runtime/engine'
+import { normalizeDoc, type ProjectDoc } from '../vendor/scxml-core/model'
+import { serializeToScxml } from '../vendor/scxml-core/serializer'
+import { validateScxml } from '../vendor/scxml-core/validator'
 
 const DEFAULT_SOURCE = `<?xml version="1.0" encoding="UTF-8"?>
 <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="idle">
@@ -10,6 +13,30 @@ const DEFAULT_SOURCE = `<?xml version="1.0" encoding="UTF-8"?>
 function positiveNumber(value: unknown, fallback: number): number {
   const n = Number(value)
   return Number.isFinite(n) && n > 0 ? n : fallback
+}
+
+interface ResolvedMachineSource {
+  xml: string
+  doc: ProjectDoc | null
+}
+
+/** Prefer ProjectDoc JSON (`doc`) and fall back to legacy raw `source`. */
+function resolveMachineSource(node: any): ResolvedMachineSource {
+  const docText = typeof node.doc === 'string' ? node.doc.trim() : ''
+  if (docText) {
+    let parsed: ProjectDoc
+    try {
+      parsed = JSON.parse(docText) as ProjectDoc
+    } catch (err) {
+      throw new Error(`doc is not valid JSON: ${err instanceof Error ? err.message : String(err)}`)
+    }
+    const doc = normalizeDoc(parsed)
+    if (!doc.states.length) throw new Error('doc has no states')
+    return { xml: serializeToScxml(doc), doc }
+  }
+  const source = typeof node.source === 'string' ? node.source.trim() : ''
+  if (source) return { xml: source, doc: null }
+  return { xml: DEFAULT_SOURCE, doc: null }
 }
 
 function hashString(value: string): string {
@@ -38,17 +65,26 @@ export function registerMachine(RED: any): void {
     const node = this
 
     node.name = String(config.name || 'state machine')
-    node.source = typeof config.source === 'string' && config.source.trim() ? config.source : DEFAULT_SOURCE
+    node.source = typeof config.source === 'string' ? config.source : ''
+    node.doc = typeof config.doc === 'string' ? config.doc : ''
     node.engine = (config.engine === 'trusted' ? 'trusted' : 'sandboxed') as EngineMode
     node.scriptTimeoutMs = positiveNumber(config.scriptTimeoutMs, 500)
     node.maxMicrosteps = positiveNumber(config.maxMicrosteps, 10000)
     node.monitorShowVars = config.monitorShowVars === true
-    node.graphVersion = hashString(node.source)
+    node.graphVersion = hashString(node.doc || node.source)
+    node.getGraphSource = function getGraphSource(): string {
+      try {
+        return resolveMachineSource(node).xml
+      } catch {
+        return node.source || ''
+      }
+    }
     machines.set(node.id, node)
 
     const bus = new EventBus()
     let session: any = null
     let startPromise: Promise<any> | null = null
+    let startError: Error | null = null
     let closed = false
     let currentEvent: string | undefined
     let lastStates: string[] = []
@@ -85,12 +121,25 @@ export function registerMachine(RED: any): void {
 
     node.ensureStarted = function ensureStarted(): Promise<any> {
       if (session) return Promise.resolve(session)
+      if (startError) return Promise.reject(startError)
       if (startPromise) return startPromise
       if (closed) return Promise.reject(new Error('state machine is closed'))
 
       node.status({ fill: 'blue', shape: 'dot', text: 'starting' })
       const promise = (async () => {
-        const created = await createMachineSession(node.source, {
+        const resolved = resolveMachineSource(node)
+        node.source = resolved.xml
+        node.graphVersion = hashString(resolved.xml)
+
+        const domParser = await getDomParser()
+        const validation = await validateScxml(resolved.xml, domParser)
+        if (!validation.ok) {
+          const err = new Error(`invalid SCXML configuration: ${validation.message}`)
+          ;(err as any).issues = validation.issues
+          throw err
+        }
+
+        const created = await createMachineSession(resolved.xml, {
           engine: node.engine,
           scriptTimeoutMs: node.scriptTimeoutMs,
           maxMicrosteps: node.maxMicrosteps,
@@ -135,9 +184,12 @@ export function registerMachine(RED: any): void {
 
       startPromise = promise.catch((err) => {
         startPromise = null
-        node.status({ fill: 'red', shape: 'ring', text: 'start failed' })
-        node.error(err)
-        throw err
+        startError = err instanceof Error ? err : new Error(String(err))
+        if (!closed) {
+          node.status({ fill: 'red', shape: 'ring', text: 'invalid config' })
+          node.error(startError)
+        }
+        throw startError
       })
       return startPromise
     }
@@ -174,6 +226,7 @@ export function registerMachine(RED: any): void {
       const active = session
       session = null
       startPromise = null
+      startError = null
       if (active) {
         try {
           active.dispose()

@@ -9,6 +9,7 @@ interface MonitorMachine {
   graphVersion: string
   monitorShowVars: boolean
   isRunning(): boolean
+  getGraphSource(): string
   getCurrentState(): {
     states: string[]
     vars: Record<string, unknown>
@@ -96,7 +97,7 @@ export function registerMonitor(RED: any): void {
     }
     res.set('Cache-Control', 'no-store')
     res.set('X-SCXML-Version', machine.graphVersion)
-    res.type('application/xml').send(machine.source)
+    res.type('application/xml').send(machine.getGraphSource())
   })
 
   RED.httpAdmin.get('/scxmljs/assets/*', (req: any, res: any) => {

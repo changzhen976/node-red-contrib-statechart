@@ -36,6 +36,36 @@ const PARALLEL = `<?xml version="1.0" encoding="UTF-8"?>
 
 const BAD = '<scxml xmlns="http://www.w3.org/2005/07/scxml"><state id="a"></scxml>'
 
+const DOC_TRAFFIC = JSON.stringify({
+  formatVersion: 1,
+  name: 'doc traffic light',
+  initial: 'u1',
+  datamodel: [{ id: 'cycles', expr: '0' }],
+  states: [
+    { uid: 'u1', id: 'red', label: 'red', kind: 'atomic', parent: null, entryActions: ['assign cycles = cycles + 1'], exitActions: [] },
+    { uid: 'u2', id: 'green', label: 'green', kind: 'atomic', parent: null, entryActions: [], exitActions: [] },
+  ],
+  transitions: [
+    { id: 't1', source: 'u1', target: 'u2', event: 'next', cond: '', actions: [] },
+  ],
+  layout: {},
+})
+
+const DOC_B = JSON.stringify({
+  formatVersion: 1,
+  name: 'doc machine B',
+  initial: 'b1',
+  datamodel: [],
+  states: [
+    { uid: 'b1', id: 'idleB', label: 'idleB', kind: 'atomic', parent: null, entryActions: [], exitActions: [] },
+    { uid: 'b2', id: 'runB', label: 'runB', kind: 'atomic', parent: null, entryActions: [], exitActions: [] },
+  ],
+  transitions: [
+    { id: 'tb1', source: 'b1', target: 'b2', event: 'goB', cond: '', actions: [] },
+  ],
+  layout: {},
+})
+
 function testModule(RED) {
   scxmlModule(RED)
   RED.nodes.registerType('p0-sink', function (config) {
@@ -65,6 +95,34 @@ function flowFor(source) {
     },
     { id: 's1', type: 'p0-sink' },
     { id: 's2', type: 'p0-sink' },
+  ]
+}
+
+function flowForDoc(doc) {
+  const flow = flowFor('')
+  flow[0].source = ''
+  flow[0].doc = doc
+  return flow
+}
+
+function twoMachineFlow() {
+  return [
+    {
+      id: 'confA', type: 'scxml-machine', name: 'machine A', doc: DOC_TRAFFIC,
+      engine: 'sandboxed', scriptTimeoutMs: 500, maxMicrosteps: 10000,
+    },
+    {
+      id: 'confB', type: 'scxml-machine', name: 'machine B', doc: DOC_B,
+      engine: 'sandboxed', scriptTimeoutMs: 500, maxMicrosteps: 10000,
+    },
+    { id: 'inA', type: 'scxml-in', machine: 'confA', eventSource: 'topic', fixedEvent: '', wires: [] },
+    { id: 'inB', type: 'scxml-in', machine: 'confB', eventSource: 'topic', fixedEvent: '', wires: [] },
+    { id: 'outA', type: 'scxml-out', machine: 'confA', includeVars: true, emitInitial: true, includeInternalSends: false, wires: [['sA'], ['sA2']] },
+    { id: 'outB', type: 'scxml-out', machine: 'confB', includeVars: true, emitInitial: true, includeInternalSends: false, wires: [['sB'], ['sB2']] },
+    { id: 'sA', type: 'p0-sink' },
+    { id: 'sA2', type: 'p0-sink' },
+    { id: 'sB', type: 'p0-sink' },
+    { id: 'sB2', type: 'p0-sink' },
   ]
 }
 
@@ -199,6 +257,39 @@ test('exposes the read-only monitor page and API', async () => {
 
     await helper.request().get('/scxmljs/assets/view.js').expect(200)
     await helper.request().get('/scxmljs/assets/monitor.js').expect(200)
+  } finally {
+    await unloadFlow()
+  }
+})
+
+
+test('drives a ProjectDoc JSON machine and validates it before start', async () => {
+  await loadFlow(flowForDoc(DOC_TRAFFIC))
+  try {
+    await waitFor(() => sinkMessages('s1').length > 0, 'doc initial state')
+    assert.equal(sinkMessages('s1')[0].payload, 'red')
+    assert.equal(sinkMessages('s1')[0].vars.cycles, 1)
+    helper.getNode('in1').receive({ topic: 'next' })
+    await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'green'), 'doc green')
+    const graph = await helper.request().get('/scxmljs/api/machines/conf1/graph').expect(200)
+    assert.match(graph.text, /<scxml[\s>]/)
+  } finally {
+    await unloadFlow()
+  }
+})
+
+test('keeps two config-node machines independent', async () => {
+  await loadFlow(twoMachineFlow())
+  try {
+    await waitFor(() => sinkMessages('sA').length > 0 && sinkMessages('sB').length > 0, 'both initial states')
+    assert.equal(sinkMessages('sA')[0].payload, 'red')
+    assert.equal(sinkMessages('sB')[0].payload, 'idleB')
+    helper.getNode('inA').receive({ topic: 'next' })
+    await waitFor(() => sinkMessages('sA').some((m) => m.payload === 'green'), 'A green')
+    assert.ok(sinkMessages('sB').every((m) => m.payload === 'idleB'), 'B must not change')
+
+    const list = await helper.request().get('/scxmljs/api/machines').expect(200)
+    assert.deepEqual(list.body.map((m) => m.id).sort(), ['confA', 'confB'])
   } finally {
     await unloadFlow()
   }
