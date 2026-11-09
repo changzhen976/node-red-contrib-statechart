@@ -2,7 +2,7 @@
 
 > 在 Node-RED 流程中嵌入 SCXML 状态机：配置状态、变量和转移条件，以消息驱动，输出当前状态与变量。
 
-**当前阶段：P0 + P2.5 + P1 完成；P2 GUI 首版可用；中英文语言包已完成（2026-11-09）。** 已实现包骨架、CJS 构建、三节点、只读实时状态图、完整运行时 MVP，以及状态/转移/变量三张表的原生 Node-RED 编辑器。
+**当前阶段：P0 + P2.5 + P1 + P2 完成；P3 发布检查进行中（2026-11-09）。** 已实现包骨架、CJS 构建、三节点、只读实时状态图、完整运行时 MVP，以及状态/转移/变量三张表的原生 Node-RED 编辑器。
 
 **复核结论：有条件 Go。** 运行时路线已在 Node-RED 5.0.9 上跑通；G1（重部署不恢复活跃状态）已接受；G2 的 donor LICENSE 与 `license` 字段已补并提交（donor commit `b3dfef6`）。实时状态通过节点状态和 `scxml-out` 消息输出；图形化只读状态图已选 P2.5 方案 B（独立监控页 + 编辑器侧栏 iframe），不是可编辑画布。详见 [可行性计划](docs/feasibility-plan.md)。
 
@@ -30,6 +30,8 @@ node-red
 - 两个 `debug` 节点。
 
 > 如果本机环境设置了 `NODE_ENV=production`，npm 会跳过 devDependencies；开发时用 `npm install --include=dev`。
+
+更多示例：导入 [`examples/demo-suite.json`](examples/demo-suite.json)，包含 6 个 tab、8 台机器，覆盖命令/条件、并行/历史、延时/发送、多机、ProjectDoc。详见 [`examples/README.md`](examples/README.md)。
 
 ## 新建多个状态机
 
@@ -69,7 +71,7 @@ node-red
 - 高级区可编辑原始 SCXML 或 ProjectDoc JSON，并支持导入/导出；
 - 保存写 `doc`；旧 `source` 仍保留为兼容回退。
 
-P2 首版已去掉“只能贴 SCXML 文本”的限制；剩余是校验提示、边界约束和自动化回归。
+P2 已完成：三张表、结构校验、actions 结构化、i18n、GUI → Deploy 端到端验证和浏览器回归均已通过。
 
 ## 语言 / i18n
 
@@ -114,8 +116,7 @@ P2 首版已去掉“只能贴 SCXML 文本”的限制；剩余是校验提示�
 
 ## 当前限制
 
-- P2 首版还缺校验错误定位、kind/initial 边界约束、delay 自动事件名、端到端 Deploy 回归；
-- 三张表的 actions 仍是纯文本行，未做结构化动作编辑器；
+- actions 仍是纯文本行，未做结构化动作编辑器和字段级动作校验；
 - 监控页无独立 token，依赖私网；
 - 不做可编辑画布（P4）；
 - 包仍为 `private: true`，未发布 npm。
@@ -215,12 +216,16 @@ msg.topic = "scxml/Traffic Light/evt/notify"
 ├── esbuild.config.mjs
 ├── src/
 │   ├── nodes/        # machine/in/out + CJS 入口
-│   ├── runtime/      # 引擎加载、事件总线
-│   └── vendor/       # P1 vendor scxml-creator core（当前为空）
+│   ├── runtime/      # 引擎加载、事件总线、监控路由
+│   ├── editor/       # 浏览器 core bridge + 结构校验
+│   └── vendor/       # scxml-creator core（model/serializer/validator/import）
 ├── editor/
-│   └── scxml.html    # 三节点编辑表单 + 帮助
+│   ├── scxml.html    # 三节点编辑表单 + 三张表/actions/i18n
+│   └── locales/      # en-US / zh-CN / zh 语言包 + 帮助
 ├── examples/
-│   └── traffic-light.json
+│   ├── demo-suite.json   # 6 tab / 8 机器
+│   ├── traffic-light.json
+│   └── README.md
 ├── test/
 │   └── p0.test.cjs   # test-helper 集成测试
 ├── monitor/          # P2.5 只读监控页（HTML/JS/CSS，构建到 dist/monitor）
@@ -238,11 +243,25 @@ msg.topic = "scxml/Traffic Light/evt/notify"
 | XML 解析 | `@xmldom/xmldom@^0.9.12`（替代 happy-dom，安装体积约 464 KB，支持 CDATA） |
 | 模块格式 | 运行时入口 CJS，ESM 依赖用动态 `import()` 加载 |
 
+## 浏览器回归
+
+需要 Firefox + geckodriver（不进入 `npm test`，避免 CI 依赖浏览器）：
+
+```sh
+GECKODRIVER=/path/to/geckodriver \
+NODERED_URL=http://localhost:1880/ \
+npm run test:browser
+```
+
+检查中文 UI、三张表回填、actions 弹窗、重复 id 校验；只读，不保存/部署，不会修改 flow。
+
 ## 文档
 
 - [可行性计划](docs/feasibility-plan.md)（v1.0，2026-11-09，当前决策依据）
 - [可行性评估](docs/assessment.md)（2026-11-06，历史评估）
 - [实施计划](docs/plan.md)（v0.1，2026-11-06，任务细节）
+- [P4 独立编辑器设计](docs/p4-standalone-editor.md)（2026-11-09，草案）
+- [示例说明](examples/README.md)（2026-11-09）
 - [验证脚本](spike/)（一次性 spike，不属于发布包）
 
 ## 状态
@@ -255,12 +274,15 @@ msg.topic = "scxml/Traffic Light/evt/notify"
 - [x] G2：donor LICENSE、`package.json` 的 `license` 字段与提交均已完成（`b3dfef6`）
 - [x] P0：包骨架 + 最小三节点 + Node-RED 5 冒烟（2026-11-09）
 - [x] P2.5：只读实时状态图（独立监控页 + 编辑器侧栏 iframe，2026-11-09）
-- [x] P1：运行时 MVP（含 50 次重复部署无泄漏，17/17 测试）
+- [x] P1：运行时 MVP（含 50 次重复部署无泄漏；当前套件 19/19）
 - [x] P2（首版）：状态/转移/变量三张表 GUI、JSON/SCXML 高级编辑
 - [x] i18n：en-US / zh-CN / zh 语言包，自动跟随 Node-RED 语言
-- [ ] P2 打磨：校验提示、kind/initial 约束、delay 自动事件名、Deploy 回归
-- [ ] P3：测试矩阵、示例、发布
-- [ ] P3：测试矩阵、示例、发布
+- [x] P2：GUI 保存 → Deploy → 运行时 `doc` 端到端回归（2026-11-09）
+- [x] P2：actions 结构化编辑（send/cancel/assign/log/script）
+- [x] P2：浏览器回归（中文 UI、三表、actions、重复 id 校验）
+- [x] P3：示例 suite（6 tab / 8 机器）+ 示例自动校验
+- [ ] P3 剩余：Node 22.9 矩阵、发布决策/执行 ← 下一步
+- [ ] P4（可选）：独立全屏编辑器，见 [设计草案](docs/p4-standalone-editor.md)
 
 ## 许可
 

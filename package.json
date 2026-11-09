@@ -22,7 +22,8 @@
     "typecheck": "tsc --noEmit",
     "prepack": "npm run build",
     "sync:vendor": "node scripts/sync-vendor.mjs",
-    "check:vendor": "node scripts/check-vendor.mjs"
+    "check:vendor": "node scripts/check-vendor.mjs",
+    "test:browser": "node test/browser-smoke.mjs"
   },
   "node-red": {
     "version": ">=5.0.0",

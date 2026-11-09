@@ -1,0 +1,1365 @@
+[
+  {
+    "id": "tab-demo-traffic",
+    "type": "tab",
+    "label": "01 Traffic Light",
+    "disabled": false,
+    "info": "# 01 Traffic Light\n\n最基础的 SCXML 循环：red → green → yellow → red。\n\n- 点 **next** 推进一个状态；\n- 点 **reset** 从初始态 red 重建会话；\n- scxml-out 同时输出状态、变量和 topic；\n- 打开机器配置，可用三张表 / actions 弹窗编辑；\n- 打开右侧 **状态机** 侧栏看只读实时图。\n\n覆盖：基础状态转移、entry action、变量、reset、监控。"
+  },
+  {
+    "id": "demo-traffic-help",
+    "type": "comment",
+    "z": "tab-demo-traffic",
+    "name": "说明",
+    "info": "next 推进；reset 回到 red。状态/变量分别接 debug。",
+    "x": 80,
+    "y": 80,
+    "wires": []
+  },
+  {
+    "id": "demo-traffic-conf",
+    "type": "scxml-machine",
+    "z": "tab-demo-traffic",
+    "name": "Traffic Light",
+    "source": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<scxml xmlns=\"http://www.w3.org/2005/07/scxml\" version=\"1.0\" datamodel=\"ecmascript\" initial=\"red\">\n  <datamodel><data id=\"cycles\" expr=\"0\"/></datamodel>\n  <state id=\"red\">\n    <onentry><assign location=\"cycles\" expr=\"cycles + 1\"/></onentry>\n    <transition event=\"next\" target=\"green\"/>\n  </state>\n  <state id=\"green\"><transition event=\"next\" target=\"yellow\"/></state>\n  <state id=\"yellow\"><transition event=\"next\" target=\"red\"/></state>\n</scxml>",
+    "engine": "sandboxed",
+    "scriptTimeoutMs": 500,
+    "maxMicrosteps": 10000,
+    "monitorShowVars": false,
+    "persistVars": false,
+    "updateEvent": "update",
+    "x": 160,
+    "y": 160,
+    "wires": []
+  },
+  {
+    "id": "demo-traffic-in",
+    "type": "scxml-in",
+    "z": "tab-demo-traffic",
+    "name": "next / reset",
+    "machine": "demo-traffic-conf",
+    "eventSource": "topic",
+    "fixedEvent": "",
+    "x": 360,
+    "y": 220,
+    "wires": []
+  },
+  {
+    "id": "demo-traffic-next",
+    "type": "inject",
+    "z": "tab-demo-traffic",
+    "name": "next",
+    "props": [
+      {
+        "p": "topic",
+        "vt": "str",
+        "v": "next"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "payload": "",
+    "payloadType": "str",
+    "topic": "next",
+    "x": 100,
+    "y": 240,
+    "wires": [
+      [
+        "demo-traffic-in"
+      ]
+    ]
+  },
+  {
+    "id": "demo-traffic-reset",
+    "type": "inject",
+    "z": "tab-demo-traffic",
+    "name": "reset",
+    "props": [
+      {
+        "p": "payload",
+        "vt": "json",
+        "v": "{\"command\":\"reset\"}"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "payload": "{\"command\":\"reset\"}",
+    "payloadType": "json",
+    "topic": "",
+    "x": 100,
+    "y": 300,
+    "wires": [
+      [
+        "demo-traffic-in"
+      ]
+    ]
+  },
+  {
+    "id": "demo-traffic-out",
+    "type": "scxml-out",
+    "z": "tab-demo-traffic",
+    "name": "traffic state",
+    "machine": "demo-traffic-conf",
+    "includeVars": true,
+    "emitInitial": true,
+    "includeInternalSends": false,
+    "outputMode": "both",
+    "stateTopic": "traffic/state",
+    "eventTopic": "traffic/{event}",
+    "x": 560,
+    "y": 220,
+    "wires": [
+      [
+        "demo-traffic-state",
+        "demo-traffic-vars"
+      ],
+      [
+        "demo-traffic-events"
+      ]
+    ]
+  },
+  {
+    "id": "demo-traffic-state",
+    "type": "debug",
+    "z": "tab-demo-traffic",
+    "name": "state (full)",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 820,
+    "y": 200,
+    "wires": []
+  },
+  {
+    "id": "demo-traffic-vars",
+    "type": "debug",
+    "z": "tab-demo-traffic",
+    "name": "vars",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "vars",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 820,
+    "y": 260,
+    "wires": []
+  },
+  {
+    "id": "demo-traffic-events",
+    "type": "debug",
+    "z": "tab-demo-traffic",
+    "name": "events",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 820,
+    "y": 320,
+    "wires": []
+  },
+  {
+    "id": "tab-demo-commands",
+    "type": "tab",
+    "label": "02 Commands & Guards",
+    "disabled": false,
+    "info": "# 02 Commands & Guards\n\n演示 msg.command、变量、条件转移和 actions。\n\n- **start**（temp=20）→ cooling，并触发图内 send started；\n- **set temp=15** → 自动补 update → heating；\n- **set temp=25** → cooling；\n- **done** → 回 idle；\n- **reset** → 从初始态重建。\n\n覆盖：set / reset / event、updateEvent、cond、assign、send(data-expr)、stateTopic/eventTopic、变量调试。"
+  },
+  {
+    "id": "demo-cmd-help",
+    "type": "comment",
+    "z": "tab-demo-commands",
+    "name": "说明",
+    "info": "先点 start；再点 set temp=15 / 25；done 回 idle。",
+    "x": 80,
+    "y": 80,
+    "wires": []
+  },
+  {
+    "id": "demo-cmd-conf",
+    "type": "scxml-machine",
+    "z": "tab-demo-commands",
+    "name": "HVAC Guard",
+    "source": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<scxml xmlns=\"http://www.w3.org/2005/07/scxml\" version=\"1.0\" datamodel=\"ecmascript\" initial=\"idle\">\n  <datamodel>\n    <data id=\"temp\" expr=\"20\"/>\n    <data id=\"mode\" expr=\"'idle'\"/>\n  </datamodel>\n  <state id=\"idle\">\n    <onentry><assign location=\"mode\" expr=\"'idle'\"/></onentry>\n    <transition event=\"start\" cond=\"temp &lt; 18\" target=\"heating\">\n      <assign location=\"mode\" expr=\"'heating'\"/>\n      <send event=\"started\" data-expr=\"{mode: mode, temp: temp}\"/>\n    </transition>\n    <transition event=\"start\" cond=\"temp &gt;= 18\" target=\"cooling\">\n      <assign location=\"mode\" expr=\"'cooling'\"/>\n      <send event=\"started\" data-expr=\"{mode: mode, temp: temp}\"/>\n    </transition>\n    <transition event=\"update\" cond=\"temp &lt; 18\" target=\"heating\"/>\n    <transition event=\"update\" cond=\"temp &gt;= 18\" target=\"cooling\"/>\n  </state>\n  <state id=\"heating\">\n    <onentry><assign location=\"mode\" expr=\"'heating'\"/></onentry>\n    <transition event=\"done\" target=\"idle\"><assign location=\"mode\" expr=\"'done'\"/></transition>\n  </state>\n  <state id=\"cooling\">\n    <onentry><assign location=\"mode\" expr=\"'cooling'\"/></onentry>\n    <transition event=\"done\" target=\"idle\"><assign location=\"mode\" expr=\"'done'\"/></transition>\n  </state>\n</scxml>",
+    "engine": "sandboxed",
+    "scriptTimeoutMs": 500,
+    "maxMicrosteps": 10000,
+    "monitorShowVars": false,
+    "persistVars": false,
+    "updateEvent": "update",
+    "x": 180,
+    "y": 160,
+    "wires": []
+  },
+  {
+    "id": "demo-cmd-in",
+    "type": "scxml-in",
+    "z": "tab-demo-commands",
+    "name": "commands",
+    "machine": "demo-cmd-conf",
+    "eventSource": "topic",
+    "fixedEvent": "",
+    "x": 390,
+    "y": 260,
+    "wires": []
+  },
+  {
+    "id": "demo-cmd-start",
+    "type": "inject",
+    "z": "tab-demo-commands",
+    "name": "start",
+    "props": [
+      {
+        "p": "topic",
+        "vt": "str",
+        "v": "start"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "payload": "",
+    "payloadType": "str",
+    "topic": "start",
+    "x": 100,
+    "y": 240,
+    "wires": [
+      [
+        "demo-cmd-in"
+      ]
+    ]
+  },
+  {
+    "id": "demo-cmd-temp15",
+    "type": "inject",
+    "z": "tab-demo-commands",
+    "name": "set temp=15",
+    "props": [
+      {
+        "p": "payload",
+        "vt": "json",
+        "v": "{\"command\":\"set\",\"payload\":{\"temp\":15}}"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "payload": "{\"command\":\"set\",\"payload\":{\"temp\":15}}",
+    "payloadType": "json",
+    "topic": "",
+    "x": 100,
+    "y": 300,
+    "wires": [
+      [
+        "demo-cmd-in"
+      ]
+    ]
+  },
+  {
+    "id": "demo-cmd-temp25",
+    "type": "inject",
+    "z": "tab-demo-commands",
+    "name": "set temp=25",
+    "props": [
+      {
+        "p": "payload",
+        "vt": "json",
+        "v": "{\"command\":\"set\",\"payload\":{\"temp\":25}}"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "payload": "{\"command\":\"set\",\"payload\":{\"temp\":25}}",
+    "payloadType": "json",
+    "topic": "",
+    "x": 100,
+    "y": 360,
+    "wires": [
+      [
+        "demo-cmd-in"
+      ]
+    ]
+  },
+  {
+    "id": "demo-cmd-done",
+    "type": "inject",
+    "z": "tab-demo-commands",
+    "name": "done",
+    "props": [
+      {
+        "p": "payload",
+        "vt": "json",
+        "v": "{\"command\":\"event\",\"event\":\"done\"}"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "payload": "{\"command\":\"event\",\"event\":\"done\"}",
+    "payloadType": "json",
+    "topic": "",
+    "x": 100,
+    "y": 420,
+    "wires": [
+      [
+        "demo-cmd-in"
+      ]
+    ]
+  },
+  {
+    "id": "demo-cmd-reset",
+    "type": "inject",
+    "z": "tab-demo-commands",
+    "name": "reset",
+    "props": [
+      {
+        "p": "payload",
+        "vt": "json",
+        "v": "{\"command\":\"reset\"}"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "payload": "{\"command\":\"reset\"}",
+    "payloadType": "json",
+    "topic": "",
+    "x": 100,
+    "y": 480,
+    "wires": [
+      [
+        "demo-cmd-in"
+      ]
+    ]
+  },
+  {
+    "id": "demo-cmd-out",
+    "type": "scxml-out",
+    "z": "tab-demo-commands",
+    "name": "hvac state",
+    "machine": "demo-cmd-conf",
+    "includeVars": true,
+    "emitInitial": true,
+    "includeInternalSends": false,
+    "outputMode": "both",
+    "stateTopic": "hvac/state",
+    "eventTopic": "hvac/{event}",
+    "x": 590,
+    "y": 260,
+    "wires": [
+      [
+        "demo-cmd-state",
+        "demo-cmd-vars"
+      ],
+      [
+        "demo-cmd-events"
+      ]
+    ]
+  },
+  {
+    "id": "demo-cmd-state",
+    "type": "debug",
+    "z": "tab-demo-commands",
+    "name": "state (full)",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 860,
+    "y": 230,
+    "wires": []
+  },
+  {
+    "id": "demo-cmd-vars",
+    "type": "debug",
+    "z": "tab-demo-commands",
+    "name": "vars",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "vars",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 860,
+    "y": 290,
+    "wires": []
+  },
+  {
+    "id": "demo-cmd-events",
+    "type": "debug",
+    "z": "tab-demo-commands",
+    "name": "started event",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 860,
+    "y": 350,
+    "wires": []
+  },
+  {
+    "id": "tab-demo-parallel",
+    "type": "tab",
+    "label": "03 Parallel & History",
+    "disabled": false,
+    "info": "# 03 Parallel & History\n\n两个独立机器：\n\n- **Parallel Plant**：power / network 两个并行区域，状态输出是数组；\n- **History Player**：open → details → pause → resume 恢复 details；back 回 home。\n\n覆盖：parallel、active state 数组、shallow history、两个 config node 独立会话。"
+  },
+  {
+    "id": "demo-par-help",
+    "type": "comment",
+    "z": "tab-demo-parallel",
+    "name": "说明",
+    "info": "Parallel 的 states 是数组；History 演示 pause/resume。",
+    "x": 80,
+    "y": 80,
+    "wires": []
+  },
+  {
+    "id": "demo-par-conf",
+    "type": "scxml-machine",
+    "z": "tab-demo-parallel",
+    "name": "Parallel Plant",
+    "source": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<scxml xmlns=\"http://www.w3.org/2005/07/scxml\" version=\"1.0\" initial=\"p\">\n  <parallel id=\"p\">\n    <state id=\"power\" initial=\"off\">\n      <state id=\"off\"><transition event=\"togglePower\" target=\"on\"/></state>\n      <state id=\"on\"><transition event=\"togglePower\" target=\"off\"/></state>\n    </state>\n    <state id=\"network\" initial=\"disconnected\">\n      <state id=\"disconnected\"><transition event=\"connect\" target=\"connected\"/></state>\n      <state id=\"connected\"><transition event=\"disconnect\" target=\"disconnected\"/></state>\n    </state>\n  </parallel>\n</scxml>",
+    "engine": "sandboxed",
+    "scriptTimeoutMs": 500,
+    "maxMicrosteps": 10000,
+    "monitorShowVars": false,
+    "persistVars": false,
+    "updateEvent": "update",
+    "x": 160,
+    "y": 160,
+    "wires": []
+  },
+  {
+    "id": "demo-par-in",
+    "type": "scxml-in",
+    "z": "tab-demo-parallel",
+    "name": "parallel events",
+    "machine": "demo-par-conf",
+    "eventSource": "topic",
+    "fixedEvent": "",
+    "x": 380,
+    "y": 220,
+    "wires": []
+  },
+  {
+    "id": "demo-par-power",
+    "type": "inject",
+    "z": "tab-demo-parallel",
+    "name": "togglePower",
+    "props": [
+      {
+        "p": "topic",
+        "vt": "str",
+        "v": "togglePower"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "payload": "",
+    "payloadType": "str",
+    "topic": "togglePower",
+    "x": 100,
+    "y": 220,
+    "wires": [
+      [
+        "demo-par-in"
+      ]
+    ]
+  },
+  {
+    "id": "demo-par-connect",
+    "type": "inject",
+    "z": "tab-demo-parallel",
+    "name": "connect",
+    "props": [
+      {
+        "p": "topic",
+        "vt": "str",
+        "v": "connect"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "payload": "",
+    "payloadType": "str",
+    "topic": "connect",
+    "x": 100,
+    "y": 280,
+    "wires": [
+      [
+        "demo-par-in"
+      ]
+    ]
+  },
+  {
+    "id": "demo-par-disconnect",
+    "type": "inject",
+    "z": "tab-demo-parallel",
+    "name": "disconnect",
+    "props": [
+      {
+        "p": "topic",
+        "vt": "str",
+        "v": "disconnect"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "payload": "",
+    "payloadType": "str",
+    "topic": "disconnect",
+    "x": 100,
+    "y": 340,
+    "wires": [
+      [
+        "demo-par-in"
+      ]
+    ]
+  },
+  {
+    "id": "demo-par-out",
+    "type": "scxml-out",
+    "z": "tab-demo-parallel",
+    "name": "parallel states",
+    "machine": "demo-par-conf",
+    "includeVars": false,
+    "emitInitial": true,
+    "includeInternalSends": false,
+    "outputMode": "state",
+    "stateTopic": "plant/state",
+    "eventTopic": "scxml/{machine}/evt/{event}",
+    "x": 580,
+    "y": 220,
+    "wires": [
+      [
+        "demo-par-debug"
+      ],
+      []
+    ]
+  },
+  {
+    "id": "demo-par-debug",
+    "type": "debug",
+    "z": "tab-demo-parallel",
+    "name": "states array",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 840,
+    "y": 220,
+    "wires": []
+  },
+  {
+    "id": "demo-hist-conf",
+    "type": "scxml-machine",
+    "z": "tab-demo-parallel",
+    "name": "History Player",
+    "source": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<scxml xmlns=\"http://www.w3.org/2005/07/scxml\" version=\"1.0\" initial=\"session\">\n  <state id=\"session\" initial=\"app\">\n    <state id=\"app\" initial=\"home\">\n      <state id=\"home\"><transition event=\"open\" target=\"details\"/></state>\n      <state id=\"details\"><transition event=\"back\" target=\"home\"/></state>\n      <history id=\"last\" type=\"shallow\"><transition target=\"home\"/></history>\n    </state>\n    <state id=\"paused\"><transition event=\"resume\" target=\"last\"/></state>\n    <state id=\"stopped\"><transition event=\"resume\" target=\"last\"/></state>\n    <transition event=\"pause\" target=\"paused\"/>\n    <transition event=\"stop\" target=\"stopped\"/>\n  </state>\n</scxml>",
+    "engine": "sandboxed",
+    "scriptTimeoutMs": 500,
+    "maxMicrosteps": 10000,
+    "monitorShowVars": false,
+    "persistVars": false,
+    "updateEvent": "update",
+    "x": 160,
+    "y": 540,
+    "wires": []
+  },
+  {
+    "id": "demo-hist-in",
+    "type": "scxml-in",
+    "z": "tab-demo-parallel",
+    "name": "history events",
+    "machine": "demo-hist-conf",
+    "eventSource": "topic",
+    "fixedEvent": "",
+    "x": 380,
+    "y": 600,
+    "wires": []
+  },
+  {
+    "id": "demo-hist-open",
+    "type": "inject",
+    "z": "tab-demo-parallel",
+    "name": "open",
+    "props": [
+      {
+        "p": "topic",
+        "vt": "str",
+        "v": "open"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "payload": "",
+    "payloadType": "str",
+    "topic": "open",
+    "x": 100,
+    "y": 600,
+    "wires": [
+      [
+        "demo-hist-in"
+      ]
+    ]
+  },
+  {
+    "id": "demo-hist-pause",
+    "type": "inject",
+    "z": "tab-demo-parallel",
+    "name": "pause",
+    "props": [
+      {
+        "p": "topic",
+        "vt": "str",
+        "v": "pause"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "payload": "",
+    "payloadType": "str",
+    "topic": "pause",
+    "x": 100,
+    "y": 660,
+    "wires": [
+      [
+        "demo-hist-in"
+      ]
+    ]
+  },
+  {
+    "id": "demo-hist-resume",
+    "type": "inject",
+    "z": "tab-demo-parallel",
+    "name": "resume",
+    "props": [
+      {
+        "p": "topic",
+        "vt": "str",
+        "v": "resume"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "payload": "",
+    "payloadType": "str",
+    "topic": "resume",
+    "x": 100,
+    "y": 720,
+    "wires": [
+      [
+        "demo-hist-in"
+      ]
+    ]
+  },
+  {
+    "id": "demo-hist-stop",
+    "type": "inject",
+    "z": "tab-demo-parallel",
+    "name": "stop",
+    "props": [
+      {
+        "p": "topic",
+        "vt": "str",
+        "v": "stop"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "payload": "",
+    "payloadType": "str",
+    "topic": "stop",
+    "x": 100,
+    "y": 780,
+    "wires": [
+      [
+        "demo-hist-in"
+      ]
+    ]
+  },
+  {
+    "id": "demo-hist-back",
+    "type": "inject",
+    "z": "tab-demo-parallel",
+    "name": "back",
+    "props": [
+      {
+        "p": "topic",
+        "vt": "str",
+        "v": "back"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "payload": "",
+    "payloadType": "str",
+    "topic": "back",
+    "x": 100,
+    "y": 840,
+    "wires": [
+      [
+        "demo-hist-in"
+      ]
+    ]
+  },
+  {
+    "id": "demo-hist-out",
+    "type": "scxml-out",
+    "z": "tab-demo-parallel",
+    "name": "history states",
+    "machine": "demo-hist-conf",
+    "includeVars": false,
+    "emitInitial": true,
+    "includeInternalSends": false,
+    "outputMode": "both",
+    "stateTopic": "player/state",
+    "eventTopic": "scxml/{machine}/evt/{event}",
+    "x": 580,
+    "y": 600,
+    "wires": [
+      [
+        "demo-hist-debug"
+      ],
+      []
+    ]
+  },
+  {
+    "id": "demo-hist-debug",
+    "type": "debug",
+    "z": "tab-demo-parallel",
+    "name": "states",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 840,
+    "y": 600,
+    "wires": []
+  },
+  {
+    "id": "tab-demo-delay",
+    "type": "tab",
+    "label": "04 Delay & Sends",
+    "disabled": false,
+    "info": "# 04 Delay & Sends\n\n1.2s / 0.8s 延时转移 + 图内 send：\n\n- **open** → opening →（1.2s）→ open；\n- **close** → closing →（0.8s）→ closed；\n- 输出 2 同时显示 door.notify 和内部 timer send（已勾选 include internal sends）；\n- 状态 topic 为 door/state，事件 topic 为 door/{event}。\n\n覆盖：delay、send/id、内部/外部 send、eventTopic、定时器。"
+  },
+  {
+    "id": "demo-delay-help",
+    "type": "comment",
+    "z": "tab-demo-delay",
+    "name": "说明",
+    "info": "点 open/close，观察 1.2s/0.8s 后状态变化。",
+    "x": 80,
+    "y": 80,
+    "wires": []
+  },
+  {
+    "id": "demo-delay-conf",
+    "type": "scxml-machine",
+    "z": "tab-demo-delay",
+    "name": "Door with Delay",
+    "source": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<scxml xmlns=\"http://www.w3.org/2005/07/scxml\" version=\"1.0\" initial=\"closed\">\n  <state id=\"closed\"><transition event=\"open\" target=\"opening\"/></state>\n  <state id=\"opening\">\n    <onentry>\n      <send event=\"opened\" delay=\"1200ms\" id=\"openTimer\"/>\n      <send event=\"door.notify\" data-expr=\"{phase: 'opening'}\"/>\n    </onentry>\n    <transition event=\"opened\" target=\"open\"/>\n  </state>\n  <state id=\"open\"><transition event=\"close\" target=\"closing\"/></state>\n  <state id=\"closing\">\n    <onentry>\n      <send event=\"closed\" delay=\"800ms\" id=\"closeTimer\"/>\n      <send event=\"door.notify\" data-expr=\"{phase: 'closing'}\"/>\n    </onentry>\n    <transition event=\"closed\" target=\"closed\"/>\n  </state>\n</scxml>",
+    "engine": "sandboxed",
+    "scriptTimeoutMs": 500,
+    "maxMicrosteps": 10000,
+    "monitorShowVars": false,
+    "persistVars": false,
+    "updateEvent": "update",
+    "x": 160,
+    "y": 160,
+    "wires": []
+  },
+  {
+    "id": "demo-delay-in",
+    "type": "scxml-in",
+    "z": "tab-demo-delay",
+    "name": "door events",
+    "machine": "demo-delay-conf",
+    "eventSource": "topic",
+    "fixedEvent": "",
+    "x": 380,
+    "y": 240,
+    "wires": []
+  },
+  {
+    "id": "demo-delay-open",
+    "type": "inject",
+    "z": "tab-demo-delay",
+    "name": "open",
+    "props": [
+      {
+        "p": "topic",
+        "vt": "str",
+        "v": "open"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "payload": "",
+    "payloadType": "str",
+    "topic": "open",
+    "x": 100,
+    "y": 240,
+    "wires": [
+      [
+        "demo-delay-in"
+      ]
+    ]
+  },
+  {
+    "id": "demo-delay-close",
+    "type": "inject",
+    "z": "tab-demo-delay",
+    "name": "close",
+    "props": [
+      {
+        "p": "topic",
+        "vt": "str",
+        "v": "close"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "payload": "",
+    "payloadType": "str",
+    "topic": "close",
+    "x": 100,
+    "y": 300,
+    "wires": [
+      [
+        "demo-delay-in"
+      ]
+    ]
+  },
+  {
+    "id": "demo-delay-reset",
+    "type": "inject",
+    "z": "tab-demo-delay",
+    "name": "reset",
+    "props": [
+      {
+        "p": "payload",
+        "vt": "json",
+        "v": "{\"command\":\"reset\"}"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "payload": "{\"command\":\"reset\"}",
+    "payloadType": "json",
+    "topic": "",
+    "x": 100,
+    "y": 360,
+    "wires": [
+      [
+        "demo-delay-in"
+      ]
+    ]
+  },
+  {
+    "id": "demo-delay-out",
+    "type": "scxml-out",
+    "z": "tab-demo-delay",
+    "name": "door events",
+    "machine": "demo-delay-conf",
+    "includeVars": false,
+    "emitInitial": true,
+    "includeInternalSends": true,
+    "outputMode": "both",
+    "stateTopic": "door/state",
+    "eventTopic": "door/{event}",
+    "x": 580,
+    "y": 240,
+    "wires": [
+      [
+        "demo-delay-state"
+      ],
+      [
+        "demo-delay-events"
+      ]
+    ]
+  },
+  {
+    "id": "demo-delay-state",
+    "type": "debug",
+    "z": "tab-demo-delay",
+    "name": "door state",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 840,
+    "y": 220,
+    "wires": []
+  },
+  {
+    "id": "demo-delay-events",
+    "type": "debug",
+    "z": "tab-demo-delay",
+    "name": "send events",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 840,
+    "y": 300,
+    "wires": []
+  },
+  {
+    "id": "tab-demo-multi",
+    "type": "tab",
+    "label": "05 Multi-Machine",
+    "disabled": false,
+    "info": "# 05 Multi-Machine\n\n两个 config node 各自一个会话，用同名事件 \toggle 互不影响：\n\n- **Lamp**：off ↔ on；\n- **Fan**：low ↔ high；\n- 监控侧栏的机器选择器可切换两台；\n- 同一个 flow 里可以继续添加更多机器。\n\n覆盖：多 config node、独立 session、机器选择器。"
+  },
+  {
+    "id": "demo-multi-help",
+    "type": "comment",
+    "z": "tab-demo-multi",
+    "name": "说明",
+    "info": "两个机器都接 toggle，但状态独立。",
+    "x": 80,
+    "y": 80,
+    "wires": []
+  },
+  {
+    "id": "demo-lamp-conf",
+    "type": "scxml-machine",
+    "z": "tab-demo-multi",
+    "name": "Lamp",
+    "source": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<scxml xmlns=\"http://www.w3.org/2005/07/scxml\" version=\"1.0\" initial=\"off\">\n  <state id=\"off\"><transition event=\"toggle\" target=\"on\"/></state>\n  <state id=\"on\"><transition event=\"toggle\" target=\"off\"/></state>\n</scxml>",
+    "engine": "sandboxed",
+    "scriptTimeoutMs": 500,
+    "maxMicrosteps": 10000,
+    "monitorShowVars": false,
+    "persistVars": false,
+    "updateEvent": "update",
+    "x": 160,
+    "y": 160,
+    "wires": []
+  },
+  {
+    "id": "demo-fan-conf",
+    "type": "scxml-machine",
+    "z": "tab-demo-multi",
+    "name": "Fan",
+    "source": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<scxml xmlns=\"http://www.w3.org/2005/07/scxml\" version=\"1.0\" initial=\"low\">\n  <state id=\"low\"><transition event=\"toggle\" target=\"high\"/></state>\n  <state id=\"high\"><transition event=\"toggle\" target=\"low\"/></state>\n</scxml>",
+    "engine": "sandboxed",
+    "scriptTimeoutMs": 500,
+    "maxMicrosteps": 10000,
+    "monitorShowVars": false,
+    "persistVars": false,
+    "updateEvent": "update",
+    "x": 160,
+    "y": 440,
+    "wires": []
+  },
+  {
+    "id": "demo-lamp-in",
+    "type": "scxml-in",
+    "z": "tab-demo-multi",
+    "name": "lamp toggle",
+    "machine": "demo-lamp-conf",
+    "eventSource": "topic",
+    "fixedEvent": "",
+    "x": 380,
+    "y": 220,
+    "wires": []
+  },
+  {
+    "id": "demo-fan-in",
+    "type": "scxml-in",
+    "z": "tab-demo-multi",
+    "name": "fan toggle",
+    "machine": "demo-fan-conf",
+    "eventSource": "topic",
+    "fixedEvent": "",
+    "x": 380,
+    "y": 500,
+    "wires": []
+  },
+  {
+    "id": "demo-lamp-toggle",
+    "type": "inject",
+    "z": "tab-demo-multi",
+    "name": "toggle lamp",
+    "props": [
+      {
+        "p": "topic",
+        "vt": "str",
+        "v": "toggle"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "payload": "",
+    "payloadType": "str",
+    "topic": "toggle",
+    "x": 100,
+    "y": 220,
+    "wires": [
+      [
+        "demo-lamp-in"
+      ]
+    ]
+  },
+  {
+    "id": "demo-fan-toggle",
+    "type": "inject",
+    "z": "tab-demo-multi",
+    "name": "toggle fan",
+    "props": [
+      {
+        "p": "topic",
+        "vt": "str",
+        "v": "toggle"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "payload": "",
+    "payloadType": "str",
+    "topic": "toggle",
+    "x": 100,
+    "y": 500,
+    "wires": [
+      [
+        "demo-fan-in"
+      ]
+    ]
+  },
+  {
+    "id": "demo-lamp-out",
+    "type": "scxml-out",
+    "z": "tab-demo-multi",
+    "name": "lamp state",
+    "machine": "demo-lamp-conf",
+    "includeVars": false,
+    "emitInitial": true,
+    "includeInternalSends": false,
+    "outputMode": "both",
+    "stateTopic": "lamp/state",
+    "eventTopic": "scxml/{machine}/evt/{event}",
+    "x": 580,
+    "y": 220,
+    "wires": [
+      [
+        "demo-lamp-debug"
+      ],
+      []
+    ]
+  },
+  {
+    "id": "demo-fan-out",
+    "type": "scxml-out",
+    "z": "tab-demo-multi",
+    "name": "fan state",
+    "machine": "demo-fan-conf",
+    "includeVars": false,
+    "emitInitial": true,
+    "includeInternalSends": false,
+    "outputMode": "both",
+    "stateTopic": "fan/state",
+    "eventTopic": "scxml/{machine}/evt/{event}",
+    "x": 580,
+    "y": 500,
+    "wires": [
+      [
+        "demo-fan-debug"
+      ],
+      []
+    ]
+  },
+  {
+    "id": "demo-lamp-debug",
+    "type": "debug",
+    "z": "tab-demo-multi",
+    "name": "lamp",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 840,
+    "y": 220,
+    "wires": []
+  },
+  {
+    "id": "demo-fan-debug",
+    "type": "debug",
+    "z": "tab-demo-multi",
+    "name": "fan",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 840,
+    "y": 500,
+    "wires": []
+  },
+  {
+    "id": "tab-demo-doc",
+    "type": "tab",
+    "label": "06 ProjectDoc & Persistence",
+    "disabled": false,
+    "info": "# 06 ProjectDoc & Persistence\n\n这台机器只存 **ProjectDoc JSON**（没有原始 SCXML），打开配置会直接看到三张表：\n\n- cart → paying → done（final）；\n- entry action 更新 step 变量；\n- persistVars: true，变量写入 Node-RED context；\n- 点 **checkout / paid** 推进；**reset** 重建会话。\n\n覆盖：ProjectDoc、GUI 三张表、final 状态、persistVars、reset。"
+  },
+  {
+    "id": "demo-doc-help",
+    "type": "comment",
+    "z": "tab-demo-doc",
+    "name": "说明",
+    "info": "打开机器配置看 ProjectDoc 三张表；checkout → paid。",
+    "x": 80,
+    "y": 80,
+    "wires": []
+  },
+  {
+    "id": "demo-doc-conf",
+    "type": "scxml-machine",
+    "z": "tab-demo-doc",
+    "name": "Checkout (ProjectDoc)",
+    "source": "",
+    "doc": "{\"formatVersion\":1,\"name\":\"checkout\",\"initial\":\"u1\",\"datamodel\":[{\"id\":\"step\",\"expr\":\"'cart'\"}],\"states\":[{\"uid\":\"u1\",\"id\":\"cart\",\"label\":\"cart\",\"kind\":\"atomic\",\"parent\":null,\"initial\":null,\"entryActions\":[\"assign step = 'cart'\"],\"exitActions\":[]},{\"uid\":\"u2\",\"id\":\"paying\",\"label\":\"paying\",\"kind\":\"atomic\",\"parent\":null,\"initial\":null,\"entryActions\":[\"assign step = 'paying'\"],\"exitActions\":[]},{\"uid\":\"u3\",\"id\":\"done\",\"label\":\"done\",\"kind\":\"final\",\"parent\":null,\"initial\":null,\"entryActions\":[],\"exitActions\":[]}],\"transitions\":[{\"id\":\"t1\",\"source\":\"u1\",\"target\":\"u2\",\"event\":\"checkout\",\"cond\":\"\",\"actions\":[]},{\"id\":\"t2\",\"source\":\"u2\",\"target\":\"u3\",\"event\":\"paid\",\"cond\":\"\",\"actions\":[]}],\"layout\":{}}",
+    "engine": "sandboxed",
+    "scriptTimeoutMs": 500,
+    "maxMicrosteps": 10000,
+    "monitorShowVars": true,
+    "persistVars": true,
+    "updateEvent": "update",
+    "x": 160,
+    "y": 160,
+    "wires": []
+  },
+  {
+    "id": "demo-doc-in",
+    "type": "scxml-in",
+    "z": "tab-demo-doc",
+    "name": "checkout events",
+    "machine": "demo-doc-conf",
+    "eventSource": "topic",
+    "fixedEvent": "",
+    "x": 400,
+    "y": 240,
+    "wires": []
+  },
+  {
+    "id": "demo-doc-checkout",
+    "type": "inject",
+    "z": "tab-demo-doc",
+    "name": "checkout",
+    "props": [
+      {
+        "p": "topic",
+        "vt": "str",
+        "v": "checkout"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "payload": "",
+    "payloadType": "str",
+    "topic": "checkout",
+    "x": 100,
+    "y": 240,
+    "wires": [
+      [
+        "demo-doc-in"
+      ]
+    ]
+  },
+  {
+    "id": "demo-doc-paid",
+    "type": "inject",
+    "z": "tab-demo-doc",
+    "name": "paid",
+    "props": [
+      {
+        "p": "topic",
+        "vt": "str",
+        "v": "paid"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "payload": "",
+    "payloadType": "str",
+    "topic": "paid",
+    "x": 100,
+    "y": 300,
+    "wires": [
+      [
+        "demo-doc-in"
+      ]
+    ]
+  },
+  {
+    "id": "demo-doc-reset",
+    "type": "inject",
+    "z": "tab-demo-doc",
+    "name": "reset",
+    "props": [
+      {
+        "p": "payload",
+        "vt": "json",
+        "v": "{\"command\":\"reset\"}"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "payload": "{\"command\":\"reset\"}",
+    "payloadType": "json",
+    "topic": "",
+    "x": 100,
+    "y": 360,
+    "wires": [
+      [
+        "demo-doc-in"
+      ]
+    ]
+  },
+  {
+    "id": "demo-doc-out",
+    "type": "scxml-out",
+    "z": "tab-demo-doc",
+    "name": "checkout state",
+    "machine": "demo-doc-conf",
+    "includeVars": true,
+    "emitInitial": true,
+    "includeInternalSends": false,
+    "outputMode": "both",
+    "stateTopic": "checkout/state",
+    "eventTopic": "checkout/{event}",
+    "x": 620,
+    "y": 240,
+    "wires": [
+      [
+        "demo-doc-state",
+        "demo-doc-vars"
+      ],
+      []
+    ]
+  },
+  {
+    "id": "demo-doc-state",
+    "type": "debug",
+    "z": "tab-demo-doc",
+    "name": "state (full)",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 900,
+    "y": 220,
+    "wires": []
+  },
+  {
+    "id": "demo-doc-vars",
+    "type": "debug",
+    "z": "tab-demo-doc",
+    "name": "vars",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "vars",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 900,
+    "y": 280,
+    "wires": []
+  }
+]
