@@ -10,7 +10,7 @@ import { resolve } from 'node:path'
 const root = resolve(import.meta.dirname, '..')
 const pkg = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'))
 const required = [
-  'LICENSE', 'NOTICE', 'README.md',
+  'LICENSE', 'NOTICE', 'README.md', 'README.en.md',
   'dist/scxml.js', 'dist/scxml.html',
   'dist/editor-app/index.html', 'dist/editor-app/assets',
   'dist/locales/en-US/scxml.json', 'dist/locales/zh-CN/scxml.json',

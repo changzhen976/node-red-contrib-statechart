@@ -15,7 +15,8 @@
     "README.md",
     "LICENSE",
     "NOTICE",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "README.en.md"
   ],
   "scripts": {
     "build": "node esbuild.config.mjs",
