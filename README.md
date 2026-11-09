@@ -69,7 +69,7 @@ node-red
 - 高级区可编辑原始 SCXML 或 ProjectDoc JSON，并支持导入/导出；
 - 保存写 `doc`；旧 `source` 仍保留为兼容回退。
 
-P2 首版已去掉“只能贴 SCXML 文本”的限制；编辑器现在会做结构校验（重复 id、parent/initial、kind、transition、变量、delay），错误显示在表单顶部并高亮行；**GUI 保存 → Deploy → 运行时读 `doc` 已端到端验证**；entry/exit/transition 的 actions 支持结构化弹窗编辑。剩余是浏览器自动化。
+P2 首版已去掉“只能贴 SCXML 文本”的限制；剩余是校验提示、边界约束和自动化回归。
 
 ## 语言 / i18n
 
@@ -114,8 +114,8 @@ P2 首版已去掉“只能贴 SCXML 文本”的限制；编辑器现在会做�
 
 ## 当前限制
 
-- P2 还缺浏览器自动化回归；
-- actions 仍是纯文本行，未做结构化动作编辑器和字段级动作校验；
+- P2 首版还缺校验错误定位、kind/initial 边界约束、delay 自动事件名、端到端 Deploy 回归；
+- 三张表的 actions 仍是纯文本行，未做结构化动作编辑器；
 - 监控页无独立 token，依赖私网；
 - 不做可编辑画布（P4）；
 - 包仍为 `private: true`，未发布 npm。
@@ -243,7 +243,6 @@ msg.topic = "scxml/Traffic Light/evt/notify"
 - [可行性计划](docs/feasibility-plan.md)（v1.0，2026-11-09，当前决策依据）
 - [可行性评估](docs/assessment.md)（2026-11-06，历史评估）
 - [实施计划](docs/plan.md)（v0.1，2026-11-06，任务细节）
-- [P4 独立编辑器设计](docs/p4-standalone-editor.md)（2026-11-09，草案）
 - [验证脚本](spike/)（一次性 spike，不属于发布包）
 
 ## 状态
@@ -259,11 +258,9 @@ msg.topic = "scxml/Traffic Light/evt/notify"
 - [x] P1：运行时 MVP（含 50 次重复部署无泄漏，17/17 测试）
 - [x] P2（首版）：状态/转移/变量三张表 GUI、JSON/SCXML 高级编辑
 - [x] i18n：en-US / zh-CN / zh 语言包，自动跟随 Node-RED 语言
-- [x] P2：GUI 保存 → Deploy → 运行时 `doc` 端到端回归（2026-11-09）
-- [x] P2：actions 结构化编辑（send/cancel/assign/log/script）
-- [ ] P2 打磨：浏览器自动化回归
+- [ ] P2 打磨：校验提示、kind/initial 约束、delay 自动事件名、Deploy 回归
 - [ ] P3：测试矩阵、示例、发布
-- [ ] P4（可选）：独立全屏编辑器，见 [设计草案](docs/p4-standalone-editor.md)
+- [ ] P3：测试矩阵、示例、发布
 
 ## 许可
 
