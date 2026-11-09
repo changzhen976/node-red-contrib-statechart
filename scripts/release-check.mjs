@@ -12,6 +12,7 @@ const pkg = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'))
 const required = [
   'LICENSE', 'NOTICE', 'README.md',
   'dist/scxml.js', 'dist/scxml.html',
+  'dist/editor-app/index.html', 'dist/editor-app/assets',
   'dist/locales/en-US/scxml.json', 'dist/locales/zh-CN/scxml.json',
   'dist/locales/zh-CN/scxml.html',
   'examples/traffic-light.json', 'examples/demo-suite.json', 'examples/README.md',
@@ -29,7 +30,7 @@ if (!pkg.license) missing.push('package.json: license missing')
 
 const pack = JSON.parse(execFileSync('npm', ['pack', '--dry-run', '--json'], { cwd: root, encoding: 'utf8' }))[0]
 const files = pack.files.map((file) => file.path)
-for (const requiredFile of ['dist/locales/zh-CN/scxml.json', 'examples/demo-suite.json', 'LICENSE', 'NOTICE']) {
+for (const requiredFile of ['dist/editor-app/index.html', 'dist/locales/zh-CN/scxml.json', 'examples/demo-suite.json', 'LICENSE', 'NOTICE']) {
   if (!files.includes(requiredFile)) missing.push(`npm pack: ${requiredFile} missing`)
 }
 if (files.some((file) => file.startsWith('.tmp/') || file.startsWith('test/') || file.startsWith('.opencode/'))) {

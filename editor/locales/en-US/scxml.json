@@ -89,7 +89,8 @@
     "typeCancel": "cancel send",
     "typeAssign": "assign variable",
     "typeLog": "log",
-    "typeScript": "custom JS"
+    "typeScript": "custom JS",
+    "openFullEditor": "Open full editor"
   },
   "option": {
     "topic": "msg.topic",
@@ -117,7 +118,9 @@
     "validationSummary": "Document has __count__ validation issue(s); fix them before deploy.",
     "actionRequired": "Fill in the required action fields.",
     "actionDataInvalid": "Action data is not valid JSON.",
-    "noActions": "No actions yet."
+    "noActions": "No actions yet.",
+    "popupBlocked": "Popup blocked. Allow popups for Node-RED and try again.",
+    "savedFromFullEditor": "Saved from the full editor; click Update/Deploy in Node-RED."
   },
   "validate": {
     "noStates": "Add at least one state.",

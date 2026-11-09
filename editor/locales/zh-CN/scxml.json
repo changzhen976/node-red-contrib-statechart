@@ -89,7 +89,8 @@
     "typeCancel": "撤销发送",
     "typeAssign": "变量赋值",
     "typeLog": "日志",
-    "typeScript": "自定义 JS"
+    "typeScript": "自定义 JS",
+    "openFullEditor": "打开完整编辑器"
   },
   "option": {
     "topic": "msg.topic",
@@ -117,7 +118,9 @@
     "validationSummary": "文档有 __count__ 个校验问题，建议修复后再部署。",
     "actionRequired": "请填写动作的必填字段。",
     "actionDataInvalid": "动作 data 不是合法 JSON。",
-    "noActions": "还没有动作。"
+    "noActions": "还没有动作。",
+    "popupBlocked": "弹窗被浏览器拦截；请允许 Node-RED 弹出窗口后重试。",
+    "savedFromFullEditor": "已从完整编辑器保存；请回 Node-RED 点“更新/部署”。"
   },
   "validate": {
     "noStates": "至少需要一个状态。",

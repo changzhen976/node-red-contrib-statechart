@@ -549,6 +549,85 @@
     });
   }
 
+
+  var p4Window = null;
+  var p4Handler = null;
+
+  function openFullEditor(node) {
+    var c = core();
+    var doc = node._scxmlEditor && node._scxmlEditor.doc;
+    if (!doc) {
+      try {
+        doc = node.source && String(node.source).trim() ? c.scxmlToDoc(node.source).doc : c.emptyDoc(node.name || 'state machine');
+      } catch (err) {
+        notify(t('message.scxmlImportFailed', { error: err && err.message ? err.message : err }), 'error');
+        return;
+      }
+    }
+    doc = c.normalizeDoc(JSON.parse(JSON.stringify(doc)));
+    function collectMachines() {
+      var list = [];
+      RED.nodes.eachConfig(function (config) {
+        if (config.type !== 'scxml-machine') return;
+        var machineDoc = null;
+        if (config.doc && String(config.doc).trim()) {
+          try { machineDoc = c.normalizeDoc(JSON.parse(config.doc)); } catch (err) { machineDoc = null; }
+        }
+        if (!machineDoc && config.source && String(config.source).trim()) {
+          try { machineDoc = c.normalizeDoc(c.scxmlToDoc(config.source).doc); } catch (err) { machineDoc = null; }
+        }
+        if (!machineDoc) machineDoc = c.emptyDoc(config.name || 'state machine');
+        list.push({ id: config.id, name: config.name || config.id, doc: JSON.parse(JSON.stringify(machineDoc)) });
+      });
+      var current = null;
+      for (var i = 0; i < list.length; i++) if (list[i].id === node.id) current = list[i];
+      if (current) current.doc = JSON.parse(JSON.stringify(doc));
+      else list.push({ id: node.id, name: node.name || node.id, doc: JSON.parse(JSON.stringify(doc)) });
+      return list;
+    }
+    var root = (RED.settings.httpAdminRoot || '/').replace(/\/?$/, '/');
+    var lang = (RED.i18n && RED.i18n.lang && RED.i18n.lang()) || 'zh-CN';
+    var url = root + 'scxmljs/editor/?nodered=1&id=' + encodeURIComponent(node.id) + '&lang=' + encodeURIComponent(lang);
+    if (p4Handler) window.removeEventListener('message', p4Handler);
+    p4Handler = function (event) {
+      if (event.origin !== location.origin) return;
+      if (p4Window && event.source !== p4Window) return;
+      var data = event.data || {};
+      if (data.type === 'scxml:ready') {
+        sendLoad();
+      } else if (data.type === 'scxml:save' && data.doc) {
+        var targetId = data.id || node.id;
+        var target = RED.nodes.node ? RED.nodes.node(targetId) : null;
+        if (!target || target.type !== 'scxml-machine') return;
+        target.doc = JSON.stringify(data.doc);
+        try {
+          target.source = c.serializeToScxml(data.doc);
+        } catch (err) {
+          // Keep the previous source; doc remains authoritative.
+        }
+        if (targetId === node.id) {
+          node._scxmlEditor = node._scxmlEditor || {};
+          node._scxmlEditor.doc = c.normalizeDoc(JSON.parse(JSON.stringify(data.doc)));
+          if (typeof scxmlPrepareMachineEditor === 'function') scxmlPrepareMachineEditor(node);
+        }
+        if (RED.nodes && RED.nodes.dirty) RED.nodes.dirty(true);
+        notify(targetId === node.id ? t('message.savedFromFullEditor') : (target.name || targetId), 'success');
+        if (p4Window && !p4Window.closed) p4Window.postMessage({ type: 'scxml:save-ack', ok: true }, location.origin);
+      }
+    };
+    window.addEventListener('message', p4Handler);
+    function sendLoad() {
+      if (!p4Window || p4Window.closed) return;
+      p4Window.postMessage({ type: 'scxml:load', id: node.id, currentId: node.id, doc: JSON.parse(JSON.stringify(doc)), machines: collectMachines(), lang: lang }, location.origin);
+    }
+    p4Window = window.open(url, '_blank');
+    if (!p4Window) {
+      notify(t('message.popupBlocked'), 'warning');
+      return;
+    }
+    setTimeout(sendLoad, 800);
+  }
+
   function render(node) {
     var c = core();
     var editor = node._scxmlEditor;
@@ -739,6 +818,11 @@
       }
     });
 
+    $('#node-config-input-open-full-editor').off('.scxml').on('click.scxml', function (e) {
+      e.preventDefault();
+      openFullEditor(node);
+    });
+
     $('#scxml-export-scxml').off('.scxml').on('click.scxml', function (e) {
       e.preventDefault();
       try {
@@ -925,6 +1009,9 @@
     <label>&nbsp;</label>
     <button type="button" id="node-config-input-open-sidebar" class="red-ui-button red-ui-button-small">
       <i class="fa fa-project-diagram"></i> <span data-i18n="form.openSidebar"></span>
+    </button>
+    <button type="button" id="node-config-input-open-full-editor" class="red-ui-button red-ui-button-small">
+      <i class="fa fa-external-link"></i> <span data-i18n="form.openFullEditor"></span>
     </button>
   </div>
 </script>

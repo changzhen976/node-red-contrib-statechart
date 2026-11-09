@@ -25,7 +25,8 @@
     "sync:vendor": "node scripts/sync-vendor.mjs",
     "check:vendor": "node scripts/check-vendor.mjs",
     "test:browser": "node test/browser-smoke.mjs",
-    "release:check": "node scripts/release-check.mjs"
+    "release:check": "node scripts/release-check.mjs",
+    "test:p4": "node test/browser-p4.mjs"
   },
   "node-red": {
     "version": ">=5.0.0",

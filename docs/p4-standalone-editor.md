@@ -1,6 +1,6 @@
 # P4 设计：独立全屏状态机编辑器
 
-> 状态：设计草案（2026-11-09）；P4 可选，排在 P2 收尾、P3 发布之后。
+> 状态：P4.1/P4.2 已实现（2026-11-09）；P4 首版可用，P4.3 为可选打磨。
 > 结论：**可行，且推荐**。独立页面比 Node-RED 配置对话框更符合 creator 的常规操作，也比在 tray 里手写画布更省成本。
 
 ## 1. 为什么可行
@@ -120,8 +120,18 @@ Node-RED editor
 - P4 不是运行时依赖；即使 P4 未完成，P2 三张表仍可用。
 - tray 内嵌 iframe 已证明会被裁切，不再考虑。
 
-## 6. 结论
+## 6. 实现状态（2026-11-09）
 
-**做成独立页面是可行的，而且比在 Node-RED tray 内做画布更合理。**
+- `editor-app/`：scxml-creator 静态构建（donor `05d2fa9`）；
+- `src/runtime/monitor.ts`：`/scxmljs/editor/` 静态路由（未鉴权，私网使用）；
+- `editor/scxml.html`：配置窗口「打开完整编辑器」按钮；
+- `src/nodered-bridge.ts`（donor）：`nodered=1` 模式接收/回传 ProjectDoc；
+- 浏览器回归：`npm run test:p4`，验证加载 3 状态、机器选择器（Traffic Light / test chart）并回写父窗口 `node.doc`。
+
+P4.3 已完成多机选择、页面锁定 `#/editor`、Ctrl/Cmd+S 保存。可选：页面内错误定位、直接调用 Node-RED API 保存、路由鉴权。
+
+## 7. 结论
+
+**已实现：独立页面可行，且比在 Node-RED tray 内做画布更合理。**
 推荐先做 **P4.1 + P4.2（复用 creator SPA）**；如果 Vue/Fastify 解耦成本过高，再退回“专用 Vue 页面”。
 当前 P2 原生三张表继续保留，作为快速编辑和 P4 不可用时的 fallback。

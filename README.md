@@ -2,7 +2,7 @@
 
 > 在 Node-RED 流程中嵌入 SCXML 状态机：配置状态、变量和转移条件，以消息驱动，输出当前状态与变量。
 
-**当前阶段：P0 + P2.5 + P1 + P2 完成；P3 发布检查进行中（Node 22.9/24 已通过，待发布决策）。** 已实现包骨架、CJS 构建、三节点、只读实时状态图、完整运行时 MVP，以及状态/转移/变量三张表的原生 Node-RED 编辑器。
+**当前阶段：P0 + P2.5 + P1 + P2 + P4 首版完成；P3 只剩发布决策（Node 22.9/24 已通过）。** 已实现包骨架、CJS 构建、三节点、只读实时状态图、完整运行时 MVP，以及状态/转移/变量三张表的原生 Node-RED 编辑器。
 
 **复核结论：有条件 Go。** 运行时路线已在 Node-RED 5.0.9 上跑通；G1（重部署不恢复活跃状态）已接受；G2 的 donor LICENSE 与 `license` 字段已补并提交（donor commit `b3dfef6`）。实时状态通过节点状态和 `scxml-out` 消息输出；图形化只读状态图已选 P2.5 方案 B（独立监控页 + 编辑器侧栏 iframe），不是可编辑画布。详见 [可行性计划](docs/feasibility-plan.md)。
 
@@ -72,6 +72,20 @@ node-red
 - 保存写 `doc`；旧 `source` 仍保留为兼容回退。
 
 P2 已完成：三张表、结构校验、actions 结构化、i18n、GUI → Deploy 端到端验证和浏览器回归均已通过。
+
+## 完整编辑器（P4）
+
+`scxml-machine` 配置窗口新增 **打开完整编辑器**：
+
+- 新标签页打开 `/scxmljs/editor/`，复用 scxml-creator 的全屏三栏/画布；
+- 页面通过 `postMessage` 接收所有 `scxml-machine` 的 `ProjectDoc`，并可在页面顶部切换机器；
+- 页面底部 **保存到 Node-RED** 按 config node id 回写父窗口的 `node.doc`；
+- 页面锁定在 `#/editor`，Ctrl/Cmd+S 直接保存回 Node-RED；
+- 回到 Node-RED 点 Update/Deploy；
+- 静态资源在 `editor-app/`，构建时复制到 `dist/editor-app/`；不依赖 Fastify/MQTT。
+
+> P4 页面复用 creator 现有 UI；gallery/service/API 入口也仍在页面内，主入口固定为 `#/editor`。
+> `/scxmljs/editor/` 是 `httpAdmin` 自定义路由，**不自动鉴权**，仅适合私网/Tailscale。
 
 ## 语言 / i18n
 
@@ -284,7 +298,8 @@ npm run test:browser
 - [x] P3：示例 suite（6 tab / 8 机器）+ 示例自动校验
 - [x] P3：Node 22.9 / Node 24 矩阵、release:check、CHANGELOG
 - [ ] P3 剩余：版本/`private`/npm 发布决策 ← 下一步
-- [ ] P4（可选）：独立全屏编辑器，见 [设计草案](docs/p4-standalone-editor.md)
+- [x] P4：独立全屏编辑器（creator SPA + postMessage + 保存回写 + P4 浏览器回归）
+- [ ] P3 发布：npm CLI 未登录，凭据就绪后 bump 0.1.0 / 移除 private / publish
 
 ## 许可
 

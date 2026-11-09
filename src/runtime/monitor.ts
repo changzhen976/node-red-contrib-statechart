@@ -34,6 +34,7 @@ export function registerMonitor(RED: any): void {
   RED.__scxmlMonitorRegistered = true
 
   const monitorDir = path.join(__dirname, 'monitor')
+  const editorDir = path.join(__dirname, 'editor-app')
   const assetBase = `${normalizeAdminRoot(RED.settings?.httpAdminRoot)}scxmljs/assets/`
   const htmlPath = path.join(monitorDir, 'index.html')
 
@@ -52,6 +53,21 @@ export function registerMonitor(RED: any): void {
 
   RED.httpAdmin.get('/scxmljs/monitor', sendHtml)
   RED.httpAdmin.get('/scxmljs/monitor/', sendHtml)
+
+  const editorBase = `${normalizeAdminRoot(RED.settings?.httpAdminRoot)}scxmljs/editor/`
+  RED.httpAdmin.get(/^\/scxmljs\/editor$/, (_req: any, res: any) => res.redirect(302, editorBase))
+  RED.httpAdmin.use('/scxmljs/editor', (req: any, res: any, next: any) => {
+    const rel = req.path === '/' || req.path === '' ? 'index.html' : req.path.replace(/^\//, '')
+    if (!/^[A-Za-z0-9._/-]+$/.test(rel) || rel.includes('..')) {
+      res.status(404).type('text/plain').send('not found')
+      return
+    }
+    const file = path.join(editorDir, rel)
+    res.set('Cache-Control', rel === 'index.html' ? 'no-store' : 'public, max-age=3600')
+    res.sendFile(file, (err: Error) => {
+      if (err) next()
+    })
+  })
 
   RED.httpAdmin.get('/scxmljs/api/machines', (_req: any, res: any) => {
     const machines = listMachines().map((machine: MonitorMachine) => {

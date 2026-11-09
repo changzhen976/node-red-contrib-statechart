@@ -1,11 +1,13 @@
 import { build } from 'esbuild'
-import { copyFile, cp, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { copyFile, cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = dirname(fileURLToPath(import.meta.url))
 const dist = resolve(root, 'dist')
 
+// Clean previous hashed assets so npm pack does not include stale chunks.
+await rm(dist, { recursive: true, force: true })
 await mkdir(dist, { recursive: true })
 
 await build({
@@ -37,6 +39,8 @@ const editorHtml = (await readFile(resolve(root, 'editor/scxml.html'), 'utf8'))
   .replace('<!-- SCXML_CORE_INLINE -->', `<script>${editorCoreJs}</script>`)
 await writeFile(resolve(dist, 'scxml.html'), editorHtml)
 await cp(resolve(root, 'editor/locales'), resolve(dist, 'locales'), { recursive: true })
+// P4 standalone editor build (generated from ../scxml-creator).
+await cp(resolve(root, 'editor-app'), resolve(dist, 'editor-app'), { recursive: true })
 
 // Browser bundle for the P2.5 read-only monitor page.
 await build({
