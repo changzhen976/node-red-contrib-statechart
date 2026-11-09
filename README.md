@@ -40,6 +40,24 @@ node-red
 
 旧 flow 的 `source` 字段仍兼容；新编辑器后续会把配置迁移到 `doc`（ProjectDoc JSON）。
 
+## 输入命令
+
+```js
+// 普通事件：msg.topic / msg.event / payload / fixed
+{ topic: "next" }
+
+// 显式事件
+{ command: "event", event: "next", payload: { ... } }
+
+// 设置变量并自动发 updateEvent（默认 update）
+{ command: "set", payload: { temp: 85 } }
+
+// 回到初始态；persistVars 时回填持久化变量，否则用 <data> 默认值
+{ command: "reset" }
+```
+
+`set` 会先校验变量是否在 `<data>` 中声明，再 `assignValue`，最后发送 `updateEvent`；可在 `scxml-machine` 配置里改 `updateEvent`。
+
 ## 已实现（P0 + P1 核心）
 
 - config node 持有一个 SCXML 会话与事件总线，in/out 节点共享；
@@ -55,15 +73,19 @@ node-red
 - 部署后 `scxml-out` 的 `node.status()` 显示当前激活状态；
 - 编辑器三节点表单与帮助文本；
 - 多状态机：`scxml-in`/`scxml-out` 的 Machine 使用 Node-RED 标准 config picker，带「+ Add」按钮，可直接新建 `scxml-machine`；
-- 测试覆盖初始状态、转移、`<send>`、并行、非法 SCXML、关闭无定时器泄漏、ProjectDoc、双机独立；
+- `scxml-in` 支持 `msg.command = set/reset/event`；`set` 自动发送 `updateEvent`（默认 `update`）；
+- 输入按机器级队列串行处理，初始化期间不会丢顺序；
+- `persistVars`：变量写入 Node-RED context，启动时用 `createSession({ data })` 回填；
+- `scxml-out` 支持 `outputMode`（state/event/both）、`stateTopic`、`eventTopic`；
+- 历史伪态、延时转移、条件转移、持久化均有集成测试。
+- 测试覆盖初始状态、转移、`<send>`、并行、非法 SCXML、关闭无定时器泄漏、ProjectDoc、双机独立、set/reset/event、outputMode、历史、延时、持久化；
 - `npm pack` 产物在干净的 Node-RED 5.0.9 用户目录可安装并加载。
 
-## P0 限制
+## 当前限制
 
-- `scxml-machine` 目前直接接收 SCXML 文本，还没有 `ProjectDoc` 表单/序列化（P1 vendor core，P2 三张表）；
-- 输入节点暂不支持 `msg.command = "set"` / `"reset"`；
-- 不做输入队列、变量 context 持久化；
-- 编辑器仍是 SCXML/ProjectDoc 文本框，三张表表单 P2；
+- 编辑器仍是 SCXML 文本框；`ProjectDoc` 运行时已支持，但三张表表单还没做（P2）；
+- P1 还差 50 次重复部署的压力测试；
+- 监控页无独立 token，依赖私网；
 - 不做可编辑画布（P4）；
 - 包仍为 `private: true`，未发布 npm。
 
@@ -202,9 +224,9 @@ msg.topic = "scxml/Traffic Light/evt/notify"
 - [x] G2：donor LICENSE、`package.json` 的 `license` 字段与提交均已完成（`b3dfef6`）
 - [x] P0：包骨架 + 最小三节点 + Node-RED 5 冒烟（2026-11-09）
 - [x] P2.5：只读实时状态图（独立监控页 + 编辑器侧栏 iframe，2026-11-09）
-- [x] P1（部分）：vendor core、ProjectDoc、部署校验闸门、多状态机 config picker
-- [ ] P1 剩余：set/reset、输入队列、变量持久化、历史/延时测试
-- [ ] P2：表单配置编辑器（三张表）
+- [x] P1：运行时 MVP（vendor/ProjectDoc/校验、多机、set/reset/event、队列、持久化、out 契约、历史/延时测试）
+- [ ] P1 压力项：50 次重复部署无泄漏
+- [ ] P2：表单配置编辑器（三张表）← 当前 GUI 缺口
 - [ ] P3：测试矩阵、示例、发布
 
 ## 许可

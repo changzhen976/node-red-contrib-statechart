@@ -36,6 +36,32 @@ const PARALLEL = `<?xml version="1.0" encoding="UTF-8"?>
 
 const BAD = '<scxml xmlns="http://www.w3.org/2005/07/scxml"><state id="a"></scxml>'
 
+const SET_CONDITION = `<?xml version="1.0" encoding="UTF-8"?>
+<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" datamodel="ecmascript" initial="a">
+  <datamodel><data id="temp" expr="0"/></datamodel>
+  <state id="a"><transition event="update" cond="temp &gt; 80" target="b"/></state>
+  <state id="b"/>
+</scxml>`
+
+const HISTORY = `<?xml version="1.0" encoding="UTF-8"?>
+<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="p">
+  <state id="p" initial="s1">
+    <state id="s1"><transition event="next" target="s2"/></state>
+    <state id="s2"><transition event="out" target="out"/></state>
+    <history id="h" type="shallow"><transition target="s1"/></history>
+  </state>
+  <state id="out"><transition event="back" target="h"/></state>
+</scxml>`
+
+const DELAY = `<?xml version="1.0" encoding="UTF-8"?>
+<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="a">
+  <state id="a">
+    <onentry><send event="later" delay="40ms"/></onentry>
+    <transition event="later" target="b"/>
+  </state>
+  <state id="b"/>
+</scxml>`
+
 const DOC_TRAFFIC = JSON.stringify({
   formatVersion: 1,
   name: 'doc traffic light',
@@ -78,11 +104,12 @@ function testModule(RED) {
   })
 }
 
-function flowFor(source) {
+function flowFor(source, outConfig = {}, machineConfig = {}) {
   return [
     {
       id: 'conf1', type: 'scxml-machine', name: 'test machine', source,
       engine: 'sandboxed', scriptTimeoutMs: 500, maxMicrosteps: 10000,
+      ...machineConfig,
     },
     {
       id: 'in1', type: 'scxml-in', machine: 'conf1',
@@ -91,6 +118,7 @@ function flowFor(source) {
     {
       id: 'out1', type: 'scxml-out', machine: 'conf1',
       includeVars: true, emitInitial: true, includeInternalSends: false,
+      ...outConfig,
       wires: [['s1'], ['s2']],
     },
     { id: 's1', type: 'p0-sink' },
@@ -290,6 +318,116 @@ test('keeps two config-node machines independent', async () => {
 
     const list = await helper.request().get('/scxmljs/api/machines').expect(200)
     assert.deepEqual(list.body.map((m) => m.id).sort(), ['confA', 'confB'])
+  } finally {
+    await unloadFlow()
+  }
+})
+
+
+test('set command assigns variables and auto-sends update', async () => {
+  await loadFlow(flowFor(SET_CONDITION))
+  try {
+    await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'a'), 'initial a')
+    helper.getNode('in1').receive({ command: 'set', payload: { temp: 85 } })
+    await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'b'), 'condition transition')
+    const msg = sinkMessages('s1').find((m) => m.payload === 'b')
+    assert.equal(msg.vars.temp, 85)
+  } finally {
+    await unloadFlow()
+  }
+})
+
+test('event command uses msg.event', async () => {
+  await loadFlow(flowFor(TRAFFIC))
+  try {
+    await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'red'), 'initial red')
+    helper.getNode('in1').receive({ command: 'event', event: 'next' })
+    await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'green'), 'event green')
+  } finally {
+    await unloadFlow()
+  }
+})
+
+test('reset command re-creates the session at the initial state', async () => {
+  await loadFlow(flowFor(TRAFFIC))
+  try {
+    await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'red'), 'initial red')
+    helper.getNode('in1').receive({ topic: 'next' })
+    await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'green'), 'green before reset')
+    helper.getNode('in1').receive({ command: 'reset' })
+    await waitFor(() => {
+      const list = sinkMessages('s1')
+      const last = list[list.length - 1]
+      return last && last.payload === 'red' && last.vars.cycles === 1
+    }, 'reset red/cycles=1')
+  } finally {
+    await unloadFlow()
+  }
+})
+
+
+test('honours outputMode=state and stateTopic', async () => {
+  await loadFlow(flowFor(SEND, { outputMode: 'state', stateTopic: 'state/{machine}' }))
+  try {
+    await waitFor(() => sinkMessages('s1').length > 0, 'initial state')
+    helper.getNode('in1').receive({ topic: 'go' })
+    await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'b'), 'state b')
+    await sleep(100)
+    assert.equal(sinkMessages('s2').length, 0, 'event output must be suppressed')
+    assert.equal(sinkMessages('s1').find((m) => m.payload === 'b').topic, 'state/test machine')
+  } finally {
+    await unloadFlow()
+  }
+})
+
+test('honours outputMode=event and eventTopic', async () => {
+  await loadFlow(flowFor(SEND, { outputMode: 'event', eventTopic: 'evt/{machine}/{event}' }))
+  try {
+    await waitFor(() => sinkMessages('s1').length === 0, 'no initial state', 200)
+    helper.getNode('in1').receive({ topic: 'go' })
+    await waitFor(() => sinkMessages('s2').some((m) => m.event === 'notify'), 'notify')
+    const msg = sinkMessages('s2').find((m) => m.event === 'notify')
+    assert.equal(msg.topic, 'evt/test machine/notify')
+    assert.equal(sinkMessages('s1').length, 0, 'state output must be suppressed')
+  } finally {
+    await unloadFlow()
+  }
+})
+
+test('restores shallow history', async () => {
+  await loadFlow(flowFor(HISTORY))
+  try {
+    await waitFor(() => sinkMessages('s1').some((m) => m.states.includes('s1')), 'p/s1')
+    helper.getNode('in1').receive({ topic: 'next' })
+    await waitFor(() => sinkMessages('s1').some((m) => m.states.includes('s2')), 'p/s2')
+    helper.getNode('in1').receive({ topic: 'out' })
+    await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'out'), 'out state')
+    helper.getNode('in1').receive({ topic: 'back' })
+    await waitFor(() => sinkMessages('s1').some((m) => m.states.includes('s2')), 'history restored')
+  } finally {
+    await unloadFlow()
+  }
+})
+
+test('fires a delayed transition', async () => {
+  await loadFlow(flowFor(DELAY))
+  try {
+    await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'a'), 'initial a')
+    await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'b'), 'delayed b', 2000)
+  } finally {
+    await unloadFlow()
+  }
+})
+
+test('restores persisted variables with createSession data', async () => {
+  await loadFlow(flowFor(SET_CONDITION, { emitInitial: false }, { persistVars: true }))
+  try {
+    const machine = helper.getNode('conf1')
+    await machine.context().set('scxmlVars', { temp: 85 })
+    helper.getNode('in1').receive({ command: 'reset' })
+    await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'a' && m.vars.temp === 85), 'restored vars')
+    helper.getNode('in1').receive({ topic: 'update' })
+    await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'b'), 'condition after restore')
   } finally {
     await unloadFlow()
   }

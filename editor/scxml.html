@@ -24,7 +24,9 @@
       engine: { value: 'sandboxed' },
       scriptTimeoutMs: { value: 500, validate: RED.validators.number() },
       maxMicrosteps: { value: 10000, validate: RED.validators.number() },
-      monitorShowVars: { value: false }
+      monitorShowVars: { value: false },
+      persistVars: { value: false },
+      updateEvent: { value: 'update' }
     },
     label: function () {
       return this.name || 'scxml machine';
@@ -73,7 +75,10 @@
       machine: { value: '', type: 'scxml-machine' },
       includeVars: { value: true },
       emitInitial: { value: true },
-      includeInternalSends: { value: false }
+      includeInternalSends: { value: false },
+      outputMode: { value: 'both' },
+      stateTopic: { value: '' },
+      eventTopic: { value: 'scxml/{machine}/evt/{event}' }
     },
     label: function () {
       return this.name || 'scxml out';
@@ -131,6 +136,14 @@
     <input type="checkbox" id="node-input-monitorShowVars">
   </div>
   <div class="form-row">
+    <label for="node-input-persistVars"><i class="fa fa-save"></i> Persist variables</label>
+    <input type="checkbox" id="node-input-persistVars">
+  </div>
+  <div class="form-row">
+    <label for="node-input-updateEvent"><i class="fa fa-refresh"></i> Update event</label>
+    <input type="text" id="node-input-updateEvent" placeholder="update">
+  </div>
+  <div class="form-row">
     <label>&nbsp;</label>
     <button type="button" id="node-input-open-sidebar" class="red-ui-button red-ui-button-small">
       <i class="fa fa-project-diagram"></i> 在侧栏查看实时状态图
@@ -181,7 +194,11 @@
   <p>The event name comes from <code>msg.topic</code>, <code>msg.event</code>, a string
   payload, or a fixed value. An empty event name is reported as an error rather than
   silently dropped.</p>
-  <p>This node has no outputs in P0. Connect <code>scxml-out</code> to the same machine
+  <p>Commands: <code>msg.command = "set"</code> with an object payload assigns declared
+  variables and then sends <code>updateEvent</code> (default <code>update</code>);
+  <code>"reset"</code> re-creates the session from the initial state;
+  <code>"event"</code> uses <code>msg.event</code>.</p>
+  <p>This node has no outputs. Connect <code>scxml-out</code> to the same machine
   to observe state changes.</p>
 </script>
 
@@ -205,6 +222,22 @@
   <div class="form-row">
     <label for="node-input-includeInternalSends"><i class="fa fa-envelope"></i> Include internal sends</label>
     <input type="checkbox" id="node-input-includeInternalSends">
+  </div>
+  <div class="form-row">
+    <label for="node-input-outputMode"><i class="fa fa-random"></i> Output mode</label>
+    <select id="node-input-outputMode">
+      <option value="both">both</option>
+      <option value="state">state only</option>
+      <option value="event">event only</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label for="node-input-stateTopic"><i class="fa fa-tag"></i> State topic</label>
+    <input type="text" id="node-input-stateTopic" placeholder="default: active state">
+  </div>
+  <div class="form-row">
+    <label for="node-input-eventTopic"><i class="fa fa-tag"></i> Event topic</label>
+    <input type="text" id="node-input-eventTopic" placeholder="scxml/{machine}/evt/{event}">
   </div>
   <p style="margin-left: 130px; color: #888;">Output 1: state. Output 2: chart &lt;send&gt; events.</p>
 </script>

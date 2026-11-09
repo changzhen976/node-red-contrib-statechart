@@ -34,7 +34,29 @@ export function registerIn(RED: any): void {
     node.on('input', async function onInput(msg: any, _send: any, done: (err?: Error) => void) {
       try {
         if (!machine) throw new Error('no scxml-machine configured')
-        const name = resolveEventName(msg, config)
+        const command = String(msg.command || 'event').toLowerCase()
+        if (command === 'set') {
+          const vars = toJsonData(msg.payload)
+          if (!vars || typeof vars !== 'object' || Array.isArray(vars)) {
+            throw new Error('set command requires msg.payload to be an object')
+          }
+          await machine.setVars(vars)
+          node.status({ fill: 'green', shape: 'dot', text: `set ${Object.keys(vars).length} var(s)` })
+          done()
+          return
+        }
+        if (command === 'reset') {
+          await machine.reset()
+          node.status({ fill: 'green', shape: 'dot', text: 'reset' })
+          done()
+          return
+        }
+        if (command !== 'event') {
+          throw new Error(`unknown command: ${command}`)
+        }
+        const name = command === 'event' && msg.event !== undefined
+          ? String(msg.event || '').trim()
+          : resolveEventName(msg, config)
         if (!name) throw new Error('event name is empty')
         const data = toJsonData(msg.payload)
         await machine.sendEvent(name, data)

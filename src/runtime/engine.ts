@@ -38,6 +38,8 @@ export interface MachineSessionOptions {
   engine: EngineMode
   scriptTimeoutMs: number
   maxMicrosteps: number
+  /** Initial data values, used to restore persisted variables before start. */
+  data?: Record<string, unknown>
 }
 
 export async function createMachineSession(
@@ -46,9 +48,11 @@ export async function createMachineSession(
 ): Promise<any> {
   const engine = await loadEngine(options.engine)
   const domParser = await getDomParser()
-  return engine.createSession(source, {
+  const sessionOptions: Record<string, unknown> = {
     domParser,
     scriptTimeoutMs: options.scriptTimeoutMs,
     maxMicrosteps: options.maxMicrosteps,
-  })
+  }
+  if (options.data) sessionOptions.data = options.data
+  return engine.createSession(source, sessionOptions)
 }

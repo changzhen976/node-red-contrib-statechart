@@ -71,6 +71,8 @@ export function registerMachine(RED: any): void {
     node.scriptTimeoutMs = positiveNumber(config.scriptTimeoutMs, 500)
     node.maxMicrosteps = positiveNumber(config.maxMicrosteps, 10000)
     node.monitorShowVars = config.monitorShowVars === true
+    node.persistVars = config.persistVars === true
+    node.updateEvent = String(config.updateEvent || 'update').trim()
     node.graphVersion = hashString(node.doc || node.source)
     node.getGraphSource = function getGraphSource(): string {
       try {
@@ -91,9 +93,59 @@ export function registerMachine(RED: any): void {
     let lastVars: Record<string, unknown> = {}
     let lastStateKey: string | null = null
     let lastChanged = false
+    const MAX_QUEUE = 1000
+    const PERSIST_KEY = 'scxmlVars'
+    let opChain: Promise<void> = Promise.resolve()
+    let queuedOps = 0
+    let saveTimer: ReturnType<typeof setTimeout> | null = null
+
+    /** Serialize inputs/commands; keeps arrival order while the session starts. */
+    function enqueue<T>(work: () => Promise<T>): Promise<T> {
+      if (closed) return Promise.reject(new Error('state machine is closed'))
+      if (queuedOps >= MAX_QUEUE) {
+        return Promise.reject(new Error(`input queue is full (max ${MAX_QUEUE})`))
+      }
+      queuedOps++
+      const run = opChain.then(work)
+      opChain = run.then(
+        () => { queuedOps-- },
+        () => { queuedOps-- },
+      )
+      return run
+    }
 
     node.bus = bus
     node.status({ fill: 'grey', shape: 'ring', text: 'not started' })
+
+    async function readPersistedVars(): Promise<Record<string, unknown> | undefined> {
+      if (!node.persistVars) return undefined
+      try {
+        const saved = await node.context().get(PERSIST_KEY)
+        return saved && typeof saved === 'object' && !Array.isArray(saved)
+          ? (saved as Record<string, unknown>)
+          : undefined
+      } catch {
+        return undefined
+      }
+    }
+
+    function writePersistedVars(active: any): void {
+      if (!node.persistVars || !active) return
+      try {
+        const result = node.context().set(PERSIST_KEY, active.snapshot())
+        if (result && typeof result.catch === 'function') result.catch(() => {})
+      } catch {
+        // Context may be unavailable during shutdown; persistence is best-effort.
+      }
+    }
+
+    function schedulePersistVars(): void {
+      if (!node.persistVars || !session || saveTimer) return
+      saveTimer = setTimeout(() => {
+        saveTimer = null
+        if (session) writePersistedVars(session)
+      }, 250)
+    }
 
     function publishState(): void {
       const states = Array.isArray(session?.activeStateIds()) ? session.activeStateIds() : []
@@ -104,6 +156,7 @@ export function registerMachine(RED: any): void {
       lastChanged = changed
       lastStates = states
       lastVars = vars
+      schedulePersistVars()
       node.status({
         fill: 'green',
         shape: 'dot',
@@ -139,10 +192,12 @@ export function registerMachine(RED: any): void {
           throw err
         }
 
+        const persisted = await readPersistedVars()
         const created = await createMachineSession(resolved.xml, {
           engine: node.engine,
           scriptTimeoutMs: node.scriptTimeoutMs,
           maxMicrosteps: node.maxMicrosteps,
+          data: persisted,
         })
         if (closed) {
           created.dispose()
@@ -194,10 +249,65 @@ export function registerMachine(RED: any): void {
       return startPromise
     }
 
-    node.sendEvent = async function sendEvent(name: string, data: unknown): Promise<void> {
-      const active = await node.ensureStarted()
-      currentEvent = name
-      active.send(name, data)
+    node.sendEvent = function sendEvent(name: string, data: unknown): Promise<void> {
+      return enqueue(async () => {
+        const active = await node.ensureStarted()
+        currentEvent = name
+        active.send(name, data)
+      })
+    }
+
+    node.setVars = function setVars(vars: Record<string, unknown>): Promise<void> {
+      return enqueue(async () => {
+        const active = await node.ensureStarted()
+        const datamodel = active.datamodel
+        if (!datamodel) throw new Error('data model is not available')
+        const entries = Object.entries(vars)
+        for (const [id] of entries) {
+          if (typeof datamodel.isValidLocation === 'function' && !datamodel.isValidLocation(id)) {
+            throw new Error(`unknown variable: ${id}`)
+          }
+        }
+        for (const [id, value] of entries) {
+          datamodel.assignValue(id, value)
+        }
+        const updateEvent = String(node.updateEvent || '').trim()
+        if (updateEvent) {
+          currentEvent = updateEvent
+          active.send(updateEvent, {})
+        }
+      })
+    }
+
+    node.reset = function reset(): Promise<void> {
+      return enqueue(async () => {
+        const pending = startPromise
+        if (pending) {
+          try {
+            await pending
+          } catch {
+            // Invalid configuration: reset clears the cached error and tries again.
+          }
+        }
+        const old = session
+        session = null
+        startPromise = null
+        startError = null
+        lastStates = []
+        lastVars = {}
+        lastStateKey = null
+        lastChanged = false
+        currentEvent = undefined
+        if (old) {
+          try {
+            old.dispose()
+          } catch {
+            // dispose is best-effort
+          }
+        }
+        node.status({ fill: 'blue', shape: 'dot', text: 'resetting' })
+        await node.ensureStarted()
+      })
     }
 
     node.getCurrentState = function getCurrentState(): MachineStateEvent | null {
@@ -223,7 +333,12 @@ export function registerMachine(RED: any): void {
       closed = true
       bus.clear()
       machines.delete(node.id)
+      if (saveTimer) {
+        clearTimeout(saveTimer)
+        saveTimer = null
+      }
       const active = session
+      if (active) writePersistedVars(active)
       session = null
       startPromise = null
       startError = null
