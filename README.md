@@ -77,7 +77,7 @@ P2 已完成：三张表、结构校验、actions 结构化、i18n、GUI → Dep
 
 `scxml-machine` 配置窗口新增 **打开完整编辑器**：
 
-- 新标签页打开 `/scxmljs/editor/`，复用 scxml-creator 的全屏三栏/画布；
+- 新标签页打开 `/scxmljs/editor/?token=...`，复用 scxml-creator 的全屏三栏/画布；
 - 页面通过 `postMessage` 接收所有 `scxml-machine` 的 `ProjectDoc`，并可在页面顶部切换机器；
 - 页面底部 **保存到 Node-RED** 按 config node id 回写父窗口的 `node.doc`；
 - 页面锁定在 `#/editor`，Ctrl/Cmd+S 直接保存回 Node-RED；
@@ -85,7 +85,23 @@ P2 已完成：三张表、结构校验、actions 结构化、i18n、GUI → Dep
 - 静态资源在 `editor-app/`，构建时复制到 `dist/editor-app/`；不依赖 Fastify/MQTT。
 
 > P4 页面复用 creator 现有 UI；gallery/service/API 入口也仍在页面内，主入口固定为 `#/editor`。
-> `/scxmljs/editor/` 是 `httpAdmin` 自定义路由，**不自动鉴权**，仅适合私网/Tailscale。
+> `/scxmljs/editor/` 首页需要 capability token；编辑器通过受保护的 `/scxmljs/token` 获取。未启用 adminAuth 时该接口公开，因此仍建议私网/Tailscale。
+
+## 监控安全 / token
+
+监控页、P4 编辑器和 API 使用 **进程级 capability token**：
+
+- 编辑器从受保护接口 `GET /scxmljs/token` 取 token；
+- 侧栏 iframe、Machine 按钮、P4 打开 URL 自动带 `?token=...`；
+- `/scxmljs/monitor`、`/scxmljs/editor/` 首页、`/scxmljs/api/*` 无 token 返回 401；
+- 静态 JS/CSS 资源保持公开（不含数据）；
+- token 随 Node-RED 重启变化，不持久化。
+
+启用 `adminAuth` 时，token 接口要求 `flows.read`；未启用 adminAuth 时 token 接口本身公开，仍建议只绑定私网/Tailscale。
+
+## 运行时语言
+
+运行时状态文本以 key 发送，由编辑器 `node._` 按当前 `editor-language` 翻译；`node.error` 的文本仍使用 Node-RED **服务端语言**。若要错误消息也中文，设置 `settings.js` 的 `lang: 'zh-CN'`（视 Node-RED 版本支持）。
 
 ## 语言 / i18n
 
@@ -257,7 +273,7 @@ msg.topic = "scxml/Traffic Light/evt/notify"
 | XML 解析 | `@xmldom/xmldom@^0.9.12`（替代 happy-dom，安装体积约 464 KB，支持 CDATA） |
 | 模块格式 | 运行时入口 CJS，ESM 依赖用动态 `import()` 加载 |
 
-## 浏览器回归
+## 浏览器回归 / 一键验证
 
 需要 Firefox + geckodriver（不进入 `npm test`，避免 CI 依赖浏览器）：
 
@@ -268,6 +284,17 @@ npm run test:browser
 ```
 
 检查中文 UI、三张表回填、actions 弹窗、重复 id 校验；只读，不保存/部署，不会修改 flow。
+
+一键本地验证：
+
+```sh
+npm run verify:all
+# 需要浏览器时：
+SCXML_BROWSER=1 GECKODRIVER=/path/to/geckodriver \
+  NODERED_URL=http://localhost:1880/ npm run verify:all
+```
+
+`verify:all` 串联 Node 24 测试、Node 22.9 测试、vendor 检查、release 检查；浏览器测试需显式开启。CI 工作流在 `.github/workflows/ci.yml`，只跑运行时矩阵与 release 检查。
 
 ## 文档
 

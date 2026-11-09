@@ -4,6 +4,9 @@
 
 ### Added
 
+- Capability token for monitor/standalone editor routes and APIs.
+- Runtime status/error catalogs (server language) and `verify:all` / CI workflow.
+
 - P4 standalone full-screen editor (`/scxmljs/editor/`) reusing the creator SPA, opened from the machine config and bridged with postMessage; supports switching between all `scxml-machine` config nodes; editor view is locked and Ctrl/Cmd+S saves.
 
 - `scxml-machine` / `scxml-in` / `scxml-out` Node-RED nodes.

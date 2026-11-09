@@ -26,7 +26,8 @@
     "check:vendor": "node scripts/check-vendor.mjs",
     "test:browser": "node test/browser-smoke.mjs",
     "release:check": "node scripts/release-check.mjs",
-    "test:p4": "node test/browser-p4.mjs"
+    "test:p4": "node test/browser-p4.mjs",
+    "verify:all": "node scripts/verify-all.mjs"
   },
   "node-red": {
     "version": ">=5.0.0",

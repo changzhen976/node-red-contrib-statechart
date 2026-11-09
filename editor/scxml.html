@@ -135,16 +135,17 @@
       var id = this.id;
       $('#node-config-input-open-sidebar').on('click', function (event) {
         event.preventDefault();
-        var root = (RED.settings.httpAdminRoot || '/').replace(/\/?$/, '/');
-        var url = root + 'scxmljs/monitor?embed=1' + (id ? '&id=' + encodeURIComponent(id) : '');
-        if (typeof scxmlSidebarFrame !== 'undefined' && scxmlSidebarFrame) {
-          scxmlSidebarFrame.attr('src', url);
-        }
-        if (RED.sidebar && RED.sidebar.show) {
-          RED.sidebar.show('scxml-monitor');
-        } else {
-          window.open(url, '_blank');
-        }
+        scxmlFetchToken(function () {
+          var url = scxmlMonitorUrl(true, id);
+          if (typeof scxmlSidebarFrame !== 'undefined' && scxmlSidebarFrame) {
+            scxmlSidebarFrame.attr('src', url);
+          }
+          if (RED.sidebar && RED.sidebar.show) {
+            RED.sidebar.show('scxml-monitor');
+          } else {
+            window.open(url, '_blank');
+          }
+        });
       });
       if (typeof scxmlPrepareMachineEditor === 'function') scxmlPrepareMachineEditor(this);
     },
@@ -189,11 +190,41 @@
     outputs: 2
   });
 
+  var scxmlRoot = (RED.settings.httpAdminRoot || '/').replace(/\/?$/, '/');
+  var scxmlToken = '';
+  var scxmlTokenLoading = false;
+
+  function scxmlTokenQuery() {
+    return scxmlToken ? '&token=' + encodeURIComponent(scxmlToken) : '';
+  }
+
+  function scxmlMonitorUrl(embed, id) {
+    return scxmlRoot + 'scxmljs/monitor?embed=' + (embed ? '1' : '0') +
+      (id ? '&id=' + encodeURIComponent(id) : '') + scxmlTokenQuery();
+  }
+
+  function scxmlFetchToken(done) {
+    if (scxmlToken) { if (done) done(); return; }
+    if (scxmlTokenLoading) return;
+    scxmlTokenLoading = true;
+    $.getJSON('scxmljs/token')
+      .done(function (data) {
+        scxmlToken = data && data.token ? String(data.token) : '';
+        if (typeof scxmlSidebarFrame !== 'undefined' && scxmlSidebarFrame && scxmlToken) {
+          scxmlSidebarFrame.attr('src', scxmlMonitorUrl(true));
+        }
+        if (done) done();
+      })
+      .fail(function () {
+        RED.notify(scxmlI18n('message.tokenUnavailable'), { type: 'error' });
+      })
+      .always(function () { scxmlTokenLoading = false; });
+  }
+
   if (RED.sidebar && RED.sidebar.addTab) {
-    var scxmlRoot = (RED.settings.httpAdminRoot || '/').replace(/\/?$/, '/');
     var scxmlSidebarFrame = $('<iframe>')
       .attr('title', scxmlI18n('sidebar.title'))
-      .attr('src', scxmlRoot + 'scxmljs/monitor?embed=1')
+      .attr('src', 'about:blank')
       .css({ border: '0', width: '100%', height: '100%' });
     var monitorContent = $('<div>')
       .css({ height: '100%', width: '100%', overflow: 'hidden' })
@@ -205,6 +236,7 @@
       content: monitorContent,
       onchange: function () {}
     });
+    scxmlFetchToken();
   }
 
 </script>
@@ -587,7 +619,16 @@
     }
     var root = (RED.settings.httpAdminRoot || '/').replace(/\/?$/, '/');
     var lang = (RED.i18n && RED.i18n.lang && RED.i18n.lang()) || 'zh-CN';
-    var url = root + 'scxmljs/editor/?nodered=1&id=' + encodeURIComponent(node.id) + '&lang=' + encodeURIComponent(lang);
+    if (!window.scxmlToken) {
+      if (typeof scxmlFetchToken === 'function') {
+        scxmlFetchToken(function () { openFullEditor(node); });
+      } else {
+        notify(t('message.tokenUnavailable'), 'error');
+      }
+      return;
+    }
+    var url = root + 'scxmljs/editor/?nodered=1&id=' + encodeURIComponent(node.id) +
+      '&lang=' + encodeURIComponent(lang) + '&token=' + encodeURIComponent(window.scxmlToken);
     if (p4Handler) window.removeEventListener('message', p4Handler);
     p4Handler = function (event) {
       if (event.origin !== location.origin) return;

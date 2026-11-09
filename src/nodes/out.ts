@@ -1,3 +1,4 @@
+import { runtimeStatus, runtimeT } from '../runtime/i18n'
 function expandTopic(template: string, machine: string, event: string): string {
   return template.replace(/\{machine\}/g, machine).replace(/\{event\}/g, event)
 }
@@ -35,7 +36,7 @@ export function registerOut(RED: any): void {
       : 'scxml/{machine}/evt/{event}'
 
     if (!machine) {
-      node.status({ fill: 'red', shape: 'ring', text: 'machine not found' })
+      node.status({ fill: 'red', shape: 'ring', text: runtimeStatus('machineNotFound') })
       node.on('close', function onClose(_removed: boolean, done: () => void) {
         done()
       })
@@ -52,7 +53,7 @@ export function registerOut(RED: any): void {
       const msg = stateMessage(machine, event, includeVars, stateTopic)
       node.send([msg, null])
       const states: string[] = event.states ?? []
-      node.status({ fill: 'green', shape: 'dot', text: states.join('+') || 'running' })
+      node.status({ fill: 'green', shape: 'dot', text: states.join('+') || runtimeStatus('running') })
     }
 
     const unsubscribe = machine.subscribe((event: any) => {
@@ -73,7 +74,7 @@ export function registerOut(RED: any): void {
           },
         ])
       } else if (event.type === 'error') {
-        node.status({ fill: 'red', shape: 'ring', text: 'error' })
+        node.status({ fill: 'red', shape: 'ring', text: runtimeStatus('error') })
         node.error(event.error)
       } else if (event.type === 'done') {
         node.status({ fill: 'grey', shape: 'dot', text: 'done' })

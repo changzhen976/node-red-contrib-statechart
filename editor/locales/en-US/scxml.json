@@ -120,7 +120,8 @@
     "actionDataInvalid": "Action data is not valid JSON.",
     "noActions": "No actions yet.",
     "popupBlocked": "Popup blocked. Allow popups for Node-RED and try again.",
-    "savedFromFullEditor": "Saved from the full editor; click Update/Deploy in Node-RED."
+    "savedFromFullEditor": "Saved from the full editor; click Update/Deploy in Node-RED.",
+    "tokenUnavailable": "Cannot obtain the SCXML capability token. Check editor permissions and reload."
   },
   "validate": {
     "noStates": "Add at least one state.",
@@ -144,5 +145,31 @@
     "invalidEvent": "Invalid event name “__event__”.",
     "invalidVarId": "Invalid variable id “__id__”.",
     "duplicateVarId": "Duplicate variable id “__id__”."
+  },
+  "status": {
+    "notStarted": "not started",
+    "starting": "starting",
+    "running": "running",
+    "done": "done",
+    "invalidConfig": "invalid config",
+    "runtimeError": "runtime error",
+    "resetting": "resetting",
+    "machineNotFound": "machine not found",
+    "error": "error",
+    "setVars": "variables set",
+    "reset": "reset"
+  },
+  "errors": {
+    "noMachine": "no scxml-machine configured",
+    "emptyEvent": "event name is empty",
+    "setPayload": "set command requires msg.payload to be an object",
+    "unknownCommand": "unknown command: __command__",
+    "queueFull": "input queue is full (max __max__)",
+    "unknownVariable": "unknown variable: __id__",
+    "closed": "state machine is closed",
+    "closedWhileStarting": "state machine was closed while starting",
+    "configInvalid": "invalid SCXML configuration: __message__",
+    "dataModel": "data model is not available",
+    "runtime": "__kind__: __message__"
   }
 }

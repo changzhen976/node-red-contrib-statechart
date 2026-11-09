@@ -123,12 +123,12 @@ Node-RED editor
 ## 6. 实现状态（2026-11-09）
 
 - `editor-app/`：scxml-creator 静态构建（donor `05d2fa9`）；
-- `src/runtime/monitor.ts`：`/scxmljs/editor/` 静态路由（未鉴权，私网使用）；
+- `src/runtime/monitor.ts`：`/scxmljs/editor/` 静态路由；首页需要 capability token（`/scxmljs/token`），静态 assets 公开；
 - `editor/scxml.html`：配置窗口「打开完整编辑器」按钮；
 - `src/nodered-bridge.ts`（donor）：`nodered=1` 模式接收/回传 ProjectDoc；
 - 浏览器回归：`npm run test:p4`，验证加载 3 状态、机器选择器（Traffic Light / test chart）并回写父窗口 `node.doc`。
 
-P4.3 已完成多机选择、页面锁定 `#/editor`、Ctrl/Cmd+S 保存。可选：页面内错误定位、直接调用 Node-RED API 保存、路由鉴权。
+P4.3 已完成多机选择、页面锁定 `#/editor`、Ctrl/Cmd+S 保存、capability token 首页保护。可选：页面内错误定位、直接调用 Node-RED API 保存。
 
 ## 7. 结论
 

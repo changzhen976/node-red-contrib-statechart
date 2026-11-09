@@ -156,6 +156,11 @@ function twoMachineFlow() {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
+async function monitorToken() {
+  const response = await helper.request().get('/scxmljs/token').expect(200)
+  return response.body.token
+}
+
 async function waitFor(predicate, label, timeout = 4000) {
   const start = Date.now()
   while (Date.now() - start < timeout) {
@@ -267,19 +272,26 @@ test('exposes the read-only monitor page and API', async () => {
   try {
     await waitFor(() => sinkMessages('s1').length > 0, 'initial state')
 
-    const list = await helper.request().get('/scxmljs/api/machines').expect(200)
+    await helper.request().get('/scxmljs/api/machines').expect(401)
+    const tokenResponse = await helper.request().get('/scxmljs/token').expect(200)
+    const token = tokenResponse.body.token
+    assert.match(token, /^[0-9a-f]{64}$/)
+    const query = `?token=${token}`
+
+    const list = await helper.request().get('/scxmljs/api/machines' + query).expect(200)
     assert.equal(list.body[0].id, 'conf1')
     assert.equal(list.body[0].name, 'test machine')
 
-    const state = await helper.request().get('/scxmljs/api/machines/conf1').expect(200)
+    const state = await helper.request().get('/scxmljs/api/machines/conf1' + query).expect(200)
     assert.equal(state.body.running, true)
     assert.deepEqual(state.body.states, ['red'])
     assert.ok(state.body.version)
 
-    const graph = await helper.request().get('/scxmljs/api/machines/conf1/graph').expect(200)
+    const graph = await helper.request().get('/scxmljs/api/machines/conf1/graph' + query).expect(200)
     assert.match(graph.text, /<scxml[\s>]/)
 
-    const page = await helper.request().get('/scxmljs/monitor').expect(200)
+    await helper.request().get('/scxmljs/monitor').expect(401)
+    const page = await helper.request().get('/scxmljs/monitor' + query).expect(200)
     assert.match(page.text, /<base href="\/scxmljs\/assets\/">/)
     assert.match(page.text, /<scxml-view/)
 
@@ -299,7 +311,8 @@ test('drives a ProjectDoc JSON machine and validates it before start', async () 
     assert.equal(sinkMessages('s1')[0].vars.cycles, 1)
     helper.getNode('in1').receive({ topic: 'next' })
     await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'green'), 'doc green')
-    const graph = await helper.request().get('/scxmljs/api/machines/conf1/graph').expect(200)
+    const token = await monitorToken()
+    const graph = await helper.request().get('/scxmljs/api/machines/conf1/graph?token=' + token).expect(200)
     assert.match(graph.text, /<scxml[\s>]/)
   } finally {
     await unloadFlow()
@@ -316,7 +329,8 @@ test('keeps two config-node machines independent', async () => {
     await waitFor(() => sinkMessages('sA').some((m) => m.payload === 'green'), 'A green')
     assert.ok(sinkMessages('sB').every((m) => m.payload === 'idleB'), 'B must not change')
 
-    const list = await helper.request().get('/scxmljs/api/machines').expect(200)
+    const token = await monitorToken()
+    const list = await helper.request().get('/scxmljs/api/machines?token=' + token).expect(200)
     assert.deepEqual(list.body.map((m) => m.id).sort(), ['confA', 'confB'])
   } finally {
     await unloadFlow()

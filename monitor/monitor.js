@@ -1,5 +1,10 @@
 const pagePath = window.location.pathname.replace(/\/monitor\/?$/, '/')
 const apiBase = `${pagePath}api/machines`
+const capabilityToken = new URLSearchParams(window.location.search).get('token') || ''
+function authUrl(url) {
+  if (!capabilityToken) return url
+  return url + (url.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(capabilityToken)
+}
 const view = document.getElementById('view')
 const select = document.getElementById('machine')
 const refresh = document.getElementById('refresh')
@@ -52,13 +57,13 @@ function showEmpty(text) {
 }
 
 async function json(url) {
-  const res = await fetch(url, { cache: 'no-store', headers: { Accept: 'application/json' } })
+  const res = await fetch(authUrl(url), { cache: 'no-store', headers: { Accept: 'application/json' } })
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
   return res.json()
 }
 
 async function text(url) {
-  const res = await fetch(url, { cache: 'no-store' })
+  const res = await fetch(authUrl(url), { cache: 'no-store' })
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
   return res.text()
 }

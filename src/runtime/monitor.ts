@@ -1,3 +1,4 @@
+import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { getMachine, listMachines } from '../nodes/machine'
@@ -24,14 +25,37 @@ function normalizeAdminRoot(value: unknown): string {
 }
 
 /**
- * Read-only monitor routes. They are intentionally not behind
- * RED.auth.needsPermission: the page is meant to load in an editor iframe,
- * which does not carry the editor's bearer token. Bind Node-RED to a private
- * tailnet interface and treat this as a trusted-network view.
+ * Monitor and standalone-editor routes.
+ *
+ * The monitor iframe / new tab cannot carry the editor's bearer token, so the
+ * editor fetches a per-process capability token from a `flows.read`-protected
+ * endpoint and passes it in the URL. Static code assets are intentionally
+ * public; machine state, graphs and the editor entry page require the token.
  */
 export function registerMonitor(RED: any): void {
   if (!RED.httpAdmin || RED.__scxmlMonitorRegistered) return
   RED.__scxmlMonitorRegistered = true
+
+  const capabilityToken = crypto.randomBytes(32).toString('hex')
+  const needsFlowRead = typeof RED.auth?.needsPermission === 'function'
+    ? RED.auth.needsPermission('flows.read')
+    : (_req: any, _res: any, next: any) => next()
+  const isAuthorized = (req: any): boolean => {
+    const supplied = req.get?.('x-scxml-token') || req.query?.token
+    return typeof supplied === 'string' && supplied === capabilityToken
+  }
+  const requireToken = (req: any, res: any, next: any): void => {
+    if (isAuthorized(req)) {
+      next()
+    } else {
+      res.status(401).json({ error: 'SCXML capability token required' })
+    }
+  }
+
+  RED.httpAdmin.get('/scxmljs/token', needsFlowRead, (_req: any, res: any) => {
+    res.set('Cache-Control', 'no-store')
+    res.json({ token: capabilityToken })
+  })
 
   const monitorDir = path.join(__dirname, 'monitor')
   const editorDir = path.join(__dirname, 'editor-app')
@@ -51,13 +75,17 @@ export function registerMonitor(RED: any): void {
     }
   }
 
-  RED.httpAdmin.get('/scxmljs/monitor', sendHtml)
-  RED.httpAdmin.get('/scxmljs/monitor/', sendHtml)
+  RED.httpAdmin.get('/scxmljs/monitor', requireToken, sendHtml)
+  RED.httpAdmin.get('/scxmljs/monitor/', requireToken, sendHtml)
 
   const editorBase = `${normalizeAdminRoot(RED.settings?.httpAdminRoot)}scxmljs/editor/`
   RED.httpAdmin.get(/^\/scxmljs\/editor$/, (_req: any, res: any) => res.redirect(302, editorBase))
   RED.httpAdmin.use('/scxmljs/editor', (req: any, res: any, next: any) => {
     const rel = req.path === '/' || req.path === '' ? 'index.html' : req.path.replace(/^\//, '')
+    if (rel === 'index.html' && !isAuthorized(req)) {
+      res.status(401).type('text/plain').send('SCXML capability token required')
+      return
+    }
     if (!/^[A-Za-z0-9._/-]+$/.test(rel) || rel.includes('..')) {
       res.status(404).type('text/plain').send('not found')
       return
@@ -69,7 +97,7 @@ export function registerMonitor(RED: any): void {
     })
   })
 
-  RED.httpAdmin.get('/scxmljs/api/machines', (_req: any, res: any) => {
+  RED.httpAdmin.get('/scxmljs/api/machines', requireToken, (_req: any, res: any) => {
     const machines = listMachines().map((machine: MonitorMachine) => {
       const state = machine.getCurrentState()
       return {
@@ -84,7 +112,7 @@ export function registerMonitor(RED: any): void {
     res.json(machines)
   })
 
-  RED.httpAdmin.get('/scxmljs/api/machines/:id', (req: any, res: any) => {
+  RED.httpAdmin.get('/scxmljs/api/machines/:id', requireToken, (req: any, res: any) => {
     const machine = getMachine(req.params.id) as MonitorMachine | undefined
     if (!machine) {
       res.status(404).json({ error: 'machine not found' })
@@ -105,7 +133,7 @@ export function registerMonitor(RED: any): void {
     res.json(body)
   })
 
-  RED.httpAdmin.get('/scxmljs/api/machines/:id/graph', (req: any, res: any) => {
+  RED.httpAdmin.get('/scxmljs/api/machines/:id/graph', requireToken, (req: any, res: any) => {
     const machine = getMachine(req.params.id) as MonitorMachine | undefined
     if (!machine) {
       res.status(404).json({ error: 'machine not found' })

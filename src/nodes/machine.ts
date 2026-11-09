@@ -3,6 +3,7 @@ import { createMachineSession, getDomParser, type EngineMode } from '../runtime/
 import { normalizeDoc, type ProjectDoc } from '../vendor/scxml-core/model'
 import { serializeToScxml } from '../vendor/scxml-core/serializer'
 import { validateScxml } from '../vendor/scxml-core/validator'
+import { runtimeStatus, runtimeT } from '../runtime/i18n'
 
 const DEFAULT_SOURCE = `<?xml version="1.0" encoding="UTF-8"?>
 <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="idle">
@@ -103,7 +104,7 @@ export function registerMachine(RED: any): void {
     function enqueue<T>(work: () => Promise<T>): Promise<T> {
       if (closed) return Promise.reject(new Error('state machine is closed'))
       if (queuedOps >= MAX_QUEUE) {
-        return Promise.reject(new Error(`input queue is full (max ${MAX_QUEUE})`))
+        return Promise.reject(new Error(runtimeT(RED, 'errors.queueFull', { max: MAX_QUEUE })))
       }
       queuedOps++
       const run = opChain.then(work)
@@ -115,7 +116,7 @@ export function registerMachine(RED: any): void {
     }
 
     node.bus = bus
-    node.status({ fill: 'grey', shape: 'ring', text: 'not started' })
+    node.status({ fill: 'grey', shape: 'ring', text: runtimeStatus('notStarted') })
 
     async function readPersistedVars(): Promise<Record<string, unknown> | undefined> {
       if (!node.persistVars) return undefined
@@ -160,7 +161,7 @@ export function registerMachine(RED: any): void {
       node.status({
         fill: 'green',
         shape: 'dot',
-        text: states.length ? states.join('+') : 'running',
+        text: states.length ? states.join('+') : runtimeStatus('running'),
       })
       bus.emit({
         type: 'state',
@@ -178,7 +179,7 @@ export function registerMachine(RED: any): void {
       if (startPromise) return startPromise
       if (closed) return Promise.reject(new Error('state machine is closed'))
 
-      node.status({ fill: 'blue', shape: 'dot', text: 'starting' })
+      node.status({ fill: 'blue', shape: 'dot', text: runtimeStatus('starting') })
       const promise = (async () => {
         const resolved = resolveMachineSource(node)
         node.source = resolved.xml
@@ -187,7 +188,7 @@ export function registerMachine(RED: any): void {
         const domParser = await getDomParser()
         const validation = await validateScxml(resolved.xml, domParser)
         if (!validation.ok) {
-          const err = new Error(`invalid SCXML configuration: ${validation.message}`)
+          const err = new Error(runtimeT(RED, 'errors.configInvalid', { message: validation.message }))
           ;(err as any).issues = validation.issues
           throw err
         }
@@ -201,7 +202,7 @@ export function registerMachine(RED: any): void {
         })
         if (closed) {
           created.dispose()
-          throw new Error('state machine was closed while starting')
+          throw new Error(runtimeT(RED, 'errors.closedWhileStarting'))
         }
         session = created
 
@@ -222,14 +223,14 @@ export function registerMachine(RED: any): void {
         })
         created.addEventListener('error', (event: any) => {
           if (closed) return
-          const err = new Error(`${event?.kind ?? 'error'}: ${event?.message ?? 'unknown error'}`)
-          node.status({ fill: 'red', shape: 'ring', text: 'runtime error' })
+          const err = new Error(runtimeT(RED, 'errors.runtime', { kind: event?.kind ?? 'error', message: event?.message ?? 'unknown error' }))
+          node.status({ fill: 'red', shape: 'ring', text: runtimeStatus('runtimeError') })
           node.error(err)
           bus.emit({ type: 'error', error: err, ts: Date.now() })
         })
         created.addEventListener('done', () => {
           if (closed) return
-          node.status({ fill: 'grey', shape: 'dot', text: 'done' })
+          node.status({ fill: 'grey', shape: 'dot', text: runtimeStatus('done') })
           bus.emit({ type: 'done', ts: Date.now() })
         })
 
@@ -241,7 +242,7 @@ export function registerMachine(RED: any): void {
         startPromise = null
         startError = err instanceof Error ? err : new Error(String(err))
         if (!closed) {
-          node.status({ fill: 'red', shape: 'ring', text: 'invalid config' })
+          node.status({ fill: 'red', shape: 'ring', text: runtimeStatus('invalidConfig') })
           node.error(startError)
         }
         throw startError
@@ -261,11 +262,11 @@ export function registerMachine(RED: any): void {
       return enqueue(async () => {
         const active = await node.ensureStarted()
         const datamodel = active.datamodel
-        if (!datamodel) throw new Error('data model is not available')
+        if (!datamodel) throw new Error(runtimeT(RED, 'errors.dataModel'))
         const entries = Object.entries(vars)
         for (const [id] of entries) {
           if (typeof datamodel.isValidLocation === 'function' && !datamodel.isValidLocation(id)) {
-            throw new Error(`unknown variable: ${id}`)
+            throw new Error(runtimeT(RED, 'errors.unknownVariable', { id }))
           }
         }
         for (const [id, value] of entries) {
@@ -305,7 +306,7 @@ export function registerMachine(RED: any): void {
             // dispose is best-effort
           }
         }
-        node.status({ fill: 'blue', shape: 'dot', text: 'resetting' })
+        node.status({ fill: 'blue', shape: 'dot', text: runtimeStatus('resetting') })
         await node.ensureStarted()
       })
     }

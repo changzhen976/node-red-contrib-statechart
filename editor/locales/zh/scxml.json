@@ -120,7 +120,8 @@
     "actionDataInvalid": "动作 data 不是合法 JSON。",
     "noActions": "还没有动作。",
     "popupBlocked": "弹窗被浏览器拦截；请允许 Node-RED 弹出窗口后重试。",
-    "savedFromFullEditor": "已从完整编辑器保存；请回 Node-RED 点“更新/部署”。"
+    "savedFromFullEditor": "已从完整编辑器保存；请回 Node-RED 点“更新/部署”。",
+    "tokenUnavailable": "无法获取 SCXML 能力令牌；请检查编辑器权限并刷新。"
   },
   "validate": {
     "noStates": "至少需要一个状态。",
@@ -144,5 +145,31 @@
     "invalidEvent": "事件名 “__event__” 无效。",
     "invalidVarId": "变量 id “__id__” 无效。",
     "duplicateVarId": "变量 id “__id__” 重复。"
+  },
+  "status": {
+    "notStarted": "未启动",
+    "starting": "启动中",
+    "running": "运行中",
+    "done": "已完成",
+    "invalidConfig": "配置无效",
+    "runtimeError": "运行时错误",
+    "resetting": "重置中",
+    "machineNotFound": "未找到状态机",
+    "error": "错误",
+    "setVars": "变量已设置",
+    "reset": "已重置"
+  },
+  "errors": {
+    "noMachine": "未配置 scxml-machine",
+    "emptyEvent": "事件名为空",
+    "setPayload": "set 命令要求 msg.payload 是对象",
+    "unknownCommand": "未知命令：__command__",
+    "queueFull": "输入队列已满（上限 __max__）",
+    "unknownVariable": "未知变量：__id__",
+    "closed": "状态机已关闭",
+    "closedWhileStarting": "状态机在启动期间被关闭",
+    "configInvalid": "SCXML 配置无效：__message__",
+    "dataModel": "数据模型不可用",
+    "runtime": "__kind__：__message__"
   }
 }

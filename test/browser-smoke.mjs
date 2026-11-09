@@ -94,11 +94,17 @@ async function main() {
     }`)
     assert.equal(ui.lang, 'zh-CN')
     assert.match(ui.nameLabel, /名称/)
+    assert.equal(await execute(`return RED.nodes.node(arguments[0])._('status.notStarted')`, [MACHINE_ID]), '未启动')
     assert.ok(ui.buttons.some((text) => text.includes('状态')))
     assert.ok(ui.states >= 1, 'expected at least one state')
     assert.ok(ui.transitions >= 1, 'expected at least one transition')
     assert.ok(ui.vars >= 1, 'expected at least one variable')
     assert.equal(ui.errorVisible, false, 'valid traffic machine should have no errors')
+
+    await execute(`document.querySelector('#node-config-input-open-sidebar').click(); return true`)
+    await sleep(1200)
+    const monitorSrc = await execute(`return Array.from(document.querySelectorAll('iframe')).map((f) => f.src).find((src) => src.includes('/scxmljs/monitor')) || ''`)
+    assert.match(monitorSrc, /[?&]token=/, 'sidebar monitor iframe must carry a capability token')
 
     await execute(`document.querySelector('#scxml-states-body .scxml-edit-actions[data-field=entry]').click(); return true`)
     await sleep(300)
