@@ -12,6 +12,26 @@ function positiveNumber(value: unknown, fallback: number): number {
   return Number.isFinite(n) && n > 0 ? n : fallback
 }
 
+function hashString(value: string): string {
+  let hash = 2166136261
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i)
+    hash = Math.imul(hash, 16777619)
+  }
+  return (hash >>> 0).toString(16)
+}
+
+const machines = new Map<string, any>()
+
+/** Used by the read-only monitor HTTP routes. */
+export function getMachine(id: string): any | undefined {
+  return machines.get(id)
+}
+
+export function listMachines(): any[] {
+  return [...machines.values()]
+}
+
 export function registerMachine(RED: any): void {
   function MachineNode(this: any, config: any): void {
     RED.nodes.createNode(this, config)
@@ -22,6 +42,9 @@ export function registerMachine(RED: any): void {
     node.engine = (config.engine === 'trusted' ? 'trusted' : 'sandboxed') as EngineMode
     node.scriptTimeoutMs = positiveNumber(config.scriptTimeoutMs, 500)
     node.maxMicrosteps = positiveNumber(config.maxMicrosteps, 10000)
+    node.monitorShowVars = config.monitorShowVars === true
+    node.graphVersion = hashString(node.source)
+    machines.set(node.id, node)
 
     const bus = new EventBus()
     let session: any = null
@@ -31,6 +54,7 @@ export function registerMachine(RED: any): void {
     let lastStates: string[] = []
     let lastVars: Record<string, unknown> = {}
     let lastStateKey: string | null = null
+    let lastChanged = false
 
     node.bus = bus
     node.status({ fill: 'grey', shape: 'ring', text: 'not started' })
@@ -41,6 +65,7 @@ export function registerMachine(RED: any): void {
       const key = JSON.stringify([states, vars])
       const changed = lastStateKey === null || key !== lastStateKey
       lastStateKey = key
+      lastChanged = changed
       lastStates = states
       lastVars = vars
       node.status({
@@ -129,9 +154,13 @@ export function registerMachine(RED: any): void {
         type: 'state',
         states: [...lastStates],
         vars: lastVars,
-        changed: false,
+        changed: lastChanged,
         ts: Date.now(),
       }
+    }
+
+    node.isRunning = function isRunning(): boolean {
+      return !!session
     }
 
     node.subscribe = function subscribe(listener: (event: any) => void): () => void {
@@ -141,6 +170,7 @@ export function registerMachine(RED: any): void {
     node.on('close', function onClose(_removed: boolean, done: () => void) {
       closed = true
       bus.clear()
+      machines.delete(node.id)
       const active = session
       session = null
       startPromise = null

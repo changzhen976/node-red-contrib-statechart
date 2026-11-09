@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base href="__ASSET_BASE__">
+  <title>SCXML Monitor</title>
+  <link rel="stylesheet" href="monitor.css">
+</head>
+<body>
+  <header class="bar">
+    <div class="brand">
+      <span class="brand-dot"></span>
+      <div>
+        <strong>SCXML Monitor</strong>
+        <span class="brand-sub">read-only live state</span>
+      </div>
+    </div>
+    <div class="controls">
+      <label class="sr-only" for="machine">State machine</label>
+      <select id="machine" title="State machine"></select>
+      <select id="zoom" title="Zoom">
+        <option value="100">100%</option>
+        <option value="125">125%</option>
+        <option value="150">150%</option>
+        <option value="180">180%</option>
+        <option value="220">220%</option>
+      </select>
+      <button id="refresh" type="button" title="Refresh machine list">Refresh</button>
+      <span id="status" class="status">loading…</span>
+    </div>
+  </header>
+  <main>
+    <div id="empty" class="empty">正在加载状态机…</div>
+    <scxml-view id="view" trusted autostart="false" interactive="false" fit hidden></scxml-view>
+    <pre id="vars" class="vars" hidden></pre>
+  </main>
+  <script type="module" src="view.js"></script>
+  <script type="module" src="monitor.js"></script>
+</body>
+</html>

@@ -21,3 +21,23 @@ await build({
 })
 
 await copyFile(resolve(root, 'editor/scxml.html'), resolve(dist, 'scxml.html'))
+
+// Browser bundle for the P2.5 read-only monitor page.
+await build({
+  entryPoints: { view: resolve(root, 'src/monitor/view-entry.ts') },
+  outdir: resolve(dist, 'monitor'),
+  entryNames: 'view',
+  bundle: true,
+  platform: 'browser',
+  format: 'esm',
+  target: ['es2022'],
+  splitting: true,
+  chunkNames: 'chunks/[name]-[hash]',
+  assetNames: 'assets/[name]-[hash]',
+  define: { 'process.env.NODE_ENV': '"production"' },
+  logLevel: 'info',
+})
+
+for (const file of ['index.html', 'monitor.js', 'monitor.css']) {
+  await copyFile(resolve(root, 'monitor', file), resolve(dist, 'monitor', file))
+}

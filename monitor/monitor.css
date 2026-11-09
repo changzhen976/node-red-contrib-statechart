@@ -1,0 +1,182 @@
+:root {
+  color-scheme: dark light;
+  --bg: #0b1220;
+  --panel: #111a2b;
+  --text: #e7edf7;
+  --muted: #8b9bb4;
+  --border: #243149;
+  --accent: #38bdf8;
+  --ok: #34d399;
+  --err: #fb7185;
+
+  --bg-app: var(--bg);
+  --surface-1: var(--panel);
+  --surface-2: #172238;
+  --surface-3: #1d2b44;
+  --fg-1: var(--text);
+  --fg-2: var(--muted);
+  --fg-3: #667892;
+  --border-1: var(--border);
+  --border-2: #31425e;
+  --border-strong: #445a7a;
+  --accent-fg: #06121f;
+  --accent-subtle: #0e3550;
+  --fg-on-accent: #06121f;
+
+  --scxml-bg: var(--bg);
+  --scxml-surface: var(--panel);
+  --scxml-surface-2: var(--surface-2);
+  --scxml-surface-3: var(--surface-3);
+  --scxml-fg: var(--text);
+  --scxml-fg-muted: var(--muted);
+  --scxml-fg-subtle: var(--muted);
+  --scxml-fg-faint: var(--fg-3);
+  --scxml-border: var(--border);
+  --scxml-border-2: var(--border-2);
+  --scxml-border-strong: var(--border-strong);
+  --scxml-accent: var(--accent);
+  --scxml-accent-text: var(--accent-fg);
+  --scxml-accent-subtle: var(--accent-subtle);
+  --scxml-on-accent: var(--fg-on-accent);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f7f9fc;
+    --panel: #ffffff;
+    --text: #162033;
+    --muted: #5d6b82;
+    --border: #d7dfeb;
+    --accent: #0369a1;
+    --ok: #15803d;
+    --err: #b91c1c;
+    --surface-2: #f0f4fa;
+    --surface-3: #e7eef8;
+    --fg-3: #7b8aa3;
+    --border-2: #c7d2e2;
+    --border-strong: #a8b7cd;
+    --accent-fg: #ffffff;
+    --accent-subtle: #e0f2fe;
+    --fg-on-accent: #ffffff;
+  }
+}
+
+* { box-sizing: border-box; }
+
+[hidden] { display: none !important; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.brand-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.brand strong { font-size: 13px; letter-spacing: .01em; }
+.brand-sub { display: block; color: var(--muted); font-size: 11px; }
+
+.controls { display: flex; align-items: center; gap: 8px; min-width: 0; }
+select, button {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border-2);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font: inherit;
+}
+select { max-width: min(44vw, 360px); }
+button { cursor: pointer; }
+button:hover { border-color: var(--accent); }
+
+#zoom { width: 74px; }
+
+.status {
+  max-width: 42vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+}
+.status.ok { color: var(--ok); }
+.status.error { color: var(--err); }
+
+main {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#view {
+  display: block;
+  width: 100%;
+  height: 100%;
+  --scxml-height: 100%;
+  background: transparent;
+}
+#view[hidden] { display: none; }
+
+.empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.vars {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  max-width: 40vw;
+  max-height: 32vh;
+  margin: 0;
+  padding: 8px 10px;
+  overflow: auto;
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+body.embed .bar { padding: 5px 8px; }
+body.embed .brand-sub { display: none; }
+body.embed #zoom { width: 74px; }
+
+.status { max-width: 34vw; }
+body.embed .vars { max-width: 80vw; }
+
+scxml-view::part(controls) { display: none; }

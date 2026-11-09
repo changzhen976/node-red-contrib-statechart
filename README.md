@@ -2,7 +2,7 @@
 
 > 在 Node-RED 流程中嵌入 SCXML 状态机：配置状态、变量和转移条件，以消息驱动，输出当前状态与变量。
 
-**当前阶段：P0 完成（2026-11-09）。** 已实现包骨架、CJS 构建、最小 `scxml-machine` / `scxml-in` / `scxml-out`、编辑器表单、示例 flow，并通过 `node-red-node-test-helper` 与真实 Node-RED 5.0.9 加载验证。
+**当前阶段：P0 + P2.5 只读监控页完成（2026-11-09）。** 已实现包骨架、CJS 构建、最小 `scxml-machine` / `scxml-in` / `scxml-out`、编辑器表单、示例 flow，以及只读实时状态图（独立监控页 + 编辑器侧栏 iframe）。
 
 **复核结论：有条件 Go。** 运行时路线已在 Node-RED 5.0.9 上跑通；G1（重部署不恢复活跃状态）已接受；G2 的 donor LICENSE 与 `license` 字段已补并提交（donor commit `b3dfef6`）。实时状态通过节点状态和 `scxml-out` 消息输出；图形化只读状态图已选 P2.5 方案 B（独立监控页 + 编辑器侧栏 iframe），不是可编辑画布。详见 [可行性计划](docs/feasibility-plan.md)。
 
@@ -49,7 +49,6 @@ node-red
 - `scxml-machine` 目前直接接收 SCXML 文本，还没有 `ProjectDoc` 表单/序列化（P1 vendor core，P2 三张表）；
 - 输入节点暂不支持 `msg.command = "set"` / `"reset"`（P1）；
 - 不做变量 context 持久化（P1）；
-- 不做只读监控页（P2.5）；
 - 不做可编辑画布（P4）；
 - 包仍为 `private: true`，未发布 npm。
 
@@ -88,7 +87,27 @@ P0 自带三层实时可见性：
 - **消息输出**：`scxml-out` 输出 `msg.states`、`msg.vars`、`msg.changed`，可接 Debug、Switch、Change、Dashboard；
 - **错误**：红状态 + `node.error`，Catch 节点可接。
 
-如果要在编辑器里看到**状态盒子实时高亮**的只读状态图，已选 P2.5 方案 B：runtime 提供只读监控页和状态接口，编辑器侧栏用 iframe 嵌入；页面用 `<scxml-view>` 只读绘制并切 `.active`，状态每 300–500 ms 轮询。它不提供编辑能力，工作量约 1–2 会话。详见 [可行性计划](docs/feasibility-plan.md)（§2.6 概览、§4.10 监控页设计）。
+### P2.5 只读实时状态图（已实现）
+
+打开：
+
+```text
+http://<Node-RED-host>:1880/scxmljs/monitor
+```
+
+编辑器里会注册一个 **SCXML** 侧栏 tab，用 iframe 嵌入同一页；双击 `scxml-machine` 打开配置窗口后，点「在侧栏查看实时状态图」按钮即可切换到该状态机窗口。**没有全局浮动按钮**，不会遮挡工作区。
+
+实现方式：
+
+- runtime 用 `RED.httpAdmin` 提供机器列表、单机状态、SCXML graph 和静态资源；
+- 浏览器用 `<scxml-view>` 的 `source` 模式只读绘制，`autostart="false"`，不启动会话；
+- 每 400 ms 轮询状态，切换 shadow DOM 里状态盒的 `.active`；
+- 顶部提供 100%–220% 缩放，默认 150%，状态图更大更清楚；
+- 监控页 HTML 每次请求从磁盘读取，重新构建后不需要重启 Node-RED 就能更新页面；
+- 支持并行状态多盒子高亮；`monitorShowVars` 打开时显示变量；
+- 只读，不提供拖拽/连线/属性编辑。
+
+安全边界：监控路由目前不走 Node-RED admin token，依赖 Node-RED 绑定在私有 Tailscale 地址；**不要把 Node-RED 绑定到 0.0.0.0 或公网**。删除/写操作仍然只在编辑器，编辑器有 admin 登录保护。
 
 ## 节点
 
@@ -136,7 +155,7 @@ msg.topic = "scxml/Traffic Light/evt/notify"
 │   └── traffic-light.json
 ├── test/
 │   └── p0.test.cjs   # test-helper 集成测试
-├── monitor/          # P2.5 只读监控页（当前为空）
+├── monitor/          # P2.5 只读监控页（HTML/JS/CSS，构建到 dist/monitor）
 ├── spike/            # 一次性可行性验证（不发布）
 └── docs/
 ```
@@ -167,7 +186,7 @@ msg.topic = "scxml/Traffic Light/evt/notify"
 - [x] G1：接受「重部署不恢复活跃状态」（2026-11-09）
 - [x] G2：donor LICENSE、`package.json` 的 `license` 字段与提交均已完成（`b3dfef6`）
 - [x] P0：包骨架 + 最小三节点 + Node-RED 5 冒烟（2026-11-09）
-- [ ] 实时状态：P2.5 只读监控页（方案 B）
+- [x] P2.5：只读实时状态图（独立监控页 + 编辑器侧栏 iframe，2026-11-09）
 - [ ] P1：运行时 MVP（vendor core、set/reset、变量持久化）
 - [ ] P2：表单配置编辑器（三张表）
 - [ ] P3：测试矩阵、示例、发布

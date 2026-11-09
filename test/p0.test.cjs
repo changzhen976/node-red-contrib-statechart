@@ -175,3 +175,31 @@ test('reports invalid SCXML without crashing', async () => {
     await unloadFlow()
   }
 })
+
+test('exposes the read-only monitor page and API', async () => {
+  await loadFlow(flowFor(TRAFFIC))
+  try {
+    await waitFor(() => sinkMessages('s1').length > 0, 'initial state')
+
+    const list = await helper.request().get('/scxmljs/api/machines').expect(200)
+    assert.equal(list.body[0].id, 'conf1')
+    assert.equal(list.body[0].name, 'test machine')
+
+    const state = await helper.request().get('/scxmljs/api/machines/conf1').expect(200)
+    assert.equal(state.body.running, true)
+    assert.deepEqual(state.body.states, ['red'])
+    assert.ok(state.body.version)
+
+    const graph = await helper.request().get('/scxmljs/api/machines/conf1/graph').expect(200)
+    assert.match(graph.text, /<scxml[\s>]/)
+
+    const page = await helper.request().get('/scxmljs/monitor').expect(200)
+    assert.match(page.text, /<base href="\/scxmljs\/assets\/">/)
+    assert.match(page.text, /<scxml-view/)
+
+    await helper.request().get('/scxmljs/assets/view.js').expect(200)
+    await helper.request().get('/scxmljs/assets/monitor.js').expect(200)
+  } finally {
+    await unloadFlow()
+  }
+})
