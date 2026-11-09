@@ -432,3 +432,13 @@ test('restores persisted variables with createSession data', async () => {
     await unloadFlow()
   }
 })
+
+test('survives 50 repeated deployments without leaking timers', async () => {
+  for (let i = 0; i < 50; i++) {
+    await loadFlow(flowFor(TRAFFIC))
+    await waitFor(() => sinkMessages('s1').length > 0, `initial state ${i}`)
+    await unloadFlow()
+  }
+  const timers = process.getActiveResourcesInfo().filter((x) => x === 'Timeout').length
+  assert.ok(timers <= 1, `expected no leaked timers after 50 deployments, found ${timers}`)
+})

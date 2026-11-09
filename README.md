@@ -2,7 +2,7 @@
 
 > 在 Node-RED 流程中嵌入 SCXML 状态机：配置状态、变量和转移条件，以消息驱动，输出当前状态与变量。
 
-**当前阶段：P0 + P2.5 完成；P1 进行中（2026-11-09）。** 已实现包骨架、CJS 构建、最小三节点、编辑器表单、示例 flow、只读实时状态图；P1 已接入 vendor core、ProjectDoc、部署校验闸门和多状态机入口。
+**当前阶段：P0 + P2.5 + P1 完成；P2 GUI 首版可用；中英文语言包已完成（2026-11-09）。** 已实现包骨架、CJS 构建、三节点、只读实时状态图、完整运行时 MVP，以及状态/转移/变量三张表的原生 Node-RED 编辑器。
 
 **复核结论：有条件 Go。** 运行时路线已在 Node-RED 5.0.9 上跑通；G1（重部署不恢复活跃状态）已接受；G2 的 donor LICENSE 与 `license` 字段已补并提交（donor commit `b3dfef6`）。实时状态通过节点状态和 `scxml-out` 消息输出；图形化只读状态图已选 P2.5 方案 B（独立监控页 + 编辑器侧栏 iframe），不是可编辑画布。详见 [可行性计划](docs/feasibility-plan.md)。
 
@@ -38,7 +38,7 @@ node-red
 3. 在弹出的 `Add new scxml-machine config node` 窗口填写名称和 SCXML/ProjectDoc；
 4. 每个 `scxml-machine` 是独立 config node，各自一个会话；侧栏监控页可以用选择器切换。
 
-旧 flow 的 `source` 字段仍兼容；新编辑器后续会把配置迁移到 `doc`（ProjectDoc JSON）。
+旧 flow 的 `source` 字段仍兼容；编辑器打开旧 flow 会自动导入成 `doc`（ProjectDoc JSON），保存时写回 `doc`。
 
 ## 输入命令
 
@@ -58,7 +58,37 @@ node-red
 
 `set` 会先校验变量是否在 `<data>` 中声明，再 `assignValue`，最后发送 `updateEvent`；可在 `scxml-machine` 配置里改 `updateEvent`。
 
-## 已实现（P0 + P1 核心）
+## GUI 编辑状态机
+
+`scxml-machine` 配置窗口现在有三张表：
+
+- **States**：id、kind、parent、initial、entry/exit actions；
+- **Transitions**：source、target、event、cond、actions、delay ms；
+- **Variables**：id、expr；
+- Add/Delete、根 initial、父/子下拉均可用；
+- 高级区可编辑原始 SCXML 或 ProjectDoc JSON，并支持导入/导出；
+- 保存写 `doc`；旧 `source` 仍保留为兼容回退。
+
+P2 首版已去掉“只能贴 SCXML 文本”的限制；编辑器现在会做结构校验（重复 id、parent/initial、kind、transition、变量、delay），错误显示在表单顶部并高亮行；**GUI 保存 → Deploy → 运行时读 `doc` 已端到端验证**；entry/exit/transition 的 actions 支持结构化弹窗编辑。剩余是浏览器自动化。
+
+## 语言 / i18n
+
+编辑器会自动跟随 Node-RED 的界面语言：
+
+- 默认使用浏览器/系统语言（Node-RED 读取 `navigator.language`）；
+- 已内置 `en-US`、`zh-CN` 和 `zh` 回退；
+- 中文环境会自动显示中文的节点标签、三张表、按钮、提示和帮助；
+- 如果 Node-RED 界面是英文，可在浏览器控制台执行：
+  ```js
+  localStorage.setItem('editor-language', 'zh-CN');
+  location.reload();
+  ```
+  也可通过浏览器的语言设置让 Node-RED 自动使用中文。
+
+语言包位于 `dist/locales/<lang>/scxml.json`（界面文案）和 `scxml.html`（帮助）；
+源码在 `editor/locales/`，构建时复制到 `dist/locales/`。
+
+## 已实现（P0 + P1 + P2 首版）
 
 - config node 持有一个 SCXML 会话与事件总线，in/out 节点共享；
 - 多个 `scxml-machine` config node 各自独立会话，可同时存在；
@@ -72,19 +102,20 @@ node-red
 - 初始状态输出（`scxml-out` 挂载后补发一次）；
 - 部署后 `scxml-out` 的 `node.status()` 显示当前激活状态；
 - 编辑器三节点表单与帮助文本；
+- `scxml-machine` 三张表 GUI、JSON/SCXML 高级编辑；
 - 多状态机：`scxml-in`/`scxml-out` 的 Machine 使用 Node-RED 标准 config picker，带「+ Add」按钮，可直接新建 `scxml-machine`；
 - `scxml-in` 支持 `msg.command = set/reset/event`；`set` 自动发送 `updateEvent`（默认 `update`）；
 - 输入按机器级队列串行处理，初始化期间不会丢顺序；
 - `persistVars`：变量写入 Node-RED context，启动时用 `createSession({ data })` 回填；
 - `scxml-out` 支持 `outputMode`（state/event/both）、`stateTopic`、`eventTopic`；
 - 历史伪态、延时转移、条件转移、持久化均有集成测试。
-- 测试覆盖初始状态、转移、`<send>`、并行、非法 SCXML、关闭无定时器泄漏、ProjectDoc、双机独立、set/reset/event、outputMode、历史、延时、持久化；
+- 测试覆盖初始状态、转移、`<send>`、并行、非法 SCXML、ProjectDoc、双机独立、set/reset/event、outputMode、历史、延时、持久化、50 次重部署；
 - `npm pack` 产物在干净的 Node-RED 5.0.9 用户目录可安装并加载。
 
 ## 当前限制
 
-- 编辑器仍是 SCXML 文本框；`ProjectDoc` 运行时已支持，但三张表表单还没做（P2）；
-- P1 还差 50 次重复部署的压力测试；
+- P2 还缺浏览器自动化回归；
+- actions 仍是纯文本行，未做结构化动作编辑器和字段级动作校验；
 - 监控页无独立 token，依赖私网；
 - 不做可编辑画布（P4）；
 - 包仍为 `private: true`，未发布 npm。
@@ -212,6 +243,7 @@ msg.topic = "scxml/Traffic Light/evt/notify"
 - [可行性计划](docs/feasibility-plan.md)（v1.0，2026-11-09，当前决策依据）
 - [可行性评估](docs/assessment.md)（2026-11-06，历史评估）
 - [实施计划](docs/plan.md)（v0.1，2026-11-06，任务细节）
+- [P4 独立编辑器设计](docs/p4-standalone-editor.md)（2026-11-09，草案）
 - [验证脚本](spike/)（一次性 spike，不属于发布包）
 
 ## 状态
@@ -224,10 +256,14 @@ msg.topic = "scxml/Traffic Light/evt/notify"
 - [x] G2：donor LICENSE、`package.json` 的 `license` 字段与提交均已完成（`b3dfef6`）
 - [x] P0：包骨架 + 最小三节点 + Node-RED 5 冒烟（2026-11-09）
 - [x] P2.5：只读实时状态图（独立监控页 + 编辑器侧栏 iframe，2026-11-09）
-- [x] P1：运行时 MVP（vendor/ProjectDoc/校验、多机、set/reset/event、队列、持久化、out 契约、历史/延时测试）
-- [ ] P1 压力项：50 次重复部署无泄漏
-- [ ] P2：表单配置编辑器（三张表）← 当前 GUI 缺口
+- [x] P1：运行时 MVP（含 50 次重复部署无泄漏，17/17 测试）
+- [x] P2（首版）：状态/转移/变量三张表 GUI、JSON/SCXML 高级编辑
+- [x] i18n：en-US / zh-CN / zh 语言包，自动跟随 Node-RED 语言
+- [x] P2：GUI 保存 → Deploy → 运行时 `doc` 端到端回归（2026-11-09）
+- [x] P2：actions 结构化编辑（send/cancel/assign/log/script）
+- [ ] P2 打磨：浏览器自动化回归
 - [ ] P3：测试矩阵、示例、发布
+- [ ] P4（可选）：独立全屏编辑器，见 [设计草案](docs/p4-standalone-editor.md)
 
 ## 许可
 

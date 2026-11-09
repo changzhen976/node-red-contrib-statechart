@@ -1,0 +1,36 @@
+<script type="text/html" data-help-name="scxml-machine">
+  <p>Defines an SCXML state machine. One config node owns one session; all
+  <code>scxml-in</code> and <code>scxml-out</code> nodes referencing it share that session.</p>
+  <p>The SCXML text is parsed and compiled in Node.js. The default <b>sandboxed</b>
+  engine uses QuickJS with script timeouts and a memory limit; <b>trusted</b> runs
+  chart expressions in the Node.js realm and is only for charts you trust.</p>
+  <p>State changes are published to <code>scxml-out</code> nodes. Active states are
+  always reported as an array; parallel machines may have several active states.</p>
+  <p><b>View live state diagram in sidebar</b> opens the read-only SCXML sidebar tab
+  and selects this machine. It highlights active states but does not edit the chart.
+  The same page is also available at <code>/scxmljs/monitor</code>.</p>
+</script>
+
+<script type="text/html" data-help-name="scxml-in">
+  <p>Turns an incoming message into an SCXML event. <code>msg.payload</code> becomes
+  the event data (it must be JSON-serializable).</p>
+  <p>The event name comes from <code>msg.topic</code>, <code>msg.event</code>, a string
+  payload, or a fixed value. An empty event name is reported as an error rather than
+  silently dropped.</p>
+  <p>Commands: <code>msg.command = "set"</code> with an object payload assigns declared
+  variables and then sends <code>updateEvent</code> (default <code>update</code>);
+  <code>"reset"</code> re-creates the session from the initial state;
+  <code>"event"</code> uses <code>msg.event</code>.</p>
+  <p>This node has no outputs. Connect <code>scxml-out</code> to the same machine
+  to observe state changes.</p>
+</script>
+
+<script type="text/html" data-help-name="scxml-out">
+  <p>Subscribes to a machine. Output 1 carries the active state(s) and, optionally,
+  the variable snapshot. Output 2 carries chart <code>&lt;send&gt;</code> events.</p>
+  <p>State output: <code>msg.payload</code> is a string for one active state and an
+  array for parallel machines; <code>msg.states</code> is always an array. With
+  <b>Include variables</b>, <code>msg.vars</code> contains declared variables.</p>
+  <p>Internal sends (delayed transitions and <code>target="#_internal"</code>) are
+  filtered by default. Enable <b>Include internal sends</b> only for debugging.</p>
+</script>

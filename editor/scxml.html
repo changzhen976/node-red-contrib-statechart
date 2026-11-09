@@ -9,10 +9,108 @@
   }
   .scxml-help code { font-size: 12px; }
 
+  .scxml-editor-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 6px 0;
+  }
+  .scxml-section-title { font-weight: 600; margin-left: 10px; }
+  .scxml-table-wrap {
+    max-height: 220px;
+    overflow: auto;
+    border: 1px solid #d5dbe6;
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+  .scxml-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+  .scxml-table th, .scxml-table td {
+    padding: 3px;
+    border-bottom: 1px solid #e7ebf2;
+    vertical-align: top;
+  }
+  .scxml-table th { background: #f3f6fa; font-weight: 600; white-space: nowrap; }
+  .scxml-table input, .scxml-table select, .scxml-table textarea {
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 11px;
+    padding: 3px;
+  }
+  .scxml-table textarea { min-height: 26px; resize: vertical; }
+  .scxml-delete {
+    border: 0;
+    background: transparent;
+    color: #b91c1c;
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1;
+  }
+  .scxml-action-cell { display: flex; align-items: flex-start; gap: 2px; }
+  .scxml-action-cell textarea { flex: 1; }
+  .scxml-edit-actions {
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+    line-height: 1;
+    padding: 3px 5px;
+  }
+  .scxml-edit-actions:hover { background: #e2e8f0; }
+  .scxml-action-dialog {
+    width: 560px;
+    max-width: 92vw;
+    border: 1px solid #94a3b8;
+    border-radius: 6px;
+    padding: 0;
+    box-shadow: 0 12px 40px rgba(0,0,0,.25);
+  }
+  .scxml-action-dialog::backdrop { background: rgba(15,23,42,.35); }
+  .scxml-action-head { padding: 10px 12px; font-weight: 600; border-bottom: 1px solid #e2e8f0; }
+  .scxml-action-rows { max-height: 55vh; overflow: auto; padding: 8px 12px; }
+  .scxml-action-row { border: 1px solid #e2e8f0; border-radius: 4px; padding: 6px; margin-bottom: 6px; }
+  .scxml-action-row-head { display: flex; gap: 6px; align-items: center; }
+  .scxml-action-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; margin-top: 4px; }
+  .scxml-action-fields label { font-size: 11px; color: #475569; }
+  .scxml-action-fields input, .scxml-action-fields textarea { width: 100%; box-sizing: border-box; font-size: 11px; }
+  .scxml-action-fields .wide { grid-column: 1 / -1; }
+  .scxml-action-footer { display: flex; gap: 8px; padding: 8px 12px; border-top: 1px solid #e2e8f0; align-items: center; }
+  .scxml-action-footer .scxml-action-spacer { flex: 1; }
+  .scxml-advanced { margin-top: 8px; }
+  .scxml-advanced summary { cursor: pointer; color: #6b7280; font-size: 12px; }
+  #scxml-doc-json { width: 100%; min-height: 120px; font-family: monospace; font-size: 11px; }
+  .scxml-errors {
+    border: 1px solid #fca5a5;
+    background: #fef2f2;
+    color: #991b1b;
+    border-radius: 4px;
+    padding: 6px 8px;
+    margin: 4px 0 8px;
+    font-size: 11px;
+  }
+  .scxml-errors ul { margin: 4px 0 0 18px; padding: 0; }
+  .scxml-errors li.warning { color: #92400e; }
+  .scxml-table tr.scxml-row-error input,
+  .scxml-table tr.scxml-row-error select,
+  .scxml-table tr.scxml-row-error textarea { border-color: #dc2626 !important; }
+  .scxml-table tr.scxml-row-warning input,
+  .scxml-table tr.scxml-row-warning select,
+  .scxml-table tr.scxml-row-warning textarea { border-color: #d97706 !important; }
+
+
 </style>
+
+<!-- SCXML_CORE_INLINE -->
 
 <script type="text/javascript">
 
+  var SCXML_NS = 'node-red-contrib-scxmljs/scxml';
+  function scxmlI18n(key, opts) { return RED._(SCXML_NS + ':' + key, opts); }
 
   RED.nodes.registerType('scxml-machine', {
     category: 'config',
@@ -29,13 +127,13 @@
       updateEvent: { value: 'update' }
     },
     label: function () {
-      return this.name || 'scxml machine';
+      return this.name || scxmlI18n('label.scxmlMachine');
     },
     inputs: 0,
     outputs: 0,
     oneditprepare: function () {
       var id = this.id;
-      $('#node-input-open-sidebar').on('click', function (event) {
+      $('#node-config-input-open-sidebar').on('click', function (event) {
         event.preventDefault();
         var root = (RED.settings.httpAdminRoot || '/').replace(/\/?$/, '/');
         var url = root + 'scxmljs/monitor?embed=1' + (id ? '&id=' + encodeURIComponent(id) : '');
@@ -48,11 +146,15 @@
           window.open(url, '_blank');
         }
       });
+      if (typeof scxmlPrepareMachineEditor === 'function') scxmlPrepareMachineEditor(this);
+    },
+    oneditsave: function () {
+      if (typeof scxmlSaveMachineEditor === 'function') scxmlSaveMachineEditor(this);
     }
   });
 
   RED.nodes.registerType('scxml-in', {
-    category: 'state machine',
+    category: scxmlI18n('category'),
     color: '#0ea5e9',
     defaults: {
       name: { value: '' },
@@ -61,14 +163,14 @@
       fixedEvent: { value: '' }
     },
     label: function () {
-      return this.name || 'scxml in';
+      return this.name || scxmlI18n('label.scxmlIn');
     },
     inputs: 1,
     outputs: 0
   });
 
   RED.nodes.registerType('scxml-out', {
-    category: 'state machine',
+    category: scxmlI18n('category'),
     color: '#16a34a',
     defaults: {
       name: { value: '' },
@@ -81,7 +183,7 @@
       eventTopic: { value: 'scxml/{machine}/evt/{event}' }
     },
     label: function () {
-      return this.name || 'scxml out';
+      return this.name || scxmlI18n('label.scxmlOut');
     },
     inputs: 0,
     outputs: 2
@@ -90,7 +192,7 @@
   if (RED.sidebar && RED.sidebar.addTab) {
     var scxmlRoot = (RED.settings.httpAdminRoot || '/').replace(/\/?$/, '/');
     var scxmlSidebarFrame = $('<iframe>')
-      .attr('title', 'SCXML monitor')
+      .attr('title', scxmlI18n('sidebar.title'))
       .attr('src', scxmlRoot + 'scxmljs/monitor?embed=1')
       .css({ border: '0', width: '100%', height: '100%' });
     var monitorContent = $('<div>')
@@ -98,7 +200,7 @@
       .append(scxmlSidebarFrame);
     RED.sidebar.addTab({
       id: 'scxml-monitor',
-      label: 'SCXML',
+      label: scxmlI18n('sidebar.label'),
       icon: 'fa fa-project-diagram',
       content: monitorContent,
       onchange: function () {}
@@ -107,147 +209,789 @@
 
 </script>
 
+<script type="text/javascript">
+(function () {
+  'use strict';
+
+  function core() { return window.SCXMLCore; }
+
+  function t(key, opts) {
+    return window.scxmlI18n ? window.scxmlI18n(key, opts) : key;
+  }
+
+  function notify(message, type) {
+    if (window.RED && typeof RED.notify === 'function') {
+      RED.notify(message, { type: type || 'warning' });
+    } else {
+      console.warn('[scxml]', message);
+    }
+  }
+
+  function esc(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function lines(text) {
+    return String(text || '').split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
+  }
+
+  function stateById(doc, uid) {
+    for (var i = 0; i < doc.states.length; i++) if (doc.states[i].uid === uid) return doc.states[i];
+    return null;
+  }
+
+  function kindOptions(selected) {
+    var kinds = ['atomic', 'compound', 'final', 'parallel', 'history'];
+    return kinds.map(function (k) {
+      return '<option value="' + k + '"' + (k === selected ? ' selected' : '') + '>' + k + '</option>';
+    }).join('');
+  }
+
+  function parentOptions(doc, selected, excludeUid) {
+    var c = core();
+    var excluded = {};
+    if (excludeUid) {
+      excluded[excludeUid] = true;
+      c.descendantsOf(doc, excludeUid).forEach(function (uid) { excluded[uid] = true; });
+    }
+    var html = '<option value="">' + esc(t('form.root')) + '</option>';
+    doc.states.forEach(function (s) {
+      if (excluded[s.uid]) return;
+      html += '<option value="' + esc(s.uid) + '"' + (s.uid === selected ? ' selected' : '') + '>' + esc(s.id) + '</option>';
+    });
+    return html;
+  }
+
+  function initialOptions(doc, uid, selected) {
+    var c = core();
+    var children = c.childrenOf(doc, uid);
+    var html = '<option value="">' + esc(t('form.none')) + '</option>';
+    children.forEach(function (s) {
+      html += '<option value="' + esc(s.uid) + '"' + (s.uid === selected ? ' selected' : '') + '>' + esc(s.id) + '</option>';
+    });
+    return html;
+  }
+
+  function stateSelectOptions(doc, selected) {
+    var html = '<option value="">' + esc(t('form.pickState')) + '</option>';
+    doc.states.forEach(function (s) {
+      html += '<option value="' + esc(s.uid) + '"' + (s.uid === selected ? ' selected' : '') + '>' + esc(s.id) + '</option>';
+    });
+    return html;
+  }
+
+  function actionCell(kind, id, field, value) {
+    return '<td><div class="scxml-action-cell">' +
+      '<textarea data-field="' + field + '" rows="2">' + esc((value || []).join('\n')) + '</textarea>' +
+      '<button type="button" class="scxml-edit-actions" data-kind="' + kind + '" data-id="' + esc(id) + '" data-field="' + field + '" title="' + esc(t('form.editActions')) + '">…</button>' +
+      '</div></td>';
+  }
+
+  function renderStates(doc) {
+    var rows = doc.states.map(function (s) {
+      return '<tr data-uid="' + esc(s.uid) + '">' +
+        '<td><input data-field="id" value="' + esc(s.id) + '"></td>' +
+        '<td><select data-field="kind">' + kindOptions(s.kind) + '</select></td>' +
+        '<td><select data-field="parent">' + parentOptions(doc, s.parent, s.uid) + '</select></td>' +
+        '<td><select data-field="initial">' + initialOptions(doc, s.uid, s.initial) + '</select></td>' +
+        actionCell('state', s.uid, 'entry', s.entryActions || []) +
+        actionCell('state', s.uid, 'exit', s.exitActions || []) +
+        '<td><button type="button" class="scxml-delete" data-kind="state" data-uid="' + esc(s.uid) + '" title="' + esc(t('form.deleteState')) + '">×</button></td>' +
+        '</tr>';
+    }).join('');
+    return rows || '<tr><td colspan="7" style="color:#888;">' + esc(t('message.noStates')) + '</td></tr>';
+  }
+
+  function renderTransitions(doc) {
+    var rows = doc.transitions.map(function (edge) {
+      return '<tr data-id="' + esc(edge.id) + '">' +
+        '<td><select data-field="source">' + stateSelectOptions(doc, edge.source) + '</select></td>' +
+        '<td><select data-field="target">' + stateSelectOptions(doc, edge.target) + '</select></td>' +
+        '<td><input data-field="event" value="' + esc(edge.event) + '"></td>' +
+        '<td><input data-field="cond" value="' + esc(edge.cond || '') + '"></td>' +
+        actionCell('transition', edge.id, 'actions', edge.actions || []) +
+        '<td><input data-field="delayMs" type="number" min="0" value="' + esc(edge.delayMs || '') + '"></td>' +
+        '<td><button type="button" class="scxml-delete" data-kind="transition" data-id="' + esc(edge.id) + '" title="' + esc(t('form.deleteTransition')) + '">×</button></td>' +
+        '</tr>';
+    }).join('');
+    return rows || '<tr><td colspan="7" style="color:#888;">' + esc(t('message.noTransitions')) + '</td></tr>';
+  }
+
+  function renderVars(doc) {
+    var rows = (doc.datamodel || []).map(function (v, index) {
+      return '<tr data-index="' + index + '">' +
+        '<td><input data-field="id" value="' + esc(v.id) + '"></td>' +
+        '<td><input data-field="expr" value="' + esc(v.expr || '') + '"></td>' +
+        '<td><button type="button" class="scxml-delete" data-kind="var" data-index="' + index + '" title="' + esc(t('form.deleteVariable')) + '">×</button></td>' +
+        '</tr>';
+    }).join('');
+    return rows || '<tr><td colspan="3" style="color:#888;">' + esc(t('message.noVariables')) + '</td></tr>';
+  }
+
+  function issueText(issue) {
+    return t('validate.' + issue.code, issue.params || {});
+  }
+
+  function renderIssues(node) {
+    var c = core();
+    var doc = node._scxmlEditor.doc;
+    var issues = c && c.validateDoc ? c.validateDoc(doc) : [];
+    node._scxmlEditor.issues = issues;
+    var $box = $('#scxml-editor-errors');
+    $box.empty();
+    $('#scxml-states-body tr, #scxml-transitions-body tr').removeClass('scxml-row-error scxml-row-warning');
+    if (!issues.length) {
+      $box.attr('hidden', true).hide();
+      return;
+    }
+    var $ul = $('<ul>');
+    issues.forEach(function (issue) {
+      $ul.append($('<li>').addClass(issue.level).text(issueText(issue)));
+      if (issue.uid) {
+        $('#scxml-states-body tr[data-uid="' + issue.uid + '"]').addClass(issue.level === 'error' ? 'scxml-row-error' : 'scxml-row-warning');
+      }
+      if (issue.transitionId) {
+        $('#scxml-transitions-body tr[data-id="' + issue.transitionId + '"]').addClass(issue.level === 'error' ? 'scxml-row-error' : 'scxml-row-warning');
+      }
+    });
+    $box.append($('<strong>').text(t('message.validationSummary', { count: issues.length }))).append($ul).removeAttr('hidden').show();
+  }
+
+
+  var actionDraft = [];
+  var actionContext = null;
+
+  function defaultAction(type) {
+    switch (type) {
+      case 'send': return { type: 'send', event: '' };
+      case 'cancel': return { type: 'cancel', sendid: '' };
+      case 'assign': return { type: 'assign', target: '', expr: '' };
+      case 'log': return { type: 'log', expr: '' };
+      default: return { type: 'script', code: '' };
+    }
+  }
+
+  function actionTypeOptions(selected) {
+    var types = ['send', 'cancel', 'assign', 'log', 'script'];
+    return types.map(function (type) {
+      return '<option value="' + type + '"' + (type === selected ? ' selected' : '') + '>' +
+        esc(t('form.type' + type.charAt(0).toUpperCase() + type.slice(1))) + '</option>';
+    }).join('');
+  }
+
+  function actionField(labelKey, field, value, wide) {
+    return '<label class="' + (wide ? 'wide' : '') + '">' + esc(t(labelKey)) +
+      '<input data-afield="' + field + '" value="' + esc(value == null ? '' : value) + '"></label>';
+  }
+
+  function actionTextarea(labelKey, field, value) {
+    return '<label class="wide">' + esc(t(labelKey)) +
+      '<textarea data-afield="' + field + '" rows="3">' + esc(value == null ? '' : value) + '</textarea></label>';
+  }
+
+  function actionRow(action, index) {
+    var fields = '';
+    if (action.type === 'send') {
+      fields += actionField('form.actionEvent', 'event', action.event);
+      fields += actionField('form.actionDelay', 'delay', action.delay);
+      fields += actionField('form.actionId', 'id', action.id);
+      fields += actionField('form.actionDataExpr', 'dataExpr', action.dataExpr);
+      fields += actionField('form.actionData', 'data', action.data === undefined ? '' : JSON.stringify(action.data), true);
+    } else if (action.type === 'cancel') {
+      fields += actionField('form.actionSendId', 'sendid', action.sendid);
+    } else if (action.type === 'assign') {
+      fields += actionField('form.actionTarget', 'target', action.target);
+      fields += actionField('form.actionExpr', 'expr', action.expr, true);
+    } else if (action.type === 'log') {
+      fields += actionField('form.actionExpr', 'expr', action.expr, true);
+    } else {
+      fields += actionTextarea('form.actionCode', 'code', action.code);
+    }
+    return '<div class="scxml-action-row" data-index="' + index + '">' +
+      '<div class="scxml-action-row-head">' +
+        '<select data-afield="type">' + actionTypeOptions(action.type) + '</select>' +
+        '<span style="flex:1"></span>' +
+        '<button type="button" class="scxml-delete scxml-action-remove" title="' + esc(t('form.deleteAction')) + '">×</button>' +
+      '</div>' +
+      '<div class="scxml-action-fields">' + fields + '</div>' +
+    '</div>';
+  }
+
+  function renderActionRows() {
+    var rows = actionDraft.map(actionRow).join('');
+    $('#scxml-action-rows').html(rows || '<p style="color:#888;font-size:11px;">' + esc(t('message.noActions')) + '</p>');
+    $('#scxml-action-error').attr('hidden', true).empty();
+  }
+
+  function openActionEditor(node, kind, id, field) {
+    var doc = node._scxmlEditor.doc;
+    var target = kind === 'state' ? stateById(doc, id) : null;
+    if (kind === 'transition') {
+      for (var i = 0; i < doc.transitions.length; i++) if (doc.transitions[i].id === id) target = doc.transitions[i];
+    }
+    if (!target) return;
+    var prop = kind === 'state' ? (field === 'entry' ? 'entryActions' : 'exitActions') : 'actions';
+    actionDraft = (target[prop] || []).filter(function (line) { return String(line).trim() !== ''; })
+      .map(function (line) { return core().parseActionLine(line); });
+    actionContext = { node: node, kind: kind, id: id, prop: prop, target: target };
+    renderActionRows();
+    var dialog = document.getElementById('scxml-action-dialog');
+    if (dialog && dialog.showModal) dialog.showModal();
+    else if (dialog) dialog.setAttribute('open', '');
+    $('#scxml-action-error').attr('hidden', true).empty();
+  }
+
+  function closeActionEditor() {
+    var dialog = document.getElementById('scxml-action-dialog');
+    if (dialog) {
+      if (dialog.close) dialog.close();
+      else dialog.removeAttribute('open');
+    }
+    actionContext = null;
+  }
+
+  function actionError(message) {
+    $('#scxml-action-error').text(message).removeAttr('hidden').show();
+  }
+
+  function saveActionEditor() {
+    if (!actionContext) return;
+    for (var i = 0; i < actionDraft.length; i++) {
+      var action = actionDraft[i];
+      if (action.type === 'send') {
+        if (!String(action.event || '').trim()) { actionError(t('message.actionRequired')); return; }
+        if (action.data !== undefined && action._dataInvalid) { actionError(t('message.actionDataInvalid')); return; }
+      } else if (action.type === 'cancel') {
+        if (!String(action.sendid || '').trim()) { actionError(t('message.actionRequired')); return; }
+      } else if (action.type === 'assign') {
+        if (!String(action.target || '').trim() || !String(action.expr || '').trim()) { actionError(t('message.actionRequired')); return; }
+      } else if (action.type === 'log') {
+        if (!String(action.expr || '').trim()) { actionError(t('message.actionRequired')); return; }
+      } else if (action.type === 'script') {
+        if (!String(action.code || '').trim()) { actionError(t('message.actionRequired')); return; }
+      }
+    }
+    var lines = actionDraft.map(function (action) {
+      delete action._dataInvalid;
+      return core().actionToLine(action);
+    }).filter(function (line) { return String(line).trim() !== ''; });
+    actionContext.target[actionContext.prop] = lines;
+    render(actionContext.node);
+    closeActionEditor();
+  }
+
+  function bindActionEditor(node) {
+    $('#scxml-action-rows').off('.scxml').on('change.scxml', '[data-afield]', function () {
+      var index = Number($(this).closest('.scxml-action-row').attr('data-index'));
+      var action = actionDraft[index];
+      if (!action) return;
+      var field = $(this).attr('data-afield');
+      var value = $(this).val();
+      if (field === 'type') {
+        actionDraft[index] = defaultAction(value);
+        renderActionRows();
+        return;
+      }
+      if (field === 'data') {
+        if (String(value).trim() === '') {
+          delete action.data;
+          delete action._dataInvalid;
+        } else {
+          try {
+            action.data = JSON.parse(value);
+            delete action._dataInvalid;
+          } catch (err) {
+            action.data = value;
+            action._dataInvalid = true;
+          }
+        }
+        return;
+      }
+      action[field] = value;
+    });
+
+    $('#scxml-action-rows').on('click.scxml', '.scxml-action-remove', function (e) {
+      e.preventDefault();
+      var index = Number($(this).closest('.scxml-action-row').attr('data-index'));
+      actionDraft.splice(index, 1);
+      renderActionRows();
+    });
+
+    $('#scxml-action-add').off('.scxml').on('click.scxml', function (e) {
+      e.preventDefault();
+      actionDraft.push(defaultAction('assign'));
+      renderActionRows();
+    });
+
+    $('#scxml-action-save').off('.scxml').on('click.scxml', function (e) {
+      e.preventDefault();
+      saveActionEditor();
+    });
+
+    $('#scxml-action-cancel').off('.scxml').on('click.scxml', function (e) {
+      e.preventDefault();
+      closeActionEditor();
+    });
+
+    $('#scxml-action-dialog').off('.scxml').on('cancel.scxml', function (e) {
+      e.preventDefault();
+      closeActionEditor();
+    });
+
+    $('#scxml-states-body, #scxml-transitions-body').off('click.scxml-actions').on('click.scxml-actions', '.scxml-edit-actions', function (e) {
+      e.preventDefault();
+      openActionEditor(node, $(this).attr('data-kind'), $(this).attr('data-id'), $(this).attr('data-field'));
+    });
+  }
+
+  function render(node) {
+    var c = core();
+    var editor = node._scxmlEditor;
+    if (!c || !editor) return;
+    var doc = editor.doc;
+    $('#scxml-states-body').html(renderStates(doc));
+    $('#scxml-transitions-body').html(renderTransitions(doc));
+    $('#scxml-vars-body').html(renderVars(doc));
+
+    var html = '<option value="">' + esc(t('form.none')) + '</option>';
+    doc.states.forEach(function (s) {
+      if (s.parent) return;
+      html += '<option value="' + esc(s.uid) + '"' + (s.uid === doc.initial ? ' selected' : '') + '>' + esc(s.id) + '</option>';
+    });
+    $('#scxml-root-initial').html(html);
+    $('#scxml-doc-json').val(JSON.stringify(doc, null, 2));
+    $('#node-config-input-doc').val(JSON.stringify(doc));
+    renderIssues(node);
+  }
+
+  function addState(node) {
+    var c = core();
+    var doc = node._scxmlEditor.doc;
+    var state = {
+      uid: c.newUid('s'),
+      id: c.uniqueStateId(doc, 'state'),
+      label: '',
+      kind: 'atomic',
+      parent: null,
+      initial: null,
+      entryActions: [],
+      exitActions: [],
+    };
+    state.label = state.id;
+    doc.states.push(state);
+    if (!doc.initial) doc.initial = state.uid;
+    render(node);
+  }
+
+  function addTransition(node) {
+    var c = core();
+    var doc = node._scxmlEditor.doc;
+    if (doc.states.length < 2) {
+      notify(t('message.atLeastTwoStates'), 'warning');
+      return;
+    }
+    doc.transitions.push({
+      id: c.newTransitionId(),
+      source: doc.states[0].uid,
+      target: doc.states[1].uid,
+      event: 'go',
+      cond: '',
+      actions: [],
+    });
+    render(node);
+  }
+
+  function addVar(node) {
+    var doc = node._scxmlEditor.doc;
+    doc.datamodel = doc.datamodel || [];
+    var n = doc.datamodel.length + 1;
+    var ids = {};
+    doc.datamodel.forEach(function (v) { ids[v.id] = true; });
+    while (ids['v' + n]) n++;
+    doc.datamodel.push({ id: 'v' + n, expr: '0' });
+    render(node);
+  }
+
+  function bind(node) {
+    var c = core();
+    $('#scxml-states-body').off('.scxml').on('change.scxml', '[data-field]', function () {
+      var uid = $(this).closest('tr').attr('data-uid');
+      var state = stateById(node._scxmlEditor.doc, uid);
+      if (!state) return;
+      var field = $(this).attr('data-field');
+      var value = $(this).val();
+      if (field === 'entry') state.entryActions = lines(value);
+      else if (field === 'exit') state.exitActions = lines(value);
+      else if (field === 'parent') state.parent = value || null;
+      else if (field === 'initial') state.initial = value || null;
+      else if (field === 'kind') state.kind = value;
+      else if (field === 'id') {
+        state.id = value;
+        state.label = value;
+      }
+      if (field === 'parent' || field === 'kind') render(node);
+      else renderIssues(node);
+    });
+
+    $('#scxml-transitions-body').off('.scxml').on('change.scxml', '[data-field]', function () {
+      var id = $(this).closest('tr').attr('data-id');
+      var doc = node._scxmlEditor.doc;
+      var t = null;
+      for (var i = 0; i < doc.transitions.length; i++) if (doc.transitions[i].id === id) t = doc.transitions[i];
+      if (!t) return;
+      var field = $(this).attr('data-field');
+      var value = $(this).val();
+      if (field === 'source') t.source = value;
+      else if (field === 'target') t.target = value;
+      else if (field === 'event') t.event = value;
+      else if (field === 'cond') t.cond = value;
+      else if (field === 'actions') t.actions = lines(value);
+      else if (field === 'delayMs') {
+        var delay = Number(value);
+        t.delayMs = Number.isFinite(delay) && delay > 0 ? delay : undefined;
+      }
+      renderIssues(node);
+    });
+
+    $('#scxml-vars-body').off('.scxml').on('change.scxml', '[data-field]', function () {
+      var index = Number($(this).closest('tr').attr('data-index'));
+      var doc = node._scxmlEditor.doc;
+      var v = doc.datamodel && doc.datamodel[index];
+      if (!v) return;
+      var field = $(this).attr('data-field');
+      if (field === 'id') v.id = $(this).val();
+      else if (field === 'expr') v.expr = $(this).val();
+      renderIssues(node);
+    });
+
+    $('#scxml-root-initial').off('.scxml').on('change.scxml', function () {
+      node._scxmlEditor.doc.initial = $(this).val() || null;
+      render(node);
+    });
+
+    $('#scxml-add-state').off('.scxml').on('click.scxml', function (e) { e.preventDefault(); addState(node); });
+    $('#scxml-add-transition').off('.scxml').on('click.scxml', function (e) { e.preventDefault(); addTransition(node); });
+    $('#scxml-add-var').off('.scxml').on('click.scxml', function (e) { e.preventDefault(); addVar(node); });
+
+    $('#scxml-states-body').on('click.scxml', '.scxml-delete', function (e) {
+      e.preventDefault();
+      var uid = $(this).attr('data-uid');
+      if (!window.confirm(t('message.confirmDeleteState'))) return;
+      var doc = node._scxmlEditor.doc;
+      var remove = {};
+      remove[uid] = true;
+      c.descendantsOf(doc, uid).forEach(function (x) { remove[x] = true; });
+      doc.states = doc.states.filter(function (s) { return !remove[s.uid]; });
+      doc.transitions = doc.transitions.filter(function (t) { return !remove[t.source] && !remove[t.target]; });
+      if (remove[doc.initial]) {
+        var top = doc.states.filter(function (s) { return !s.parent; });
+        doc.initial = top.length ? top[0].uid : null;
+      }
+      render(node);
+    });
+
+    $('#scxml-transitions-body').on('click.scxml', '.scxml-delete', function (e) {
+      e.preventDefault();
+      var id = $(this).attr('data-id');
+      var doc = node._scxmlEditor.doc;
+      doc.transitions = doc.transitions.filter(function (t) { return t.id !== id; });
+      render(node);
+    });
+
+    $('#scxml-vars-body').on('click.scxml', '.scxml-delete', function (e) {
+      e.preventDefault();
+      var index = Number($(this).attr('data-index'));
+      var doc = node._scxmlEditor.doc;
+      if (doc.datamodel) doc.datamodel.splice(index, 1);
+      render(node);
+    });
+
+    $('#scxml-apply-json').off('.scxml').on('click.scxml', function (e) {
+      e.preventDefault();
+      try {
+        var parsed = JSON.parse($('#scxml-doc-json').val());
+        node._scxmlEditor.doc = c.normalizeDoc(parsed);
+        render(node);
+      } catch (err) {
+        notify(t('message.invalidJson', { error: err && err.message ? err.message : err }), 'error');
+      }
+    });
+
+    $('#scxml-export-json').off('.scxml').on('click.scxml', function (e) {
+      e.preventDefault();
+      $('#scxml-doc-json').val(JSON.stringify(node._scxmlEditor.doc, null, 2));
+    });
+
+    $('#scxml-import-scxml').off('.scxml').on('click.scxml', function (e) {
+      e.preventDefault();
+      try {
+        var result = c.scxmlToDoc($('#node-config-input-source').val(), window.DOMParser ? new DOMParser() : undefined);
+        node._scxmlEditor.doc = c.normalizeDoc(result.doc);
+        if (result.warnings && result.warnings.length) notify(result.warnings.join('; '), 'warning');
+        render(node);
+      } catch (err) {
+        notify(t('message.scxmlImportFailed', { error: err && err.message ? err.message : err }), 'error');
+      }
+    });
+
+    $('#scxml-export-scxml').off('.scxml').on('click.scxml', function (e) {
+      e.preventDefault();
+      try {
+        $('#node-config-input-source').val(c.serializeToScxml(node._scxmlEditor.doc));
+      } catch (err) {
+        notify(t('message.scxmlExportFailed', { error: err && err.message ? err.message : err }), 'error');
+      }
+    });
+
+    bindActionEditor(node);
+  }
+
+  function prepare(node) {
+    var c = core();
+    if (!c) {
+      notify(t('message.coreMissing'), 'error');
+      return;
+    }
+    var doc = null;
+    var rawDoc = typeof node.doc === 'string' ? node.doc.trim() : '';
+    if (rawDoc) {
+      try {
+        doc = c.normalizeDoc(JSON.parse(rawDoc));
+      } catch (err) {
+        notify(t('message.docParseFailed', { error: err && err.message ? err.message : err }), 'warning');
+      }
+    }
+    if (!doc && typeof node.source === 'string' && node.source.trim()) {
+      try {
+        var imported = c.scxmlToDoc(node.source, window.DOMParser ? new DOMParser() : undefined);
+        doc = c.normalizeDoc(imported.doc);
+        if (imported.warnings && imported.warnings.length) notify(imported.warnings.join('; '), 'warning');
+      } catch (err) {
+        notify(t('message.scxmlImportFailed', { error: err && err.message ? err.message : err }), 'error');
+      }
+    }
+    if (!doc) doc = c.emptyDoc(node.name || 'state machine');
+    if (!node.updateEvent) node.updateEvent = 'update';
+    $('#node-config-input-updateEvent').val(node.updateEvent);
+    if (!doc.initial) {
+      var top = doc.states.filter(function (s) { return !s.parent; });
+      if (top.length) doc.initial = top[0].uid;
+    }
+    node._scxmlEditor = { doc: doc };
+    bind(node);
+    render(node);
+  }
+
+  function save(node) {
+    var c = core();
+    var editor = node._scxmlEditor;
+    if (!c || !editor) return;
+    var doc;
+    try {
+      doc = c.normalizeDoc(editor.doc);
+    } catch (err) {
+      notify(t('message.docNormalizeFailed', { error: err && err.message ? err.message : err }), 'error');
+      return;
+    }
+    editor.doc = doc;
+    var issues = c.validateDoc ? c.validateDoc(doc) : [];
+    if (issues.length) {
+      notify(t('message.validationSummary', { count: issues.length }), 'warning');
+    }
+    $('#scxml-editor-errors').empty();
+    var serialized = '';
+    try {
+      serialized = c.serializeToScxml(doc);
+    } catch (err) {
+      // Keep the previous raw SCXML; the runtime will validate `doc` on deploy.
+    }
+    // Node-RED config dialogs do not auto-copy hidden inputs into the node.
+    // Assign the authoritative fields directly so `oneditsave` actually persists.
+    node.doc = JSON.stringify(doc);
+    if (serialized) node.source = serialized;
+    node.name = $('#node-config-input-name').val() || '';
+    node.engine = $('#node-config-input-engine').val() || 'sandboxed';
+    node.scriptTimeoutMs = Number($('#node-config-input-scriptTimeoutMs').val()) || 500;
+    node.maxMicrosteps = Number($('#node-config-input-maxMicrosteps').val()) || 10000;
+    node.monitorShowVars = $('#node-config-input-monitorShowVars').prop('checked') === true;
+    node.persistVars = $('#node-config-input-persistVars').prop('checked') === true;
+    node.updateEvent = $('#node-config-input-updateEvent').val() || 'update';
+    $('#node-config-input-doc').val(node.doc);
+    if (serialized) $('#node-config-input-source').val(serialized);
+  }
+
+  window.scxmlPrepareMachineEditor = prepare;
+  window.scxmlSaveMachineEditor = save;
+})();
+
+</script>
+
 <script type="text/html" data-template-name="scxml-machine">
   <div class="form-row">
-    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
-    <input type="text" id="node-input-name" placeholder="state machine">
+    <label for="node-config-input-name"><i class="fa fa-tag"></i> <span data-i18n="form.name"></span></label>
+    <input type="text" id="node-config-input-name" data-i18n="[placeholder]form.placeholderName">
+  </div>
+  <div class="form-row" style="display:block;">
+    <div class="scxml-editor-toolbar">
+      <button type="button" id="scxml-add-state" class="red-ui-button red-ui-button-small"><span data-i18n="form.addState"></span></button>
+      <button type="button" id="scxml-add-transition" class="red-ui-button red-ui-button-small"><span data-i18n="form.addTransition"></span></button>
+      <button type="button" id="scxml-add-var" class="red-ui-button red-ui-button-small"><span data-i18n="form.addVariable"></span></button>
+      <span class="scxml-section-title" data-i18n="form.initial"></span>
+      <select id="scxml-root-initial" style="max-width:180px;"></select>
+    </div>
+    <div id="scxml-editor-errors" class="scxml-errors" hidden></div>
+    <div class="scxml-section-title" data-i18n="form.states"></div>
+    <div class="scxml-table-wrap">
+      <table class="scxml-table">
+        <thead><tr><th data-i18n="form.id"></th><th data-i18n="form.kind"></th><th data-i18n="form.parent"></th><th data-i18n="form.initial"></th><th data-i18n="form.entry"></th><th data-i18n="form.exit"></th><th></th></tr></thead>
+        <tbody id="scxml-states-body"></tbody>
+      </table>
+    </div>
+    <div class="scxml-section-title" data-i18n="form.transitions"></div>
+    <div class="scxml-table-wrap">
+      <table class="scxml-table">
+        <thead><tr><th data-i18n="form.source"></th><th data-i18n="form.target"></th><th data-i18n="form.event"></th><th data-i18n="form.cond"></th><th data-i18n="form.actions"></th><th data-i18n="form.delay"></th><th></th></tr></thead>
+        <tbody id="scxml-transitions-body"></tbody>
+      </table>
+    </div>
+    <div class="scxml-section-title" data-i18n="form.variables"></div>
+    <div class="scxml-table-wrap">
+      <table class="scxml-table">
+        <thead><tr><th data-i18n="form.id"></th><th data-i18n="form.expr"></th><th></th></tr></thead>
+        <tbody id="scxml-vars-body"></tbody>
+      </table>
+    </div>
+    <dialog id="scxml-action-dialog" class="scxml-action-dialog">
+      <div class="scxml-action-head" data-i18n="form.actionEditor"></div>
+      <div id="scxml-action-error" class="scxml-errors" hidden></div>
+      <div id="scxml-action-rows" class="scxml-action-rows"></div>
+      <div class="scxml-action-footer">
+        <button type="button" id="scxml-action-add" class="red-ui-button red-ui-button-small"><span data-i18n="form.addAction"></span></button>
+        <span class="scxml-action-spacer"></span>
+        <button type="button" id="scxml-action-cancel" class="red-ui-button red-ui-button-small"><span data-i18n="form.cancelActions"></span></button>
+        <button type="button" id="scxml-action-save" class="red-ui-button red-ui-button-small primary"><span data-i18n="form.saveActions"></span></button>
+      </div>
+    </dialog>
+    <input type="hidden" id="node-config-input-doc">
+    <details class="scxml-advanced">
+      <summary><span data-i18n="form.advanced"></span></summary>
+      <div class="form-row">
+        <label for="node-config-input-source"><i class="fa fa-code"></i> <span data-i18n="form.scxml"></span></label>
+        <textarea id="node-config-input-source" class="scxml-source" data-i18n="[placeholder]form.placeholderSource"></textarea>
+      </div>
+      <div class="form-row" style="display:block;">
+        <label for="scxml-doc-json" data-i18n="form.projectDoc"></label>
+        <textarea id="scxml-doc-json" placeholder="ProjectDoc JSON"></textarea>
+        <button type="button" id="scxml-apply-json" class="red-ui-button red-ui-button-small"><span data-i18n="form.applyJson"></span></button>
+        <button type="button" id="scxml-export-json" class="red-ui-button red-ui-button-small"><span data-i18n="form.exportJson"></span></button>
+        <button type="button" id="scxml-import-scxml" class="red-ui-button red-ui-button-small"><span data-i18n="form.importScxml"></span></button>
+        <button type="button" id="scxml-export-scxml" class="red-ui-button red-ui-button-small"><span data-i18n="form.exportScxml"></span></button>
+      </div>
+    </details>
   </div>
   <div class="form-row">
-    <label for="node-input-source"><i class="fa fa-code"></i> SCXML</label>
-    <textarea id="node-input-source" class="scxml-source" placeholder="Paste an SCXML document"></textarea>
-  </div>
-  <div class="form-row">
-    <label for="node-input-engine"><i class="fa fa-shield"></i> Engine</label>
-    <select id="node-input-engine">
-      <option value="sandboxed">sandboxed (QuickJS)</option>
-      <option value="trusted">trusted (host JS, trusted charts only)</option>
+    <label for="node-config-input-engine"><i class="fa fa-shield"></i> <span data-i18n="form.engine"></span></label>
+    <select id="node-config-input-engine">
+      <option value="sandboxed" data-i18n="option.sandboxed"></option>
+      <option value="trusted" data-i18n="option.trusted"></option>
     </select>
   </div>
   <div class="form-row">
-    <label for="node-input-scriptTimeoutMs"><i class="fa fa-clock-o"></i> Script timeout (ms)</label>
-    <input type="number" id="node-input-scriptTimeoutMs" min="1" placeholder="500">
+    <label for="node-config-input-scriptTimeoutMs"><i class="fa fa-clock-o"></i> <span data-i18n="form.scriptTimeout"></span></label>
+    <input type="number" id="node-config-input-scriptTimeoutMs" min="1" placeholder="500">
   </div>
   <div class="form-row">
-    <label for="node-input-maxMicrosteps"><i class="fa fa-repeat"></i> Max microsteps</label>
-    <input type="number" id="node-input-maxMicrosteps" min="1" placeholder="10000">
+    <label for="node-config-input-maxMicrosteps"><i class="fa fa-repeat"></i> <span data-i18n="form.maxMicrosteps"></span></label>
+    <input type="number" id="node-config-input-maxMicrosteps" min="1" placeholder="10000">
   </div>
   <div class="form-row">
-    <label for="node-input-monitorShowVars"><i class="fa fa-table"></i> Monitor variables</label>
-    <input type="checkbox" id="node-input-monitorShowVars">
+    <label for="node-config-input-monitorShowVars"><i class="fa fa-table"></i> <span data-i18n="form.monitorVars"></span></label>
+    <input type="checkbox" id="node-config-input-monitorShowVars">
   </div>
   <div class="form-row">
-    <label for="node-input-persistVars"><i class="fa fa-save"></i> Persist variables</label>
-    <input type="checkbox" id="node-input-persistVars">
+    <label for="node-config-input-persistVars"><i class="fa fa-save"></i> <span data-i18n="form.persistVars"></span></label>
+    <input type="checkbox" id="node-config-input-persistVars">
   </div>
   <div class="form-row">
-    <label for="node-input-updateEvent"><i class="fa fa-refresh"></i> Update event</label>
-    <input type="text" id="node-input-updateEvent" placeholder="update">
+    <label for="node-config-input-updateEvent"><i class="fa fa-refresh"></i> <span data-i18n="form.updateEvent"></span></label>
+    <input type="text" id="node-config-input-updateEvent" data-i18n="[placeholder]form.placeholderUpdate">
   </div>
   <div class="form-row">
     <label>&nbsp;</label>
-    <button type="button" id="node-input-open-sidebar" class="red-ui-button red-ui-button-small">
-      <i class="fa fa-project-diagram"></i> 在侧栏查看实时状态图
+    <button type="button" id="node-config-input-open-sidebar" class="red-ui-button red-ui-button-small">
+      <i class="fa fa-project-diagram"></i> <span data-i18n="form.openSidebar"></span>
     </button>
   </div>
 </script>
 
-<script type="text/html" data-help-name="scxml-machine">
-  <p>Defines an SCXML state machine. One config node owns one session; all
-  <code>scxml-in</code> and <code>scxml-out</code> nodes referencing it share that session.</p>
-  <p>The SCXML text is parsed and compiled in Node.js. The default <b>sandboxed</b>
-  engine uses QuickJS with script timeouts and a memory limit; <b>trusted</b> runs
-  chart expressions in the Node.js realm and is only for charts you trust.</p>
-  <p>State changes are published to <code>scxml-out</code> nodes. Active states are
-  always reported as an array; parallel machines may have several active states.</p>
-  <p><b>在侧栏查看实时状态图</b> opens the read-only SCXML sidebar tab and selects
-  this machine. It highlights active states but does not edit the chart. The same
-  page is also available at <code>/scxmljs/monitor</code>.</p>
-</script>
 
 <script type="text/html" data-template-name="scxml-in">
   <div class="form-row">
-    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
-    <input type="text" id="node-input-name" placeholder="event in">
+    <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="form.name"></span></label>
+    <input type="text" id="node-input-name" data-i18n="[placeholder]form.placeholderEventIn">
   </div>
   <div class="form-row">
-    <label for="node-input-machine"><i class="fa fa-cog"></i> Machine</label>
+    <label for="node-input-machine"><i class="fa fa-cog"></i> <span data-i18n="form.machine"></span></label>
     <input type="text" id="node-input-machine">
   </div>
   <div class="form-row">
-    <label for="node-input-eventSource"><i class="fa fa-bolt"></i> Event name from</label>
+    <label for="node-input-eventSource"><i class="fa fa-bolt"></i> <span data-i18n="form.eventSource"></span></label>
     <select id="node-input-eventSource">
-      <option value="topic">msg.topic</option>
-      <option value="msg.event">msg.event</option>
-      <option value="payload">msg.payload (string)</option>
-      <option value="fixed">fixed event</option>
+      <option value="topic" data-i18n="option.topic"></option>
+      <option value="msg.event" data-i18n="option.msgEvent"></option>
+      <option value="payload" data-i18n="option.payload"></option>
+      <option value="fixed" data-i18n="option.fixed"></option>
     </select>
   </div>
   <div class="form-row">
-    <label for="node-input-fixedEvent"><i class="fa fa-pencil"></i> Fixed event</label>
-    <input type="text" id="node-input-fixedEvent" placeholder="only used when source is fixed">
+    <label for="node-input-fixedEvent"><i class="fa fa-pencil"></i> <span data-i18n="form.fixedEvent"></span></label>
+    <input type="text" id="node-input-fixedEvent" data-i18n="[placeholder]form.placeholderFixedEvent">
   </div>
 </script>
 
-<script type="text/html" data-help-name="scxml-in">
-  <p>Turns an incoming message into an SCXML event. <code>msg.payload</code> becomes
-  the event data (it must be JSON-serializable).</p>
-  <p>The event name comes from <code>msg.topic</code>, <code>msg.event</code>, a string
-  payload, or a fixed value. An empty event name is reported as an error rather than
-  silently dropped.</p>
-  <p>Commands: <code>msg.command = "set"</code> with an object payload assigns declared
-  variables and then sends <code>updateEvent</code> (default <code>update</code>);
-  <code>"reset"</code> re-creates the session from the initial state;
-  <code>"event"</code> uses <code>msg.event</code>.</p>
-  <p>This node has no outputs. Connect <code>scxml-out</code> to the same machine
-  to observe state changes.</p>
-</script>
 
 <script type="text/html" data-template-name="scxml-out">
   <div class="form-row">
-    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
-    <input type="text" id="node-input-name" placeholder="state out">
+    <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="form.name"></span></label>
+    <input type="text" id="node-input-name" data-i18n="[placeholder]form.placeholderEventOut">
   </div>
   <div class="form-row">
-    <label for="node-input-machine"><i class="fa fa-cog"></i> Machine</label>
+    <label for="node-input-machine"><i class="fa fa-cog"></i> <span data-i18n="form.machine"></span></label>
     <input type="text" id="node-input-machine">
   </div>
   <div class="form-row">
-    <label for="node-input-includeVars"><i class="fa fa-table"></i> Include variables</label>
+    <label for="node-input-includeVars"><i class="fa fa-table"></i> <span data-i18n="form.includeVars"></span></label>
     <input type="checkbox" id="node-input-includeVars">
   </div>
   <div class="form-row">
-    <label for="node-input-emitInitial"><i class="fa fa-play"></i> Emit initial state</label>
+    <label for="node-input-emitInitial"><i class="fa fa-play"></i> <span data-i18n="form.emitInitial"></span></label>
     <input type="checkbox" id="node-input-emitInitial">
   </div>
   <div class="form-row">
-    <label for="node-input-includeInternalSends"><i class="fa fa-envelope"></i> Include internal sends</label>
+    <label for="node-input-includeInternalSends"><i class="fa fa-envelope"></i> <span data-i18n="form.includeInternalSends"></span></label>
     <input type="checkbox" id="node-input-includeInternalSends">
   </div>
   <div class="form-row">
-    <label for="node-input-outputMode"><i class="fa fa-random"></i> Output mode</label>
+    <label for="node-input-outputMode"><i class="fa fa-random"></i> <span data-i18n="form.outputMode"></span></label>
     <select id="node-input-outputMode">
-      <option value="both">both</option>
-      <option value="state">state only</option>
-      <option value="event">event only</option>
+      <option value="both" data-i18n="option.both"></option>
+      <option value="state" data-i18n="option.state"></option>
+      <option value="event" data-i18n="option.event"></option>
     </select>
   </div>
   <div class="form-row">
-    <label for="node-input-stateTopic"><i class="fa fa-tag"></i> State topic</label>
-    <input type="text" id="node-input-stateTopic" placeholder="default: active state">
+    <label for="node-input-stateTopic"><i class="fa fa-tag"></i> <span data-i18n="form.stateTopic"></span></label>
+    <input type="text" id="node-input-stateTopic" data-i18n="[placeholder]form.placeholderStateTopic">
   </div>
   <div class="form-row">
-    <label for="node-input-eventTopic"><i class="fa fa-tag"></i> Event topic</label>
-    <input type="text" id="node-input-eventTopic" placeholder="scxml/{machine}/evt/{event}">
+    <label for="node-input-eventTopic"><i class="fa fa-tag"></i> <span data-i18n="form.eventTopic"></span></label>
+    <input type="text" id="node-input-eventTopic" data-i18n="[placeholder]form.placeholderEventTopic">
   </div>
-  <p style="margin-left: 130px; color: #888;">Output 1: state. Output 2: chart &lt;send&gt; events.</p>
+  <p style="margin-left: 130px; color: #888;" data-i18n="form.outputHint"></p>
 </script>
 
-<script type="text/html" data-help-name="scxml-out">
-  <p>Subscribes to a machine. Output 1 carries the active state(s) and, optionally,
-  the variable snapshot. Output 2 carries chart <code>&lt;send&gt;</code> events.</p>
-  <p>State output: <code>msg.payload</code> is a string for one active state and an
-  array for parallel machines; <code>msg.states</code> is always an array. With
-  <b>Include variables</b>, <code>msg.vars</code> contains declared variables.</p>
-  <p>Internal sends (delayed transitions and <code>target="#_internal"</code>) are
-  filtered by default. Enable <b>Include internal sends</b> only for debugging.</p>
-</script>

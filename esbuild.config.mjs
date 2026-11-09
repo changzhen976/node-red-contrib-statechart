@@ -1,5 +1,5 @@
 import { build } from 'esbuild'
-import { copyFile, mkdir } from 'node:fs/promises'
+import { copyFile, cp, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -20,7 +20,23 @@ await build({
   external: ['@tinyactors/scxmljs', '@tinyactors/scxmljs/trusted', '@xmldom/xmldom'],
 })
 
-await copyFile(resolve(root, 'editor/scxml.html'), resolve(dist, 'scxml.html'))
+// Bundle the pure core for the Node-RED editor form. It is inlined below so
+// the editor never needs a bare ESM import or a second HTTP route.
+const editorCore = await build({
+  entryPoints: [resolve(root, 'src/editor/core-bridge.ts')],
+  bundle: true,
+  platform: 'browser',
+  format: 'iife',
+  target: ['es2020'],
+  minify: true,
+  write: false,
+  legalComments: 'none',
+})
+const editorCoreJs = editorCore.outputFiles[0].text
+const editorHtml = (await readFile(resolve(root, 'editor/scxml.html'), 'utf8'))
+  .replace('<!-- SCXML_CORE_INLINE -->', `<script>${editorCoreJs}</script>`)
+await writeFile(resolve(dist, 'scxml.html'), editorHtml)
+await cp(resolve(root, 'editor/locales'), resolve(dist, 'locales'), { recursive: true })
 
 // Browser bundle for the P2.5 read-only monitor page.
 await build({
