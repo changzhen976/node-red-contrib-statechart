@@ -1,0 +1,184 @@
+<style>
+  .scxml-source {
+    width: 100%;
+    min-height: 220px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.45;
+    white-space: pre;
+  }
+  .scxml-help code { font-size: 12px; }
+</style>
+
+<script type="text/javascript">
+  function fillScxmlMachineSelect($select, current) {
+    $select.empty();
+    $select.append($('<option>').val('').text('-- select machine --'));
+    RED.nodes.eachConfig(function (n) {
+      if (n.type === 'scxml-machine') {
+        $select.append($('<option>').val(n.id).text(n.name || n.id));
+      }
+    });
+    $select.val(current || '');
+  }
+
+  RED.nodes.registerType('scxml-machine', {
+    category: 'config',
+    color: '#7c3aed',
+    defaults: {
+      name: { value: 'state machine' },
+      source: { value: '' },
+      engine: { value: 'sandboxed' },
+      scriptTimeoutMs: { value: 500, validate: RED.validators.number() },
+      maxMicrosteps: { value: 10000, validate: RED.validators.number() }
+    },
+    label: function () {
+      return this.name || 'scxml machine';
+    },
+    inputs: 0,
+    outputs: 0
+  });
+
+  RED.nodes.registerType('scxml-in', {
+    category: 'state machine',
+    color: '#0ea5e9',
+    defaults: {
+      name: { value: '' },
+      machine: { value: '', type: 'scxml-machine' },
+      eventSource: { value: 'topic' },
+      fixedEvent: { value: '' }
+    },
+    label: function () {
+      return this.name || 'scxml in';
+    },
+    inputs: 1,
+    outputs: 0,
+    oneditprepare: function () {
+      fillScxmlMachineSelect($('#node-input-machine'), this.machine);
+    }
+  });
+
+  RED.nodes.registerType('scxml-out', {
+    category: 'state machine',
+    color: '#16a34a',
+    defaults: {
+      name: { value: '' },
+      machine: { value: '', type: 'scxml-machine' },
+      includeVars: { value: true },
+      emitInitial: { value: true },
+      includeInternalSends: { value: false }
+    },
+    label: function () {
+      return this.name || 'scxml out';
+    },
+    inputs: 0,
+    outputs: 2,
+    oneditprepare: function () {
+      fillScxmlMachineSelect($('#node-input-machine'), this.machine);
+    }
+  });
+</script>
+
+<script type="text/html" data-template-name="scxml-machine">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="state machine">
+  </div>
+  <div class="form-row">
+    <label for="node-input-source"><i class="fa fa-code"></i> SCXML</label>
+    <textarea id="node-input-source" class="scxml-source" placeholder="Paste an SCXML document"></textarea>
+  </div>
+  <div class="form-row">
+    <label for="node-input-engine"><i class="fa fa-shield"></i> Engine</label>
+    <select id="node-input-engine">
+      <option value="sandboxed">sandboxed (QuickJS)</option>
+      <option value="trusted">trusted (host JS, trusted charts only)</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label for="node-input-scriptTimeoutMs"><i class="fa fa-clock-o"></i> Script timeout (ms)</label>
+    <input type="number" id="node-input-scriptTimeoutMs" min="1" placeholder="500">
+  </div>
+  <div class="form-row">
+    <label for="node-input-maxMicrosteps"><i class="fa fa-repeat"></i> Max microsteps</label>
+    <input type="number" id="node-input-maxMicrosteps" min="1" placeholder="10000">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="scxml-machine">
+  <p>Defines an SCXML state machine. One config node owns one session; all
+  <code>scxml-in</code> and <code>scxml-out</code> nodes referencing it share that session.</p>
+  <p>The SCXML text is parsed and compiled in Node.js. The default <b>sandboxed</b>
+  engine uses QuickJS with script timeouts and a memory limit; <b>trusted</b> runs
+  chart expressions in the Node.js realm and is only for charts you trust.</p>
+  <p>State changes are published to <code>scxml-out</code> nodes. Active states are
+  always reported as an array; parallel machines may have several active states.</p>
+</script>
+
+<script type="text/html" data-template-name="scxml-in">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="event in">
+  </div>
+  <div class="form-row">
+    <label for="node-input-machine"><i class="fa fa-cog"></i> Machine</label>
+    <select id="node-input-machine"></select>
+  </div>
+  <div class="form-row">
+    <label for="node-input-eventSource"><i class="fa fa-bolt"></i> Event name from</label>
+    <select id="node-input-eventSource">
+      <option value="topic">msg.topic</option>
+      <option value="msg.event">msg.event</option>
+      <option value="payload">msg.payload (string)</option>
+      <option value="fixed">fixed event</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label for="node-input-fixedEvent"><i class="fa fa-pencil"></i> Fixed event</label>
+    <input type="text" id="node-input-fixedEvent" placeholder="only used when source is fixed">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="scxml-in">
+  <p>Turns an incoming message into an SCXML event. <code>msg.payload</code> becomes
+  the event data (it must be JSON-serializable).</p>
+  <p>The event name comes from <code>msg.topic</code>, <code>msg.event</code>, a string
+  payload, or a fixed value. An empty event name is reported as an error rather than
+  silently dropped.</p>
+  <p>This node has no outputs in P0. Connect <code>scxml-out</code> to the same machine
+  to observe state changes.</p>
+</script>
+
+<script type="text/html" data-template-name="scxml-out">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="state out">
+  </div>
+  <div class="form-row">
+    <label for="node-input-machine"><i class="fa fa-cog"></i> Machine</label>
+    <select id="node-input-machine"></select>
+  </div>
+  <div class="form-row">
+    <label for="node-input-includeVars"><i class="fa fa-table"></i> Include variables</label>
+    <input type="checkbox" id="node-input-includeVars">
+  </div>
+  <div class="form-row">
+    <label for="node-input-emitInitial"><i class="fa fa-play"></i> Emit initial state</label>
+    <input type="checkbox" id="node-input-emitInitial">
+  </div>
+  <div class="form-row">
+    <label for="node-input-includeInternalSends"><i class="fa fa-envelope"></i> Include internal sends</label>
+    <input type="checkbox" id="node-input-includeInternalSends">
+  </div>
+  <p style="margin-left: 130px; color: #888;">Output 1: state. Output 2: chart &lt;send&gt; events.</p>
+</script>
+
+<script type="text/html" data-help-name="scxml-out">
+  <p>Subscribes to a machine. Output 1 carries the active state(s) and, optionally,
+  the variable snapshot. Output 2 carries chart <code>&lt;send&gt;</code> events.</p>
+  <p>State output: <code>msg.payload</code> is a string for one active state and an
+  array for parallel machines; <code>msg.states</code> is always an array. With
+  <b>Include variables</b>, <code>msg.vars</code> contains declared variables.</p>
+  <p>Internal sends (delayed transitions and <code>target="#_internal"</code>) are
+  filtered by default. Enable <b>Include internal sends</b> only for debugging.</p>
+</script>

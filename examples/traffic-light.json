@@ -1,0 +1,113 @@
+[
+  {
+    "id": "tab-scxml-p0",
+    "type": "tab",
+    "label": "SCXML P0",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "scxml-conf-traffic",
+    "type": "scxml-machine",
+    "z": "tab-scxml-p0",
+    "name": "Traffic Light",
+    "source": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<scxml xmlns=\"http://www.w3.org/2005/07/scxml\" version=\"1.0\" datamodel=\"ecmascript\" initial=\"red\">\n  <datamodel>\n    <data id=\"cycles\" expr=\"0\"/>\n  </datamodel>\n  <state id=\"red\">\n    <onentry><assign location=\"cycles\" expr=\"cycles + 1\"/></onentry>\n    <transition event=\"next\" target=\"green\"/>\n  </state>\n  <state id=\"green\">\n    <transition event=\"next\" target=\"yellow\"/>\n  </state>\n  <state id=\"yellow\">\n    <transition event=\"next\" target=\"red\"/>\n  </state>\n</scxml>\n",
+    "engine": "sandboxed",
+    "scriptTimeoutMs": 500,
+    "maxMicrosteps": 10000,
+    "x": 160,
+    "y": 120,
+    "wires": []
+  },
+  {
+    "id": "inject-next",
+    "type": "inject",
+    "z": "tab-scxml-p0",
+    "name": "next",
+    "props": [
+      {
+        "p": "topic",
+        "vt": "str",
+        "v": "next"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "next",
+    "x": 120,
+    "y": 220,
+    "wires": [
+      [
+        "scxml-in-next"
+      ]
+    ]
+  },
+  {
+    "id": "scxml-in-next",
+    "type": "scxml-in",
+    "z": "tab-scxml-p0",
+    "name": "next",
+    "machine": "scxml-conf-traffic",
+    "eventSource": "topic",
+    "fixedEvent": "",
+    "x": 330,
+    "y": 220,
+    "wires": []
+  },
+  {
+    "id": "scxml-out-state",
+    "type": "scxml-out",
+    "z": "tab-scxml-p0",
+    "name": "state",
+    "machine": "scxml-conf-traffic",
+    "includeVars": true,
+    "emitInitial": true,
+    "includeInternalSends": false,
+    "x": 330,
+    "y": 320,
+    "wires": [
+      [
+        "debug-state"
+      ],
+      [
+        "debug-events"
+      ]
+    ]
+  },
+  {
+    "id": "debug-state",
+    "type": "debug",
+    "z": "tab-scxml-p0",
+    "name": "state",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 560,
+    "y": 300,
+    "wires": []
+  },
+  {
+    "id": "debug-events",
+    "type": "debug",
+    "z": "tab-scxml-p0",
+    "name": "chart send",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 560,
+    "y": 360,
+    "wires": []
+  }
+]

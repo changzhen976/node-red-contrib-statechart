@@ -1,0 +1,10 @@
+node-red-contrib-scxmljs
+Copyright (c) 2026 The node-red-contrib-scxmljs authors
+Licensed under the MIT License. See LICENSE.
+
+Third-party software
+--------------------
+- @tinyactors/scxmljs (MIT) — W3C SCXML 1.0 interpreter used as the runtime engine.
+- @xmldom/xmldom (MIT) — XML parser used to parse SCXML in Node.js.
+- scxml-creator (MIT) — the sibling project whose ProjectDoc model, serializer and
+  validator will be vendored in P1. This P0 does not include its source code.
