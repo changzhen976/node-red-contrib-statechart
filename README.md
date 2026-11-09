@@ -2,7 +2,7 @@
 
 > 在 Node-RED 流程中嵌入 SCXML 状态机：配置状态、变量和转移条件，以消息驱动，输出当前状态与变量。
 
-**当前阶段：P0 + P2.5 + P1 + P2 完成；P3 发布检查进行中（2026-11-09）。** 已实现包骨架、CJS 构建、三节点、只读实时状态图、完整运行时 MVP，以及状态/转移/变量三张表的原生 Node-RED 编辑器。
+**当前阶段：P0 + P2.5 + P1 + P2 完成；P3 发布检查进行中（Node 22.9/24 已通过，待发布决策）。** 已实现包骨架、CJS 构建、三节点、只读实时状态图、完整运行时 MVP，以及状态/转移/变量三张表的原生 Node-RED 编辑器。
 
 **复核结论：有条件 Go。** 运行时路线已在 Node-RED 5.0.9 上跑通；G1（重部署不恢复活跃状态）已接受；G2 的 donor LICENSE 与 `license` 字段已补并提交（donor commit `b3dfef6`）。实时状态通过节点状态和 `scxml-out` 消息输出；图形化只读状态图已选 P2.5 方案 B（独立监控页 + 编辑器侧栏 iframe），不是可编辑画布。详见 [可行性计划](docs/feasibility-plan.md)。
 
@@ -260,6 +260,7 @@ npm run test:browser
 - [可行性计划](docs/feasibility-plan.md)（v1.0，2026-11-09，当前决策依据）
 - [可行性评估](docs/assessment.md)（2026-11-06，历史评估）
 - [实施计划](docs/plan.md)（v0.1，2026-11-06，任务细节）
+- [发布检查清单](docs/release-checklist.md)（2026-11-09，未发布）
 - [P4 独立编辑器设计](docs/p4-standalone-editor.md)（2026-11-09，草案）
 - [示例说明](examples/README.md)（2026-11-09）
 - [验证脚本](spike/)（一次性 spike，不属于发布包）
@@ -281,7 +282,8 @@ npm run test:browser
 - [x] P2：actions 结构化编辑（send/cancel/assign/log/script）
 - [x] P2：浏览器回归（中文 UI、三表、actions、重复 id 校验）
 - [x] P3：示例 suite（6 tab / 8 机器）+ 示例自动校验
-- [ ] P3 剩余：Node 22.9 矩阵、发布决策/执行 ← 下一步
+- [x] P3：Node 22.9 / Node 24 矩阵、release:check、CHANGELOG
+- [ ] P3 剩余：版本/`private`/npm 发布决策 ← 下一步
 - [ ] P4（可选）：独立全屏编辑器，见 [设计草案](docs/p4-standalone-editor.md)
 
 ## 许可

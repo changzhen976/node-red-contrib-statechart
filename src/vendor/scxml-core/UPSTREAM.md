@@ -8,3 +8,4 @@
 Files: `model.ts`, `serializer.ts`, `action-parse.ts`, `validator.ts`, `naming.ts`, `scxml-import.ts`.
 
 Do not edit these files by hand. Update the donor and re-run the sync script.
+Local patch: validator.ts uses dynamic import so Node 22.9 CJS does not require() an ESM entry.
