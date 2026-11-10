@@ -65,11 +65,28 @@ for (const entry of await readdir(resolve(root, 'dist'), { recursive: true })) {
 }
 missing.push(...leaked)
 
-// The standalone editor must not advertise the donor project.
+// The standalone editor must not advertise the donor project, and neither the
+// editor nor the node form may explain donor-only features (globals registry,
+// MQTT bridge, server clock, system events) that this package does not ship.
+const DONOR_TEXT = [
+  'scxmljs-creator',
+  'gv_ 为全局变量前缀',
+  'mqv_ 表示 MQTT',
+  'ge_/mqe_ 为事件前缀',
+  '开头时绑定全局变量',
+  'sys. 为系统保留前缀',
+]
 for (const entry of await readdir(resolve(root, 'dist/editor-app'), { recursive: true })) {
   if (!/\.(js|mjs|css|html|json)$/.test(entry)) continue
   const text = await readFile(resolve(root, 'dist/editor-app', entry), 'utf8').catch(() => '')
-  if (text.includes('scxmljs-creator')) missing.push(`dist/editor-app/${entry}: donor brand name still present`)
+  for (const needle of DONOR_TEXT) {
+    if (text.includes(needle)) missing.push(`dist/editor-app/${entry}: donor naming copy still present ("${needle}")`)
+  }
+}
+
+const nodeForm = await readFile(resolve(root, 'dist/statechart.html'), 'utf8')
+for (const needle of ['gv_', 'mqv_']) {
+  if (nodeForm.includes(needle)) missing.push(`dist/statechart.html: donor variable prefix "${needle}" still present`)
 }
 
 console.log(JSON.stringify({

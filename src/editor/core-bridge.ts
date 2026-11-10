@@ -18,7 +18,6 @@ import {
 import { serializeToScxml } from '../vendor/scxml-core/serializer'
 import { scxmlToDoc } from '../vendor/scxml-core/scxml-import'
 import { actionToLine, parseActionLine } from '../vendor/scxml-core/action-parse'
-import { checkEventName, checkVarName } from '../vendor/scxml-core/naming'
 import { validateDoc } from './validate-doc'
 
 ;(globalThis as any).SCXMLCore = {
@@ -34,8 +33,6 @@ import { validateDoc } from './validate-doc'
   scxmlToDoc,
   actionToLine,
   parseActionLine,
-  checkEventName,
-  checkVarName,
   validateDoc,
   type: {} as ProjectDoc,
 }

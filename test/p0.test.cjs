@@ -493,4 +493,16 @@ test('ships statechart types, palette labels and a custom icon', () => {
   assert.ok(standalone.includes('dock the Node-RED bar'), 'standalone bar must reserve layout space')
   assert.ok(standalone.includes('100dvh - 44px'))
   assert.ok(standalone.includes('.toolbar .exit-btn'), 'donor exit button should be hidden in Node-RED mode')
+  assert.ok(standalone.includes('MutationObserver'), 'donor service/API entry points should be hidden')
+
+  // Donor-only concepts must not leak into the node form or the variable help.
+  assert.ok(!html.includes('gv_'), 'node form must not ship the donor global-variable prefix')
+  assert.ok(!html.includes('mqv_'), 'node form must not ship the donor MQTT variable prefix')
+  const spaAsset = /src="\.\/assets\/(index-[^"]+\.js)"/.exec(standalone)
+  assert.ok(spaAsset, 'standalone editor bundle should be referenced from index.html')
+  const spaBundle = fs.readFileSync(path.join(root, 'dist', 'editor-app', 'assets', spaAsset[1]), 'utf8')
+  assert.ok(spaBundle.includes('所有变量都是本机变量'), 'variable help should describe local variables only')
+  assert.ok(!spaBundle.includes('开头时绑定全局变量'), 'variable help must not describe a globals registry')
+  assert.ok(!spaBundle.includes('mqv_ 表示 MQTT'), 'variable rules must not describe an MQTT bridge')
+  assert.ok(!spaBundle.includes('ge_/mqe_ 为事件前缀'), 'variable rules must not describe broadcast/MQTT events')
 })
