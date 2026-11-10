@@ -7,7 +7,7 @@
 
 当前已经具备三个前提：
 
-- 运行时以 `ProjectDoc` 为源（`scxml-machine.doc`），不依赖编辑器 UI；
+- 运行时以 `ProjectDoc` 为源（`statechart-machine.doc`），不依赖编辑器 UI；
 - vendor core 已包含 model / serializer / scxml-import / action-parse；
 - Node-RED 编辑器与页面同源，可以用 `postMessage` 传递 `ProjectDoc`，不需要页面直接改 Node-RED 内部状态。
 
@@ -29,8 +29,8 @@
 
 ```text
 Node-RED editor
-  scxml-machine 配置窗口
-    [打开完整编辑器]  ── window.open ──►  /scxmljs/editor?id=<configNodeId>
+  statechart-machine 配置窗口
+    [打开完整编辑器]  ── window.open ──►  /statechart/editor/?id=<configNodeId>
                                              │
                                              │ postMessage
                                              ▼
@@ -47,9 +47,9 @@ Node-RED editor
 
 ### 页面与路由
 
-- `RED.httpAdmin.get('/scxmljs/editor', ...)` 返回静态 SPA（或单独静态服务）。
+- `RED.httpAdmin.get('/statechart/editor', ...)` 返回静态 SPA（或单独静态服务）。
 - 资源与监控页同源，避免 CORS；路径统一走 `RED.settings.httpAdminRoot`。
-- 从 `scxml-machine` 配置窗口增加按钮：
+- 从 `statechart-machine` 配置窗口增加按钮：
   - `window.open(url, '_blank', 'noopener=no')` 需要拿到 opener 引用；
   - 更稳妥：`const win = window.open(url, '_blank')`，页面 `postMessage` 回来。
 - 独立页面打开（没有 opener）时：
@@ -108,7 +108,7 @@ Node-RED editor
 
 | 阶段 | 内容 | 估算 |
 |---|---|---|
-| P4.1 | creator 静态构建 + `/scxmljs/editor` + 打开按钮 + postMessage load/save | 1–2 会话 |
+| P4.1 | creator 静态构建 + `/statechart/editor` + 打开按钮 + postMessage load/save | 1–2 会话 |
 | P4.2 | 三栏/画布/属性面板接入，doc 往返，多机选择 | 1–2 会话 |
 | P4.3 | 校验/错误定位、i18n、浏览器自动化、与 P2 表单互操作 | 0.5–1 会话 |
 
@@ -123,7 +123,7 @@ Node-RED editor
 ## 6. 实现状态（2026-11-09）
 
 - `editor-app/`：scxml-creator 静态构建（donor `05d2fa9`）；
-- `src/runtime/monitor.ts`：`/scxmljs/editor/` 静态路由；首页需要 capability token（`/scxmljs/token`），静态 assets 公开；
+- `src/runtime/monitor.ts`：`/statechart/editor/` 静态路由；首页需要 capability token（`/statechart/token`），静态 assets 公开；
 - `editor/scxml.html`：配置窗口「打开完整编辑器」按钮；
 - `src/nodered-bridge.ts`（donor）：`nodered=1` 模式接收/回传 ProjectDoc；
 - 浏览器回归：`npm run test:p4`，验证加载 3 状态、机器选择器（Traffic Light / test chart）并回写父窗口 `node.doc`。
@@ -135,3 +135,13 @@ P4.3 已完成多机选择、页面锁定 `#/editor`、Ctrl/Cmd+S 保存、capab
 **已实现：独立页面可行，且比在 Node-RED tray 内做画布更合理。**
 推荐先做 **P4.1 + P4.2（复用 creator SPA）**；如果 Vue/Fastify 解耦成本过高，再退回“专用 Vue 页面”。
 当前 P2 原生三张表继续保留，作为快速编辑和 P4 不可用时的 fallback。
+
+> 2026-11-10：配置窗口的“打开完整编辑器”已提升到顶部主按钮；独立页面标题由构建期覆盖为 `State chart editor — Node-RED`，不改 donor 源文件。
+
+### 已知问题与整改（2026-11-10）
+
+**悬浮栏遮挡**：donor 的 `nodered-bridge.ts` 把 Node-RED 状态栏固定定位在左下角，且页面 `#app` 占满 100% 高度，没有预留空间。已在构建期向 `dist/editor-app/index.html` 注入 CSS：状态栏改为底部全宽 44px 停靠，`#app` 高度改为 `calc(100dvh - 44px)`，长提示单行省略；不修改 donor 源文件。
+
+**“退出编辑”无响应**：`Toolbar.vue` 的“退出编辑”走 `service.exitEditor()`；Node-RED 模式下 bridge 只加载 `ProjectDoc`，从未调用 `service.openInEditor()`，所以 `service.machineId` 为空，`exitEditor()` 直接返回 `/`。`App.vue` 随即把 hash 改为 `/`，但 `nodered-bridge.ts` 的 `lockToEditor()` 会在 `hashchange` 时强制切回 `#/editor`，因此表现为“点了没反应”，也不会出现未保存三选对话框。
+
+处理：0.1.x 已在构建期注入 `.toolbar .exit-btn { display: none !important; }`，在 Node-RED 模式隐藏该按钮；底部状态栏的“关闭”保留。更完整的 donor 处理留给 0.2。

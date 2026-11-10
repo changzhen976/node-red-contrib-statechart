@@ -9,5 +9,5 @@
   ```
 - Copied from `../scxml-creator/dist/` into this directory.
 - Do not hand-edit this directory; rebuild the donor SPA and copy again.
-- Runtime entry: Node-RED `httpAdmin` `/scxmljs/editor/`.
+- Runtime entry: Node-RED `httpAdmin` `/statechart/editor/`.
 - Mode: `?nodered=1&id=<configNodeId>&lang=zh-CN`; receives/sends ProjectDoc via postMessage.

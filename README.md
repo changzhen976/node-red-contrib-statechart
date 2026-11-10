@@ -1,4 +1,4 @@
-# node-red-contrib-scxmljs
+# @changzhen976/node-red-contrib-statechart
 
 [English](README.en.md) · **简体中文**
 
@@ -6,7 +6,9 @@
 ![Node.js >=22.9](https://img.shields.io/badge/Node.js-%3E%3D22.9-green)
 ![License MIT](https://img.shields.io/badge/license-MIT-blue)
 
-在 Node-RED 流程中嵌入 SCXML 状态机：用消息驱动状态变化，用状态和变量驱动后续流程。
+在 Node-RED 中用可视化状态机（state chart）编排事件驱动逻辑：用消息驱动状态变化，用状态和变量驱动后续流程。
+
+默认全程 GUI 编辑，不需要手写 XML；需要时可导入/导出 SCXML 1.0，交给标准引擎执行。
 
 ## 功能
 
@@ -32,7 +34,7 @@
 ## 安装
 
 ```sh
-npm install node-red-contrib-scxmljs
+npm install @changzhen976/node-red-contrib-statechart
 ```
 
 > 当前尚未发布到 npm。发布前可使用 `npm pack` 生成的 tgz 安装：
@@ -40,7 +42,7 @@ npm install node-red-contrib-scxmljs
 ```sh
 npm pack
 cd ~/.node-red
-npm install /path/to/node-red-contrib-scxmljs-<version>.tgz
+npm install /path/to/changzhen976-node-red-contrib-statechart-<version>.tgz
 ```
 
 重启 Node-RED 后，左侧节点面板会出现 **状态机** 分类。
@@ -59,15 +61,15 @@ npm install /path/to/node-red-contrib-scxmljs-<version>.tgz
 
 | 节点 | 类型 | 作用 |
 |---|---|---|
-| `scxml-machine` | config node | 保存状态机文档，持有独立会话和事件总线 |
-| `scxml-in` | 输入节点 | 把消息转换成 SCXML 事件，或执行 `set/reset` 命令 |
-| `scxml-out` | 输出节点 | 输出状态/变量、图内 `<send>` 事件和运行错误 |
+| `statechart-machine` | config node | 保存状态机文档，持有独立会话和事件总线 |
+| `statechart-in` | 输入节点 | 把消息转换成状态机事件，或执行 `set/reset` 命令 |
+| `statechart-out` | 输出节点 | 输出状态/变量、图内 `<send>` 事件和运行错误 |
 
-`scxml-machine` 是 config node，不在左侧 palette 中。添加 `scxml-in` 或 `scxml-out` 后，在 **Machine** 下拉右侧点 **＋** 即可新建；每个 machine 是独立会话。
+`statechart-machine` 是 config node，不在左侧 palette 中。添加 `statechart-in` 或 `statechart-out` 后，在 **Machine** 下拉右侧点 **＋** 即可新建；每个状态机是独立会话。
 
 ## 编辑状态机
 
-打开 `scxml-machine` 配置窗口可使用三张表：
+打开 `statechart-machine` 配置窗口可使用三张表：
 
 - **States**：id、kind、parent、initial、entry/exit actions；
 - **Transitions**：source、target、event、condition、actions、delay；
@@ -75,7 +77,7 @@ npm install /path/to/node-red-contrib-scxmljs-<version>.tgz
 
 支持添加/删除、父/子状态选择、根 initial、结构化 actions 编辑和实时结构校验；高级区可编辑原始 SCXML 或 ProjectDoc JSON。
 
-配置窗口还提供 **打开完整编辑器**：在新标签页打开全屏 Vue 编辑器，可切换所有 state machine，编辑后通过 **保存到 Node-RED** 回写，再回到 Node-RED 点 Update/Deploy。
+配置窗口还提供 **打开完整编辑器**：在新标签页打开全屏 Vue 编辑器，可切换所有状态图（state chart），编辑后通过 **保存到 Node-RED** 回写，再回到 Node-RED 点 Update/Deploy。
 
 ## 输入命令
 
@@ -90,7 +92,7 @@ npm install /path/to/node-red-contrib-scxmljs-<version>.tgz
 
 ## 输出
 
-`scxml-out` 有两个输出：
+`statechart-out` 有两个输出：
 
 ```js
 // 输出 1：状态
@@ -138,6 +140,10 @@ msg.topic
 
 监控和完整编辑器使用 capability token；静态资源公开，monitor 页面、编辑器首页和 API 需要 token。默认建议只在可信网络中使用。
 
+## 与 SCXML 的关系
+
+默认工作流完全在 GUI 中完成，不需要接触 XML。运行时会把状态机序列化为 SCXML 1.0，交给 `@tinyactors/scxmljs` 引擎；高级区、导入/导出仍保留 SCXML 读写能力，便于与其他 SCXML 工具互通或排障。
+
 ## 兼容性
 
 | 项 | 目标 |
@@ -159,7 +165,7 @@ npm run verify:all
 浏览器回归需要 Firefox、geckodriver 和运行中的 Node-RED：
 
 ```sh
-SCXML_BROWSER=1 GECKODRIVER=/path/to/geckodriver \
+STATECHART_BROWSER=1 GECKODRIVER=/path/to/geckodriver \
   NODERED_URL=http://localhost:1880/ npm run verify:all
 ```
 
@@ -169,6 +175,7 @@ SCXML_BROWSER=1 GECKODRIVER=/path/to/geckodriver \
 - [资源消耗评估](docs/resource-profile.md)
 - [完整编辑器设计](docs/p4-standalone-editor.md)
 - [发布检查清单](docs/release-checklist.md)
+- [命名与图标评估](docs/naming-assessment.md)
 
 ## 许可
 
