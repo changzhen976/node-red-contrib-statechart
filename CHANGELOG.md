@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.2 — 2026-11-10
+
+### Fixed
+
+- The standalone editor no longer shows the donor project's name in its toolbar: the
+  brand reads **State chart** and its stored UI state uses the `statechart:` key prefix.
+- The monitor page no longer repeats its title when embedded in the Node-RED sidebar;
+  only the machine selector, zoom, refresh and status controls remain.
+
 ## 0.1.0 — 2026-11-10
 
 First public release.
