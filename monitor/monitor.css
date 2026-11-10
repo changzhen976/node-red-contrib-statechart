@@ -177,7 +177,8 @@ main {
 }
 
 body.embed .bar { padding: 5px 8px; }
-body.embed .brand-sub { display: none; }
+/* The Node-RED sidebar tab already shows this title; keep only the controls. */
+body.embed .brand { display: none; }
 body.embed #zoom { width: 74px; }
 
 /*
