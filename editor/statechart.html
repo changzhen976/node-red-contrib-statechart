@@ -683,20 +683,25 @@
       } else if (data.type === 'scxml:save' && data.doc) {
         var targetId = data.id || node.id;
         var target = RED.nodes.node ? RED.nodes.node(targetId) : null;
-        if (!target || target.type !== 'statechart-machine') return;
-        target.doc = JSON.stringify(data.doc);
+        // A brand-new machine config node is not registered in RED.nodes until
+        // the dialog is confirmed, so fall back to the dialog's own object.
+        var isEditingSelf = targetId === node.id;
+        if (!target && !isEditingSelf) return;
+        if (target && target.type !== 'statechart-machine') return;
+        var machine = target || node;
+        machine.doc = JSON.stringify(data.doc);
         try {
-          target.source = c.serializeToScxml(data.doc);
+          machine.source = c.serializeToScxml(data.doc);
         } catch (err) {
           // Keep the previous source; doc remains authoritative.
         }
-        if (targetId === node.id) {
+        if (isEditingSelf) {
           node._scxmlEditor = node._scxmlEditor || {};
           node._scxmlEditor.doc = c.normalizeDoc(JSON.parse(JSON.stringify(data.doc)));
           if (typeof scxmlPrepareMachineEditor === 'function') scxmlPrepareMachineEditor(node);
         }
         if (RED.nodes && RED.nodes.dirty) RED.nodes.dirty(true);
-        notify(targetId === node.id ? t('message.savedFromFullEditor') : (target.name || targetId), 'success');
+        notify(isEditingSelf ? t('message.savedFromFullEditor') : (machine.name || targetId), 'success');
         if (p4Window && !p4Window.closed) p4Window.postMessage({ type: 'scxml:save-ack', ok: true }, location.origin);
       }
     };

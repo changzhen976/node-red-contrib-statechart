@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.3 — 2026-11-10
+
+### Fixed
+
+- "Save to Node-RED" from the standalone editor now also lands in a **brand-new**
+  machine dialog. The config node is not registered in `RED.nodes` until the dialog is
+  confirmed, so the save used to be dropped silently (and no "sent" confirmation was
+  shown). Existing-machine edits are unchanged.
+
 ## 0.1.2 — 2026-11-10
 
 ### Fixed
