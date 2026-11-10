@@ -127,8 +127,18 @@ async function poll() {
   }
 }
 
+function syncSelectedId(id) {
+  try {
+    const url = new URL(window.location.href)
+    if (id) url.searchParams.set('id', id)
+    else url.searchParams.delete('id')
+    history.replaceState(null, '', url)
+  } catch { /* ignore */ }
+}
+
 async function selectMachine(id) {
   selectedId = id || ''
+  syncSelectedId(selectedId)
   lastState = null
   lastVersion = ''
   clearHighlight()
@@ -150,7 +160,10 @@ async function selectMachine(id) {
 async function loadMachines() {
   try {
     machines = await json(apiBase)
-    const current = new URLSearchParams(window.location.search).get('id')
+    // Keep the user's current selection across Refresh. The URL id is only
+    // the initial entry point; selecting a machine updates both selectedId
+    // and the URL.
+    const current = selectedId || new URLSearchParams(window.location.search).get('id')
     select.innerHTML = ''
     if (!machines.length) {
       showEmpty('没有已部署的 scxml-machine')

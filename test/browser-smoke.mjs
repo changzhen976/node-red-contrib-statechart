@@ -101,6 +101,17 @@ async function main() {
     assert.ok(ui.vars >= 1, 'expected at least one variable')
     assert.equal(ui.errorVisible, false, 'valid traffic machine should have no errors')
 
+    await execute(`RED.sidebar.show('context'); return true`)
+    await sleep(400)
+    await execute(`RED.sidebar.show('scxml-monitor'); return true`)
+    await sleep(400)
+    const sidebarUi = await execute(`return {
+      banner: Array.from(document.querySelectorAll('.red-ui-sidebar-banner-label')).filter((e) => e.offsetParent !== null).map((e) => e.innerText),
+      icon: (document.querySelector('button[data-tab-id="scxml-monitor"] i') || {}).className || '',
+    }`)
+    assert.ok(sidebarUi.banner.includes('状态机监控'), 'sidebar banner should switch to 状态机监控')
+    assert.match(sidebarUi.icon, /fa-sitemap/)
+
     await execute(`document.querySelector('#node-config-input-open-sidebar').click(); return true`)
     await sleep(1200)
     const monitorSrc = await execute(`return Array.from(document.querySelectorAll('iframe')).map((f) => f.src).find((src) => src.includes('/scxmljs/monitor')) || ''`)

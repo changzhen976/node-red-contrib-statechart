@@ -80,6 +80,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 12px;
   padding: 8px 12px;
   background: var(--panel);
@@ -95,8 +96,9 @@ body {
 .brand strong { font-size: 13px; letter-spacing: .01em; }
 .brand-sub { display: block; color: var(--muted); font-size: 11px; }
 
-.controls { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.controls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-width: 0; }
 select, button {
+  box-sizing: border-box;
   background: var(--surface-2);
   color: var(--text);
   border: 1px solid var(--border-2);
@@ -123,12 +125,14 @@ button:hover { border-color: var(--accent); }
 main {
   position: relative;
   flex: 1;
+  min-width: 0;
   min-height: 0;
   overflow: hidden;
 }
 
 #view {
   display: block;
+  min-width: 0;
   width: 100%;
   height: 100%;
   --scxml-height: 100%;
@@ -175,6 +179,35 @@ main {
 body.embed .bar { padding: 5px 8px; }
 body.embed .brand-sub { display: none; }
 body.embed #zoom { width: 74px; }
+
+/*
+ * Narrow sidebars: keep the controls in a balanced two-row grid instead of
+ * letting every control wrap onto its own line. DOM order is unchanged:
+ *   row 1: machine + zoom
+ *   row 2: refresh + status
+ */
+@media (max-width: 520px) {
+  .bar { align-items: flex-start; }
+  .brand { flex: 1 1 100%; }
+  .controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 74px;
+    grid-auto-rows: minmax(30px, auto);
+    width: 100%;
+    gap: 6px 8px;
+  }
+  #machine { grid-column: 1; width: 100%; max-width: none; }
+  #zoom { grid-column: 2; width: 74px; }
+  #refresh { grid-column: 1; width: max-content; }
+  .status {
+    grid-column: 2;
+    max-width: none;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
 
 .status { max-width: 34vw; }
 body.embed .vars { max-width: 80vw; }

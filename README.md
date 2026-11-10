@@ -2,7 +2,7 @@
 
 [English](README.en.md) · **简体中文**
 
-![Node-RED 5.x](https://img.shields.io/badge/Node--RED-5.x-red)
+![Node-RED 5.x](https://img.shields.io/badge/Node--RED-5.x-brightgreen)
 ![Node.js >=22.9](https://img.shields.io/badge/Node.js-%3E%3D22.9-green)
 ![License MIT](https://img.shields.io/badge/license-MIT-blue)
 

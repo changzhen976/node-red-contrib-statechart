@@ -103,6 +103,17 @@
   .scxml-table tr.scxml-row-warning textarea { border-color: #d97706 !important; }
 
 
+
+  /* Keep the sidebar drag handle above the monitor iframe, and allow the
+     sidebar content to shrink below its intrinsic content width. */
+  #red-ui-sidebar-separator { z-index: 20; }
+  #red-ui-sidebar-separator .red-ui-sidebar-separator-handle { width: 14px; }
+  #red-ui-sidebar .red-ui-sidebar-content,
+  #red-ui-sidebar .red-ui-sidebar-section { min-width: 0; }
+  #red-ui-sidebar iframe { display: block; min-width: 0; }
+  /* While dragging the divider, stop the monitor iframe from swallowing
+     mousemove events as the pointer enters the sidebar. */
+  body.scxml-sidebar-resizing #red-ui-sidebar iframe { pointer-events: none !important; }
 </style>
 
 <!-- SCXML_CORE_INLINE -->
@@ -225,16 +236,29 @@
     var scxmlSidebarFrame = $('<iframe>')
       .attr('title', scxmlI18n('sidebar.title'))
       .attr('src', 'about:blank')
-      .css({ border: '0', width: '100%', height: '100%' });
+      .css({ border: '0', width: '100%', height: '100%', minWidth: 0, display: 'block' });
     var monitorContent = $('<div>')
-      .css({ height: '100%', width: '100%', overflow: 'hidden' })
+      .css({ height: '100%', width: '100%', minWidth: 0, overflow: 'hidden' })
       .append(scxmlSidebarFrame);
     RED.sidebar.addTab({
       id: 'scxml-monitor',
       label: scxmlI18n('sidebar.label'),
-      icon: 'fa fa-project-diagram',
+      name: scxmlI18n('sidebar.title'),
+      iconClass: 'fa fa-sitemap',
       content: monitorContent,
       onchange: function () {}
+    });
+    $(document)
+      .off('mousedown.scxmlSidebarResize')
+      .on('mousedown.scxmlSidebarResize', '#red-ui-sidebar-separator', function () {
+        $('body').addClass('scxml-sidebar-resizing');
+      })
+      .off('mouseup.scxmlSidebarResize pointerup.scxmlSidebarResize')
+      .on('mouseup.scxmlSidebarResize pointerup.scxmlSidebarResize', function () {
+        $('body').removeClass('scxml-sidebar-resizing');
+      });
+    $(window).off('blur.scxmlSidebarResize').on('blur.scxmlSidebarResize', function () {
+      $('body').removeClass('scxml-sidebar-resizing');
     });
     scxmlFetchToken();
   }

@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Fixed
+
+- Preserve the selected state machine when refreshing the monitor view.
+- Keep the sidebar resize handle above the monitor iframe and disable iframe pointer events while dragging so the preview can be narrowed.
+- Use a green Node-RED 5.x compatibility badge in the bilingual READMEs.
+
+- Sidebar tab now uses a valid `iconClass` and updates its banner title when switching tabs.
+- Monitor controls use a balanced 2×2 grid on narrow sidebars instead of clipping.
+
 ### Added
 
 - Capability token for monitor/standalone editor routes and APIs.
