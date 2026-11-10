@@ -1,0 +1,63 @@
+name: Bug report
+description: Something in the state chart nodes, editor or monitor does not work
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. A minimal flow export (or the machine JSON) helps a lot —
+        remove anything private before pasting it.
+  - type: input
+    id: package-version
+    attributes:
+      label: Package version
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Node-RED and Node.js versions
+      placeholder: Node-RED 5.0.9 on Node.js 24.22
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Runtime (statechart-machine / in / out)
+        - Editor form
+        - Standalone editor
+        - Monitor / sidebar
+        - Build, packaging or install
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Import examples/traffic-light.json
+        2. Deploy and send "next"
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour and logs
+      render: shell
+  - type: textarea
+    id: flow
+    attributes:
+      label: Flow or machine JSON
+      description: Paste the export or attach a .json file.
+      render: json

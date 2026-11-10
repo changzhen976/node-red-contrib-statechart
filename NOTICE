@@ -9,3 +9,5 @@ Third-party software
 - scxml-creator (MIT) — vendored core at commit 6b5cfb6: ProjectDoc model,
   serializer, action parser, validator, naming and SCXML importer. See
   src/vendor/scxml-core/UPSTREAM.md.
+
+Full license texts for the components above are in THIRD_PARTY_LICENSES.md.

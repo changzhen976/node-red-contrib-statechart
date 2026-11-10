@@ -1,0 +1,30 @@
+name: Feature request
+description: Suggest a capability, a message contract change or a UI improvement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the workflow or the state machine you are modelling, not only the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Runtime semantics
+        - Editor form
+        - Standalone editor
+        - Monitor / sidebar
+        - Documentation
+        - Something else

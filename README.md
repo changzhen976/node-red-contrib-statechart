@@ -174,9 +174,8 @@ STATECHART_BROWSER=1 GECKODRIVER=/path/to/geckodriver \
 - [示例说明](examples/README.md)
 - [资源消耗评估](docs/resource-profile.md)
 - [完整编辑器设计](docs/p4-standalone-editor.md)
-- [发布检查清单](docs/release-checklist.md)
-- [命名与图标评估](docs/naming-assessment.md)
+- [贡献指南](CONTRIBUTING.md)
 
 ## 许可
 
-MIT，见 [LICENSE](LICENSE) 与 [NOTICE](NOTICE)。
+MIT，见 [LICENSE](LICENSE) 与 [NOTICE](NOTICE)；第三方组件许可见 [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)。

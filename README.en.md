@@ -174,9 +174,9 @@ More documentation:
 - [Examples](examples/README.md)
 - [Resource profile](docs/resource-profile.md)
 - [Full editor design](docs/p4-standalone-editor.md)
-- [Release checklist](docs/release-checklist.md)
-- [Naming and icon assessment](docs/naming-assessment.md)
+- [Contributing](CONTRIBUTING.md)
 
 ## License
 
-MIT. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+MIT. See [LICENSE](LICENSE) and [NOTICE](NOTICE). Third-party notices are in
+[THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).

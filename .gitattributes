@@ -1,0 +1,10 @@
+* text=auto eol=lf
+
+*.png binary
+*.ico binary
+*.jpg binary
+
+# Generated artefacts: keep them out of review and language stats.
+editor-app/assets/** linguist-generated=true -diff
+dist/** linguist-generated=true -diff
+package-lock.json linguist-generated=true
