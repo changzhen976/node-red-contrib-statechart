@@ -10,6 +10,16 @@ Build event-driven flows with visual state charts in Node-RED: drive state with 
 
 The default workflow is entirely GUI-based — no XML required. Charts are executed by a SCXML 1.0 engine, and you can import/export SCXML when you need it.
 
+## Screenshots
+
+**Live monitor in the Node-RED sidebar** — active states are highlighted; switch machine, zoom, and optionally show variables.
+
+![State chart monitor in the Node-RED sidebar](docs/images/monitor-sidebar.png)
+
+**Standalone full-screen editor** — open it from the machine dialog, edit, then write back and deploy.
+
+![Standalone state chart editor](docs/images/standalone-editor.png)
+
 ## Features
 
 - Edit states, transitions, variables and actions inside Node-RED;

@@ -30,7 +30,8 @@
     "NOTICE",
     "THIRD_PARTY_LICENSES.md",
     "CHANGELOG.md",
-    "README.en.md"
+    "README.en.md",
+    "docs/images"
   ],
   "scripts": {
     "build": "node esbuild.config.mjs",

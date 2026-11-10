@@ -8,6 +8,14 @@
   brand reads **State chart** and its stored UI state uses the `statechart:` key prefix.
 - The monitor page no longer repeats its title when embedded in the Node-RED sidebar;
   only the machine selector, zoom, refresh and status controls remain.
+- The standalone editor no longer documents donor-only features: the variable help
+  describes machine-local variables only, prefix rules for a globals registry, MQTT
+  bridge, server clock and system events are gone, and the donor service/API entry
+  points are hidden.
+
+### Added
+
+- Screenshots of the sidebar monitor and the standalone editor in both READMEs.
 
 ## 0.1.0 — 2026-11-10
 
