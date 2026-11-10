@@ -37,7 +37,7 @@
 npm install @changzhen976/node-red-contrib-statechart
 ```
 
-> 当前尚未发布到 npm。发布前可使用 `npm pack` 生成的 tgz 安装：
+> 需要装本地改动时，也可以从源码打包安装：
 
 ```sh
 npm pack

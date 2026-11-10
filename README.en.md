@@ -37,7 +37,7 @@ The default workflow is entirely GUI-based — no XML required. Charts are execu
 npm install @changzhen976/node-red-contrib-statechart
 ```
 
-> The package is not yet published to npm. Until then, install a tarball:
+> To install uncommitted local changes, build a tarball instead:
 
 ```sh
 npm pack
