@@ -1,5 +1,5 @@
 import { build } from 'esbuild'
-import { copyFile, cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { copyFile, cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -42,6 +42,25 @@ await cp(resolve(root, 'editor/locales'), resolve(dist, 'locales'), { recursive:
 await cp(resolve(root, 'assets/icons'), resolve(dist, 'icons'), { recursive: true })
 // P4 standalone editor build (generated from ../scxml-creator).
 await cp(resolve(root, 'editor-app'), resolve(dist, 'editor-app'), { recursive: true })
+// The donor SPA still renders its own product name in the toolbar and uses it
+// as the prefix of its localStorage keys. Rewrite the copied build so the
+// published editor does not advertise another project.
+async function patchDonorBranding (dir) {
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    const file = resolve(dir, entry.name)
+    if (entry.isDirectory()) {
+      await patchDonorBranding(file)
+      continue
+    }
+    if (!/\.(js|mjs|css|html|json)$/.test(entry.name)) continue
+    const source = await readFile(file, 'utf8')
+    if (!source.includes('scxmljs-creator')) continue
+    await writeFile(file, source
+      .replaceAll('"brand-name"},"scxmljs-creator"', '"brand-name"},"State chart"')
+      .replaceAll('scxmljs-creator:', 'statechart:'))
+  }
+}
+await patchDonorBranding(resolve(dist, 'editor-app'))
 // The donor SPA title still carries the old product name, and its Node-RED bar
 // floats over the editor. Override both in dist without hand-editing the
 // generated editor-app directory.

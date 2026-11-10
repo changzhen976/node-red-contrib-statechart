@@ -65,6 +65,13 @@ for (const entry of await readdir(resolve(root, 'dist'), { recursive: true })) {
 }
 missing.push(...leaked)
 
+// The standalone editor must not advertise the donor project.
+for (const entry of await readdir(resolve(root, 'dist/editor-app'), { recursive: true })) {
+  if (!/\.(js|mjs|css|html|json)$/.test(entry)) continue
+  const text = await readFile(resolve(root, 'dist/editor-app', entry), 'utf8').catch(() => '')
+  if (text.includes('scxmljs-creator')) missing.push(`dist/editor-app/${entry}: donor brand name still present`)
+}
+
 console.log(JSON.stringify({
   name: pkg.name,
   version: pkg.version,
