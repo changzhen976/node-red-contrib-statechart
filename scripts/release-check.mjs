@@ -11,10 +11,11 @@ const root = resolve(import.meta.dirname, '..')
 const pkg = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'))
 const required = [
   'LICENSE', 'NOTICE', 'README.md', 'README.en.md',
-  'dist/scxml.js', 'dist/scxml.html',
+  'dist/statechart.js', 'dist/statechart.html',
   'dist/editor-app/index.html', 'dist/editor-app/assets',
-  'dist/locales/en-US/scxml.json', 'dist/locales/zh-CN/scxml.json',
-  'dist/locales/zh-CN/scxml.html',
+  'dist/locales/en-US/statechart.json', 'dist/locales/zh-CN/statechart.json',
+  'dist/locales/zh-CN/statechart.html',
+  'dist/icons/statechart.svg',
   'examples/traffic-light.json', 'examples/demo-suite.json', 'examples/README.md',
 ]
 const missing = []
@@ -22,15 +23,28 @@ for (const file of required) {
   try { await access(resolve(root, file)) } catch { missing.push(file) }
 }
 
+const editorIndex = await readFile(resolve(root, 'dist/editor-app/index.html'), 'utf8')
+if (editorIndex.includes('scxmljs-creator')) {
+  missing.push('dist/editor-app/index.html: old product title still present')
+}
+if (!editorIndex.includes('dock the Node-RED bar')) {
+  missing.push('dist/editor-app/index.html: standalone bar layout override missing')
+}
+if (!editorIndex.includes('.toolbar .exit-btn')) {
+  missing.push('dist/editor-app/index.html: standalone exit button hide rule missing')
+}
 const notice = await readFile(resolve(root, 'NOTICE'), 'utf8')
 if (!notice.includes('6b5cfb6')) missing.push('NOTICE: vendor commit 6b5cfb6 missing')
-if (!pkg['node-red']?.nodes?.scxml) missing.push('package.json: node-red.nodes.scxml missing')
+if (!pkg['node-red']?.nodes?.statechart) missing.push('package.json: node-red.nodes.statechart missing')
 if (!pkg.engines?.node) missing.push('package.json: engines.node missing')
 if (!pkg.license) missing.push('package.json: license missing')
+if (pkg.name.startsWith('@') && pkg.publishConfig?.access !== 'public') {
+  missing.push('package.json: scoped package must set publishConfig.access=public')
+}
 
 const pack = JSON.parse(execFileSync('npm', ['pack', '--dry-run', '--json'], { cwd: root, encoding: 'utf8' }))[0]
 const files = pack.files.map((file) => file.path)
-for (const requiredFile of ['dist/editor-app/index.html', 'dist/locales/zh-CN/scxml.json', 'examples/demo-suite.json', 'LICENSE', 'NOTICE']) {
+for (const requiredFile of ['dist/editor-app/index.html', 'dist/locales/zh-CN/statechart.json', 'dist/icons/statechart.svg', 'examples/demo-suite.json', 'LICENSE', 'NOTICE']) {
   if (!files.includes(requiredFile)) missing.push(`npm pack: ${requiredFile} missing`)
 }
 if (files.some((file) => file.startsWith('.tmp/') || file.startsWith('test/') || file.startsWith('.opencode/'))) {

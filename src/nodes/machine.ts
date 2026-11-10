@@ -65,7 +65,7 @@ export function registerMachine(RED: any): void {
     RED.nodes.createNode(this, config)
     const node = this
 
-    node.name = String(config.name || 'state machine')
+    node.name = String(config.name || 'State chart')
     node.source = typeof config.source === 'string' ? config.source : ''
     node.doc = typeof config.doc === 'string' ? config.doc : ''
     node.engine = (config.engine === 'trusted' ? 'trusted' : 'sandboxed') as EngineMode
@@ -95,7 +95,7 @@ export function registerMachine(RED: any): void {
     let lastStateKey: string | null = null
     let lastChanged = false
     const MAX_QUEUE = 1000
-    const PERSIST_KEY = 'scxmlVars'
+    const PERSIST_KEY = 'statechartVars'
     let opChain: Promise<void> = Promise.resolve()
     let queuedOps = 0
     let saveTimer: ReturnType<typeof setTimeout> | null = null
@@ -355,5 +355,5 @@ export function registerMachine(RED: any): void {
     })
   }
 
-  RED.nodes.registerType('scxml-machine', MachineNode)
+  RED.nodes.registerType('statechart-machine', MachineNode)
 }

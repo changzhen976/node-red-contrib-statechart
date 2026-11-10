@@ -1,15 +1,15 @@
-<script type="text/html" data-help-name="scxml-machine">
-  <p>定义一个 SCXML 状态机。一个 config node 拥有一个会话；引用它的所有
-  <code>scxml-in</code> 和 <code>scxml-out</code> 节点共享该会话。</p>
+<script type="text/html" data-help-name="statechart-machine">
+  <p>定义一个状态机（SCXML 1.0）。一个 config node 拥有一个会话；引用它的所有
+  <code>statechart-in</code> 和 <code>statechart-out</code> 节点共享该会话。</p>
   <p>SCXML 在 Node.js 中解析并编译。默认 <b>sandboxed</b> 引擎使用 QuickJS，
   带脚本超时和内存限制；<b>trusted</b> 在 Node.js realm 中运行表达式，仅用于你信任的图。</p>
-  <p>状态变化发布到 <code>scxml-out</code> 节点。活动状态始终以数组报告；
+  <p>状态变化发布到 <code>statechart-out</code> 节点。活动状态始终以数组报告；
   并行状态机可能有多个活动状态。</p>
-  <p><b>在侧栏查看实时状态图</b> 会打开只读 SCXML 侧栏并选中此机器，只高亮活动状态，
-  不编辑图。也可以通过 <code>/scxmljs/monitor</code> 访问同一页面。</p>
+  <p><b>在侧栏查看实时状态图</b> 会打开只读状态机侧栏并选中此机器，只高亮活动状态，
+  不编辑图。也可以通过 <code>/statechart/monitor</code> 访问同一页面。</p>
 </script>
 
-<script type="text/html" data-help-name="scxml-in">
+<script type="text/html" data-help-name="statechart-in">
   <p>把输入消息转换为 SCXML 事件。<code>msg.payload</code> 成为事件数据
   （必须可 JSON 序列化）。</p>
   <p>事件名来自 <code>msg.topic</code>、<code>msg.event</code>、字符串 payload
@@ -17,10 +17,10 @@
   <p>命令：<code>msg.command = "set"</code> 且 payload 为对象时，先给已声明变量赋值，
   再发送 <code>updateEvent</code>（默认 <code>update</code>）；
   <code>"reset"</code> 从初始状态重建会话；<code>"event"</code> 使用 <code>msg.event</code>。</p>
-  <p>该节点没有输出。连接同一状态机的 <code>scxml-out</code> 来观察状态变化。</p>
+  <p>该节点没有输出。连接同一状态机的 <code>statechart-out</code> 来观察状态变化。</p>
 </script>
 
-<script type="text/html" data-help-name="scxml-out">
+<script type="text/html" data-help-name="statechart-out">
   <p>订阅一个状态机。输出 1 带活动状态，可选带变量快照；输出 2 带图内
   <code>&lt;send&gt;</code> 事件。</p>
   <p>状态输出：单个活动状态时 <code>msg.payload</code> 是字符串，并行状态机时是数组；

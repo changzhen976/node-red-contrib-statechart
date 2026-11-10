@@ -1,5 +1,5 @@
 /** Node-RED runtime message helper (server language, not editor-language). */
-const NS = 'node-red-contrib-scxmljs/scxml'
+const NS = '@changzhen976/node-red-contrib-statechart/statechart'
 
 export function runtimeT(RED: any, key: string, params?: Record<string, unknown>): string {
   try {

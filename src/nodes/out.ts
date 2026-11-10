@@ -33,7 +33,7 @@ export function registerOut(RED: any): void {
     const stateTopic = typeof config.stateTopic === 'string' ? config.stateTopic : ''
     const eventTopic = typeof config.eventTopic === 'string' && config.eventTopic
       ? config.eventTopic
-      : 'scxml/{machine}/evt/{event}'
+      : 'statechart/{machine}/evt/{event}'
 
     if (!machine) {
       node.status({ fill: 'red', shape: 'ring', text: runtimeStatus('machineNotFound') })
@@ -103,5 +103,5 @@ export function registerOut(RED: any): void {
     })
   }
 
-  RED.nodes.registerType('scxml-out', OutNode)
+  RED.nodes.registerType('statechart-out', OutNode)
 }

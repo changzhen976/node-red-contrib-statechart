@@ -73,5 +73,5 @@ export function registerIn(RED: any): void {
     })
   }
 
-  RED.nodes.registerType('scxml-in', InNode)
+  RED.nodes.registerType('statechart-in', InNode)
 }

@@ -6,7 +6,7 @@
 2. 右上角菜单 → **导入**；
 3. 选择 `demo-suite.json`（或粘贴内容），选择“导入副本”；
 4. 点 **部署**；
-5. 打开右侧 **状态机** 侧栏，或用 `http://<node-red>:1880/scxmljs/monitor`。
+5. 打开右侧 **状态机** 侧栏，或用 `http://<node-red>:1880/statechart/monitor`。
 
 `demo-suite.json` 会新增 6 个 tab；`traffic-light.json` 是最小示例，可单独导入。
 

@@ -65,7 +65,7 @@
     "placeholderSource": "粘贴 SCXML 文档",
     "placeholderUpdate": "update",
     "placeholderStateTopic": "默认：当前状态",
-    "placeholderEventTopic": "scxml/{machine}/evt/{event}",
+    "placeholderEventTopic": "statechart/{machine}/evt/{event}",
     "root": "(根)",
     "none": "(无)",
     "pickState": "(选择状态)",
@@ -90,7 +90,9 @@
     "typeAssign": "变量赋值",
     "typeLog": "日志",
     "typeScript": "自定义 JS",
-    "openFullEditor": "打开完整编辑器"
+    "openFullEditor": "打开完整编辑器",
+    "openFullEditorTitle": "完整编辑器",
+    "openFullEditorHint": "画布、撤销/重做、仿真与 SCXML 导入/导出。"
   },
   "option": {
     "topic": "msg.topic",
@@ -111,7 +113,7 @@
     "docNormalizeFailed": "文档规范化失败：__error__",
     "scxmlImportFailed": "SCXML 导入失败：__error__",
     "scxmlExportFailed": "SCXML 导出失败：__error__",
-    "coreMissing": "SCXMLCore 未加载；请重新构建编辑器资源。",
+    "coreMissing": "状态机编辑器核心未加载；请重新构建编辑器资源。",
     "noStates": "还没有状态，点“+ 状态”。",
     "noTransitions": "还没有转移。",
     "noVariables": "还没有变量。",
@@ -121,7 +123,7 @@
     "noActions": "还没有动作。",
     "popupBlocked": "弹窗被浏览器拦截；请允许 Node-RED 弹出窗口后重试。",
     "savedFromFullEditor": "已从完整编辑器保存；请回 Node-RED 点“更新/部署”。",
-    "tokenUnavailable": "无法获取 SCXML 能力令牌；请检查编辑器权限并刷新。"
+    "tokenUnavailable": "无法获取状态机能力令牌；请检查编辑器权限并刷新。"
   },
   "validate": {
     "noStates": "至少需要一个状态。",
@@ -160,7 +162,7 @@
     "reset": "已重置"
   },
   "errors": {
-    "noMachine": "未配置 scxml-machine",
+    "noMachine": "未配置 statechart-machine",
     "emptyEvent": "事件名为空",
     "setPayload": "set 命令要求 msg.payload 是对象",
     "unknownCommand": "未知命令：__command__",
@@ -168,7 +170,7 @@
     "unknownVariable": "未知变量：__id__",
     "closed": "状态机已关闭",
     "closedWhileStarting": "状态机在启动期间被关闭",
-    "configInvalid": "SCXML 配置无效：__message__",
+    "configInvalid": "状态机配置无效：__message__",
     "dataModel": "数据模型不可用",
     "runtime": "__kind__：__message__"
   }

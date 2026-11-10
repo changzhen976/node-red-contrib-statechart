@@ -9,7 +9,7 @@ test('demo suite SCXML sources compile', async () => {
   const { parseSCXML, compile } = await import('@tinyactors/scxmljs/trusted')
   const { DOMParser } = await import('@xmldom/xmldom')
   const parser = new DOMParser()
-  const machines = flows.filter((node) => node.type === 'scxml-machine' && node.source)
+  const machines = flows.filter((node) => node.type === 'statechart-machine' && node.source)
   assert.ok(machines.length >= 5, 'expected several source machines')
   for (const machine of machines) {
     const parsed = parseSCXML(machine.source, parser)
@@ -18,7 +18,7 @@ test('demo suite SCXML sources compile', async () => {
 })
 
 test('demo suite ProjectDoc example has a valid shape', () => {
-  const machine = flows.find((node) => node.type === 'scxml-machine' && node.doc)
+  const machine = flows.find((node) => node.type === 'statechart-machine' && node.doc)
   assert.ok(machine, 'expected a ProjectDoc machine')
   const doc = JSON.parse(machine.doc)
   assert.equal(doc.formatVersion, 1)

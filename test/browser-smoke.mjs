@@ -13,7 +13,7 @@ import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 
 const BASE = (process.env.NODERED_URL || 'http://localhost:1880/').replace(/\/?$/, '/')
-const MACHINE_ID = process.env.SCXML_MACHINE_ID || 'scxml-conf-traffic'
+const MACHINE_ID = process.env.STATECHART_MACHINE_ID || 'scxml-conf-traffic'
 const GECKO = process.env.GECKODRIVER || 'geckodriver'
 const PORT = Number(process.env.GECKODRIVER_PORT || 4445)
 const WD = `http://127.0.0.1:${PORT}`
@@ -80,7 +80,7 @@ async function main() {
 
     const z = await execute(`const n = RED.nodes.node(arguments[0]); return n ? n.z : null;`, [MACHINE_ID])
     assert.ok(z, `machine ${MACHINE_ID} not found in editor`)
-    await execute(`RED.workspaces.show(arguments[0]); RED.editor.editConfig("", "scxml-machine", arguments[1]); return true`, [z, MACHINE_ID])
+    await execute(`RED.workspaces.show(arguments[0]); RED.editor.editConfig("", "statechart-machine", arguments[1]); return true`, [z, MACHINE_ID])
     await waitForSelector('#scxml-states-body tr')
 
     const ui = await execute(`return {
@@ -114,7 +114,7 @@ async function main() {
 
     await execute(`document.querySelector('#node-config-input-open-sidebar').click(); return true`)
     await sleep(1200)
-    const monitorSrc = await execute(`return Array.from(document.querySelectorAll('iframe')).map((f) => f.src).find((src) => src.includes('/scxmljs/monitor')) || ''`)
+    const monitorSrc = await execute(`return Array.from(document.querySelectorAll('iframe')).map((f) => f.src).find((src) => src.includes('/statechart/monitor')) || ''`)
     assert.match(monitorSrc, /[?&]token=/, 'sidebar monitor iframe must carry a capability token')
 
     await execute(`document.querySelector('#scxml-states-body .scxml-edit-actions[data-field=entry]').click(); return true`)

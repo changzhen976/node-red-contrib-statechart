@@ -1,7 +1,7 @@
 const { test, before, after, beforeEach, afterEach } = require('node:test')
 const assert = require('node:assert/strict')
 const helper = require('node-red-node-test-helper')
-const scxmlModule = require('../dist/scxml.js')
+const scxmlModule = require('../dist/statechart.js')
 
 helper.init(require.resolve('node-red'))
 
@@ -107,16 +107,16 @@ function testModule(RED) {
 function flowFor(source, outConfig = {}, machineConfig = {}) {
   return [
     {
-      id: 'conf1', type: 'scxml-machine', name: 'test machine', source,
+      id: 'conf1', type: 'statechart-machine', name: 'test machine', source,
       engine: 'sandboxed', scriptTimeoutMs: 500, maxMicrosteps: 10000,
       ...machineConfig,
     },
     {
-      id: 'in1', type: 'scxml-in', machine: 'conf1',
+      id: 'in1', type: 'statechart-in', machine: 'conf1',
       eventSource: 'topic', fixedEvent: '', wires: [],
     },
     {
-      id: 'out1', type: 'scxml-out', machine: 'conf1',
+      id: 'out1', type: 'statechart-out', machine: 'conf1',
       includeVars: true, emitInitial: true, includeInternalSends: false,
       ...outConfig,
       wires: [['s1'], ['s2']],
@@ -136,17 +136,17 @@ function flowForDoc(doc) {
 function twoMachineFlow() {
   return [
     {
-      id: 'confA', type: 'scxml-machine', name: 'machine A', doc: DOC_TRAFFIC,
+      id: 'confA', type: 'statechart-machine', name: 'machine A', doc: DOC_TRAFFIC,
       engine: 'sandboxed', scriptTimeoutMs: 500, maxMicrosteps: 10000,
     },
     {
-      id: 'confB', type: 'scxml-machine', name: 'machine B', doc: DOC_B,
+      id: 'confB', type: 'statechart-machine', name: 'machine B', doc: DOC_B,
       engine: 'sandboxed', scriptTimeoutMs: 500, maxMicrosteps: 10000,
     },
-    { id: 'inA', type: 'scxml-in', machine: 'confA', eventSource: 'topic', fixedEvent: '', wires: [] },
-    { id: 'inB', type: 'scxml-in', machine: 'confB', eventSource: 'topic', fixedEvent: '', wires: [] },
-    { id: 'outA', type: 'scxml-out', machine: 'confA', includeVars: true, emitInitial: true, includeInternalSends: false, wires: [['sA'], ['sA2']] },
-    { id: 'outB', type: 'scxml-out', machine: 'confB', includeVars: true, emitInitial: true, includeInternalSends: false, wires: [['sB'], ['sB2']] },
+    { id: 'inA', type: 'statechart-in', machine: 'confA', eventSource: 'topic', fixedEvent: '', wires: [] },
+    { id: 'inB', type: 'statechart-in', machine: 'confB', eventSource: 'topic', fixedEvent: '', wires: [] },
+    { id: 'outA', type: 'statechart-out', machine: 'confA', includeVars: true, emitInitial: true, includeInternalSends: false, wires: [['sA'], ['sA2']] },
+    { id: 'outB', type: 'statechart-out', machine: 'confB', includeVars: true, emitInitial: true, includeInternalSends: false, wires: [['sB'], ['sB2']] },
     { id: 'sA', type: 'p0-sink' },
     { id: 'sA2', type: 'p0-sink' },
     { id: 'sB', type: 'p0-sink' },
@@ -157,7 +157,7 @@ function twoMachineFlow() {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 async function monitorToken() {
-  const response = await helper.request().get('/scxmljs/token').expect(200)
+  const response = await helper.request().get('/statechart/token').expect(200)
   return response.body.token
 }
 
@@ -232,7 +232,7 @@ test('emits chart <send> events on output 2', async () => {
     await waitFor(() => sinkMessages('s2').some((m) => m.event === 'notify'), 'notify')
     const msg = sinkMessages('s2').find((m) => m.event === 'notify')
     assert.deepEqual(msg.payload, { n: 1 })
-    assert.equal(msg.topic, 'scxml/test machine/evt/notify')
+    assert.equal(msg.topic, 'statechart/test machine/evt/notify')
   } finally {
     await unloadFlow()
   }
@@ -272,31 +272,31 @@ test('exposes the read-only monitor page and API', async () => {
   try {
     await waitFor(() => sinkMessages('s1').length > 0, 'initial state')
 
-    await helper.request().get('/scxmljs/api/machines').expect(401)
-    const tokenResponse = await helper.request().get('/scxmljs/token').expect(200)
+    await helper.request().get('/statechart/api/machines').expect(401)
+    const tokenResponse = await helper.request().get('/statechart/token').expect(200)
     const token = tokenResponse.body.token
     assert.match(token, /^[0-9a-f]{64}$/)
     const query = `?token=${token}`
 
-    const list = await helper.request().get('/scxmljs/api/machines' + query).expect(200)
+    const list = await helper.request().get('/statechart/api/machines' + query).expect(200)
     assert.equal(list.body[0].id, 'conf1')
     assert.equal(list.body[0].name, 'test machine')
 
-    const state = await helper.request().get('/scxmljs/api/machines/conf1' + query).expect(200)
+    const state = await helper.request().get('/statechart/api/machines/conf1' + query).expect(200)
     assert.equal(state.body.running, true)
     assert.deepEqual(state.body.states, ['red'])
     assert.ok(state.body.version)
 
-    const graph = await helper.request().get('/scxmljs/api/machines/conf1/graph' + query).expect(200)
+    const graph = await helper.request().get('/statechart/api/machines/conf1/graph' + query).expect(200)
     assert.match(graph.text, /<scxml[\s>]/)
 
-    await helper.request().get('/scxmljs/monitor').expect(401)
-    const page = await helper.request().get('/scxmljs/monitor' + query).expect(200)
-    assert.match(page.text, /<base href="\/scxmljs\/assets\/">/)
+    await helper.request().get('/statechart/monitor').expect(401)
+    const page = await helper.request().get('/statechart/monitor' + query).expect(200)
+    assert.match(page.text, /<base href="\/statechart\/assets\/">/)
     assert.match(page.text, /<scxml-view/)
 
-    await helper.request().get('/scxmljs/assets/view.js').expect(200)
-    await helper.request().get('/scxmljs/assets/monitor.js').expect(200)
+    await helper.request().get('/statechart/assets/view.js').expect(200)
+    await helper.request().get('/statechart/assets/monitor.js').expect(200)
   } finally {
     await unloadFlow()
   }
@@ -312,7 +312,7 @@ test('drives a ProjectDoc JSON machine and validates it before start', async () 
     helper.getNode('in1').receive({ topic: 'next' })
     await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'green'), 'doc green')
     const token = await monitorToken()
-    const graph = await helper.request().get('/scxmljs/api/machines/conf1/graph?token=' + token).expect(200)
+    const graph = await helper.request().get('/statechart/api/machines/conf1/graph?token=' + token).expect(200)
     assert.match(graph.text, /<scxml[\s>]/)
   } finally {
     await unloadFlow()
@@ -330,7 +330,7 @@ test('keeps two config-node machines independent', async () => {
     assert.ok(sinkMessages('sB').every((m) => m.payload === 'idleB'), 'B must not change')
 
     const token = await monitorToken()
-    const list = await helper.request().get('/scxmljs/api/machines?token=' + token).expect(200)
+    const list = await helper.request().get('/statechart/api/machines?token=' + token).expect(200)
     assert.deepEqual(list.body.map((m) => m.id).sort(), ['confA', 'confB'])
   } finally {
     await unloadFlow()
@@ -437,7 +437,7 @@ test('restores persisted variables with createSession data', async () => {
   await loadFlow(flowFor(SET_CONDITION, { emitInitial: false }, { persistVars: true }))
   try {
     const machine = helper.getNode('conf1')
-    await machine.context().set('scxmlVars', { temp: 85 })
+    await machine.context().set('statechartVars', { temp: 85 })
     helper.getNode('in1').receive({ command: 'reset' })
     await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'a' && m.vars.temp === 85), 'restored vars')
     helper.getNode('in1').receive({ topic: 'update' })
@@ -455,4 +455,42 @@ test('survives 50 repeated deployments without leaking timers', async () => {
   }
   const timers = process.getActiveResourcesInfo().filter((x) => x === 'Timeout').length
   assert.ok(timers <= 1, `expected no leaked timers after 50 deployments, found ${timers}`)
+})
+
+test('ships statechart types, palette labels and a custom icon', () => {
+  const fs = require('node:fs')
+  const path = require('node:path')
+  const root = path.join(__dirname, '..')
+  const pkg = require(path.join(root, 'package.json'))
+  const html = fs.readFileSync(path.join(root, 'dist', 'statechart.html'), 'utf8')
+
+  assert.equal(pkg.name, '@changzhen976/node-red-contrib-statechart')
+  assert.equal(pkg.private, undefined)
+  assert.equal(pkg.publishConfig?.access, 'public')
+  assert.equal(pkg.main, 'dist/statechart.js')
+  assert.ok(pkg.keywords.includes('node-red'))
+  assert.match(html, new RegExp("registerType\\('statechart-machine'"))
+  assert.match(html, new RegExp("registerType\\('statechart-in'"))
+  assert.match(html, new RegExp("registerType\\('statechart-out'"))
+  assert.ok(html.includes(pkg.name + '/statechart'), 'editor i18n namespace must match the package name')
+  assert.ok(html.includes("paletteLabel: scxmlI18n('label.scxmlIn')"))
+  assert.ok(html.includes("paletteLabel: scxmlI18n('label.scxmlOut')"))
+  assert.ok(html.includes("icon: 'statechart.svg'"))
+  assert.ok(fs.existsSync(path.join(root, 'dist', 'icons', 'statechart.svg')))
+
+  const en = JSON.parse(fs.readFileSync(path.join(root, 'dist', 'locales', 'en-US', 'statechart.json'), 'utf8'))
+  assert.equal(en.label.scxmlIn, 'State chart in')
+  assert.equal(en.label.scxmlOut, 'State chart out')
+  assert.ok(en.form.openFullEditorTitle)
+  assert.ok(en.form.openFullEditorHint)
+
+  assert.ok(html.includes('scxml-full-editor-callout'), 'full editor CTA should be a top callout')
+  assert.ok(html.indexOf('scxml-full-editor-callout') < html.indexOf('id="node-config-input-name"'), 'full editor CTA should be above the name field')
+  assert.ok(html.includes('id="node-config-input-open-full-editor"'))
+  const standalone = fs.readFileSync(path.join(root, 'dist', 'editor-app', 'index.html'), 'utf8')
+  assert.ok(standalone.includes('<title>State chart editor'))
+  assert.ok(!standalone.includes('scxmljs-creator'))
+  assert.ok(standalone.includes('dock the Node-RED bar'), 'standalone bar must reserve layout space')
+  assert.ok(standalone.includes('100dvh - 44px'))
+  assert.ok(standalone.includes('.toolbar .exit-btn'), 'donor exit button should be hidden in Node-RED mode')
 })

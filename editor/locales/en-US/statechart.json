@@ -1,13 +1,13 @@
 {
-  "category": "state machine",
+  "category": "state chart",
   "label": {
-    "scxmlMachine": "State machine",
-    "scxmlIn": "SCXML in",
-    "scxmlOut": "SCXML out"
+    "scxmlMachine": "State chart",
+    "scxmlIn": "State chart in",
+    "scxmlOut": "State chart out"
   },
   "sidebar": {
-    "label": "SCXML",
-    "title": "SCXML monitor"
+    "label": "State chart",
+    "title": "State chart monitor"
   },
   "form": {
     "name": "Name",
@@ -53,19 +53,19 @@
     "outputMode": "Output mode",
     "stateTopic": "State topic",
     "eventTopic": "Event topic",
-    "outputHint": "Output 1: state. Output 2: chart <send> events.",
+    "outputHint": "Output 1: state. Output 2: state chart <send> events.",
     "deleteState": "Delete state",
     "deleteTransition": "Delete transition",
     "deleteVariable": "Delete variable",
-    "placeholderName": "state machine",
+    "placeholderName": "state chart",
     "placeholderEventIn": "event in",
     "placeholderEventOut": "state out",
-    "placeholderMachine": "select or add a state machine",
+    "placeholderMachine": "select or add a state chart",
     "placeholderFixedEvent": "only used when source is fixed",
     "placeholderSource": "Paste an SCXML document",
     "placeholderUpdate": "update",
     "placeholderStateTopic": "default: active state",
-    "placeholderEventTopic": "scxml/{machine}/evt/{event}",
+    "placeholderEventTopic": "statechart/{machine}/evt/{event}",
     "root": "(root)",
     "none": "(none)",
     "pickState": "(pick state)",
@@ -90,7 +90,9 @@
     "typeAssign": "assign variable",
     "typeLog": "log",
     "typeScript": "custom JS",
-    "openFullEditor": "Open full editor"
+    "openFullEditor": "Open full editor",
+    "openFullEditorTitle": "Full editor",
+    "openFullEditorHint": "Canvas, undo/redo, simulation and SCXML import/export."
   },
   "option": {
     "topic": "msg.topic",
@@ -111,7 +113,7 @@
     "docNormalizeFailed": "Could not normalize the document: __error__",
     "scxmlImportFailed": "SCXML import failed: __error__",
     "scxmlExportFailed": "SCXML export failed: __error__",
-    "coreMissing": "SCXMLCore is not loaded; rebuild the editor assets.",
+    "coreMissing": "The state chart editor core is not loaded; rebuild the editor assets.",
     "noStates": "No states yet. Click “+ State”.",
     "noTransitions": "No transitions yet.",
     "noVariables": "No variables yet.",
@@ -121,7 +123,7 @@
     "noActions": "No actions yet.",
     "popupBlocked": "Popup blocked. Allow popups for Node-RED and try again.",
     "savedFromFullEditor": "Saved from the full editor; click Update/Deploy in Node-RED.",
-    "tokenUnavailable": "Cannot obtain the SCXML capability token. Check editor permissions and reload."
+    "tokenUnavailable": "Cannot obtain the state chart capability token. Check editor permissions and reload."
   },
   "validate": {
     "noStates": "Add at least one state.",
@@ -160,7 +162,7 @@
     "reset": "reset"
   },
   "errors": {
-    "noMachine": "no scxml-machine configured",
+    "noMachine": "no statechart-machine configured",
     "emptyEvent": "event name is empty",
     "setPayload": "set command requires msg.payload to be an object",
     "unknownCommand": "unknown command: __command__",
@@ -168,7 +170,7 @@
     "unknownVariable": "unknown variable: __id__",
     "closed": "state machine is closed",
     "closedWhileStarting": "state machine was closed while starting",
-    "configInvalid": "invalid SCXML configuration: __message__",
+    "configInvalid": "invalid state chart configuration: __message__",
     "dataModel": "data model is not available",
     "runtime": "__kind__: __message__"
   }

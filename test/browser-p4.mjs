@@ -6,7 +6,7 @@ import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 
 const BASE = (process.env.NODERED_URL || 'http://localhost:1880/').replace(/\/?$/, '/')
-const MACHINE_ID = process.env.SCXML_MACHINE_ID || 'scxml-conf-traffic'
+const MACHINE_ID = process.env.STATECHART_MACHINE_ID || 'scxml-conf-traffic'
 const GECKO = process.env.GECKODRIVER || 'geckodriver'
 const PORT = Number(process.env.GECKODRIVER_PORT || 4446)
 const WD = `http://127.0.0.1:${PORT}`
@@ -61,7 +61,7 @@ async function main() {
     await sleep(5000)
     const z = await execute(`const n = RED.nodes.node(arguments[0]); return n ? n.z : null;`, [MACHINE_ID])
     assert.ok(z, `machine ${MACHINE_ID} not found`)
-    await execute(`RED.workspaces.show(arguments[0]); RED.editor.editConfig("", "scxml-machine", arguments[1]); return true`, [z, MACHINE_ID])
+    await execute(`RED.workspaces.show(arguments[0]); RED.editor.editConfig("", "statechart-machine", arguments[1]); return true`, [z, MACHINE_ID])
     await waitFor(`return !!document.querySelector('#node-config-input-open-full-editor');`, 'full editor button')
 
     const parentHandle = (await call('GET', '/window')).value

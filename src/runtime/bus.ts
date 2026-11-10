@@ -51,7 +51,7 @@ export class EventBus {
       try {
         listener(event)
       } catch (err) {
-        console.error('[scxml] listener failed:', err)
+        console.error('[statechart] listener failed:', err)
       }
     }
   }

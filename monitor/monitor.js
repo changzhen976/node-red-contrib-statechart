@@ -28,12 +28,12 @@ function applyZoom() {
   if (!zoomSelect || !view) return
   const value = Number.parseInt(zoomSelect.value, 10) || 150
   view.style.zoom = String(value / 100)
-  try { localStorage.setItem('scxml-monitor-zoom', String(value)) } catch { /* ignore */ }
+  try { localStorage.setItem('statechart-monitor-zoom', String(value)) } catch { /* ignore */ }
 }
 
 if (zoomSelect) {
   const savedZoom = (() => {
-    try { return localStorage.getItem('scxml-monitor-zoom') } catch { return null }
+    try { return localStorage.getItem('statechart-monitor-zoom') } catch { return null }
   })()
   if (savedZoom && [...zoomSelect.options].some((o) => o.value === savedZoom)) {
     zoomSelect.value = savedZoom
@@ -166,7 +166,7 @@ async function loadMachines() {
     const current = selectedId || new URLSearchParams(window.location.search).get('id')
     select.innerHTML = ''
     if (!machines.length) {
-      showEmpty('没有已部署的 scxml-machine')
+      showEmpty('没有已部署的 statechart-machine')
       setStatus('no machines')
       return
     }

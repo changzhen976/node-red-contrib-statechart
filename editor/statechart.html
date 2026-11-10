@@ -9,6 +9,21 @@
   }
   .scxml-help code { font-size: 12px; }
 
+  .scxml-full-editor-callout {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 10px;
+    margin: 2px 0 10px;
+    border: 1px solid #bfdbfe;
+    border-radius: 6px;
+    background: #eff6ff;
+  }
+  .scxml-full-editor-text { flex: 1; min-width: 0; }
+  .scxml-full-editor-text strong { display: block; font-size: 12px; color: #1e3a8a; }
+  .scxml-full-editor-text span { display: block; font-size: 11px; color: #475569; }
+  .scxml-full-editor-callout .red-ui-button { white-space: nowrap; }
+
   .scxml-editor-toolbar {
     display: flex;
     align-items: center;
@@ -120,14 +135,15 @@
 
 <script type="text/javascript">
 
-  var SCXML_NS = 'node-red-contrib-scxmljs/scxml';
+  var SCXML_NS = '@changzhen976/node-red-contrib-statechart/statechart';
   function scxmlI18n(key, opts) { return RED._(SCXML_NS + ':' + key, opts); }
 
-  RED.nodes.registerType('scxml-machine', {
+  RED.nodes.registerType('statechart-machine', {
     category: 'config',
     color: '#7c3aed',
+    icon: 'statechart.svg',
     defaults: {
-      name: { value: 'state machine' },
+      name: { value: scxmlI18n('label.scxmlMachine') },
       source: { value: '' },
       doc: { value: '' },
       engine: { value: 'sandboxed' },
@@ -165,12 +181,14 @@
     }
   });
 
-  RED.nodes.registerType('scxml-in', {
+  RED.nodes.registerType('statechart-in', {
     category: scxmlI18n('category'),
     color: '#0ea5e9',
+    icon: 'statechart.svg',
+    paletteLabel: scxmlI18n('label.scxmlIn'),
     defaults: {
       name: { value: '' },
-      machine: { value: '', type: 'scxml-machine' },
+      machine: { value: '', type: 'statechart-machine' },
       eventSource: { value: 'topic' },
       fixedEvent: { value: '' }
     },
@@ -181,18 +199,20 @@
     outputs: 0
   });
 
-  RED.nodes.registerType('scxml-out', {
+  RED.nodes.registerType('statechart-out', {
     category: scxmlI18n('category'),
     color: '#16a34a',
+    icon: 'statechart.svg',
+    paletteLabel: scxmlI18n('label.scxmlOut'),
     defaults: {
       name: { value: '' },
-      machine: { value: '', type: 'scxml-machine' },
+      machine: { value: '', type: 'statechart-machine' },
       includeVars: { value: true },
       emitInitial: { value: true },
       includeInternalSends: { value: false },
       outputMode: { value: 'both' },
       stateTopic: { value: '' },
-      eventTopic: { value: 'scxml/{machine}/evt/{event}' }
+      eventTopic: { value: 'statechart/{machine}/evt/{event}' }
     },
     label: function () {
       return this.name || scxmlI18n('label.scxmlOut');
@@ -210,7 +230,7 @@
   }
 
   function scxmlMonitorUrl(embed, id) {
-    return scxmlRoot + 'scxmljs/monitor?embed=' + (embed ? '1' : '0') +
+    return scxmlRoot + 'statechart/monitor?embed=' + (embed ? '1' : '0') +
       (id ? '&id=' + encodeURIComponent(id) : '') + scxmlTokenQuery();
   }
 
@@ -218,7 +238,7 @@
     if (scxmlToken) { if (done) done(); return; }
     if (scxmlTokenLoading) return;
     scxmlTokenLoading = true;
-    $.getJSON('scxmljs/token')
+    $.getJSON('statechart/token')
       .done(function (data) {
         scxmlToken = data && data.token ? String(data.token) : '';
         if (typeof scxmlSidebarFrame !== 'undefined' && scxmlSidebarFrame && scxmlToken) {
@@ -279,7 +299,7 @@
     if (window.RED && typeof RED.notify === 'function') {
       RED.notify(message, { type: type || 'warning' });
     } else {
-      console.warn('[scxml]', message);
+      console.warn('[statechart]', message);
     }
   }
 
@@ -624,7 +644,7 @@
     function collectMachines() {
       var list = [];
       RED.nodes.eachConfig(function (config) {
-        if (config.type !== 'scxml-machine') return;
+        if (config.type !== 'statechart-machine') return;
         var machineDoc = null;
         if (config.doc && String(config.doc).trim()) {
           try { machineDoc = c.normalizeDoc(JSON.parse(config.doc)); } catch (err) { machineDoc = null; }
@@ -651,7 +671,7 @@
       }
       return;
     }
-    var url = root + 'scxmljs/editor/?nodered=1&id=' + encodeURIComponent(node.id) +
+    var url = root + 'statechart/editor/?nodered=1&id=' + encodeURIComponent(node.id) +
       '&lang=' + encodeURIComponent(lang) + '&token=' + encodeURIComponent(window.scxmlToken);
     if (p4Handler) window.removeEventListener('message', p4Handler);
     p4Handler = function (event) {
@@ -663,7 +683,7 @@
       } else if (data.type === 'scxml:save' && data.doc) {
         var targetId = data.id || node.id;
         var target = RED.nodes.node ? RED.nodes.node(targetId) : null;
-        if (!target || target.type !== 'scxml-machine') return;
+        if (!target || target.type !== 'statechart-machine') return;
         target.doc = JSON.stringify(data.doc);
         try {
           target.source = c.serializeToScxml(data.doc);
@@ -980,7 +1000,18 @@
 
 </script>
 
-<script type="text/html" data-template-name="scxml-machine">
+<script type="text/html" data-template-name="statechart-machine">
+  <div class="form-row" style="display:block;">
+    <div class="scxml-full-editor-callout">
+      <div class="scxml-full-editor-text">
+        <strong data-i18n="form.openFullEditorTitle"></strong>
+        <span data-i18n="form.openFullEditorHint"></span>
+      </div>
+      <button type="button" id="node-config-input-open-full-editor" class="red-ui-button red-ui-button-small primary">
+        <i class="fa fa-external-link"></i> <span data-i18n="form.openFullEditor"></span>
+      </button>
+    </div>
+  </div>
   <div class="form-row">
     <label for="node-config-input-name"><i class="fa fa-tag"></i> <span data-i18n="form.name"></span></label>
     <input type="text" id="node-config-input-name" data-i18n="[placeholder]form.placeholderName">
@@ -1075,14 +1106,11 @@
     <button type="button" id="node-config-input-open-sidebar" class="red-ui-button red-ui-button-small">
       <i class="fa fa-project-diagram"></i> <span data-i18n="form.openSidebar"></span>
     </button>
-    <button type="button" id="node-config-input-open-full-editor" class="red-ui-button red-ui-button-small">
-      <i class="fa fa-external-link"></i> <span data-i18n="form.openFullEditor"></span>
-    </button>
   </div>
 </script>
 
 
-<script type="text/html" data-template-name="scxml-in">
+<script type="text/html" data-template-name="statechart-in">
   <div class="form-row">
     <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="form.name"></span></label>
     <input type="text" id="node-input-name" data-i18n="[placeholder]form.placeholderEventIn">
@@ -1107,7 +1135,7 @@
 </script>
 
 
-<script type="text/html" data-template-name="scxml-out">
+<script type="text/html" data-template-name="statechart-out">
   <div class="form-row">
     <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="form.name"></span></label>
     <input type="text" id="node-input-name" data-i18n="[placeholder]form.placeholderEventOut">
