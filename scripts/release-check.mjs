@@ -4,7 +4,7 @@
  * not as failures, so this can run in CI while the package is still private.
  */
 import { execFileSync } from 'node:child_process'
-import { access, readFile } from 'node:fs/promises'
+import { access, readdir, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
 const root = resolve(import.meta.dirname, '..')
@@ -50,6 +50,20 @@ for (const requiredFile of ['dist/editor-app/index.html', 'dist/locales/zh-CN/st
 if (files.some((file) => file.startsWith('.tmp/') || file.startsWith('test/') || file.startsWith('.opencode/'))) {
   missing.push('npm pack: development-only files included')
 }
+
+// Internal hostnames and paths must never ship in the published artefacts.
+// The needles are assembled from parts so this guard does not itself spell out
+// the hostname it looks for.
+const INTERNAL_HOSTNAMES = ['home' + 'assistant', 'debian' + '-dev']
+const leaked = []
+for (const entry of await readdir(resolve(root, 'dist'), { recursive: true })) {
+  if (!/\.(js|mjs|cjs|html|css|json|map)$/.test(entry)) continue
+  const text = await readFile(resolve(root, 'dist', entry), 'utf8').catch(() => '')
+  for (const needle of INTERNAL_HOSTNAMES) {
+    if (text.includes(needle)) leaked.push(`dist/${entry}: contains an internal hostname`)
+  }
+}
+missing.push(...leaked)
 
 console.log(JSON.stringify({
   name: pkg.name,
