@@ -1,6 +1,6 @@
 # 重构路线：以 statechart-kit 为核心
 
-> 状态：执行中（2026-11-11）— M0–M2 完成；M3 代码完成（浏览器 smoke 待跑），M4–M5 待开始
+> 状态：执行中（2026-11-11）— M0–M3 完成（浏览器 smoke 待跑）；M5 打包/干净安装已验证；M4 与发布待开始
 > 目标版本：`0.2.0`
 > 核心依赖：`statechart-kit@0.8.0`（已打 tag；npm `latest` 仍为 0.7.0）
 > 关联文档：[完整编辑器设计](p4-standalone-editor.md)（历史方案）、[资源消耗评估](resource-profile.md)
@@ -238,19 +238,20 @@ Build
 
 ### M4 tray/i18n
 
-- [ ] R21 tray B/C 决策并实施
-- [ ] R22 诊断 code → 三语文案
+- [x] R21 tray 决策：保持三表（B）；校验适配并入 R22
+- [ ] R22 `validate-doc` 换 `validateStructure`，诊断 code → 三语文案
 - [ ] R23 节点帮助/README/示例回归
 - [ ] R24 监控页回归（token/缩放/并行高亮）
 
 ### M5 release
 
-- [ ] R25 重写 `release-check.mjs`
-- [ ] R26 NOTICE/THIRD_PARTY_LICENSES + CHANGELOG
-- [ ] R27 `npm pack` 干净安装 + Node-RED 冒烟
+- [x] R25 重写 `release-check.mjs`（新编辑器、kit 署名）
+- [x] R26 NOTICE / THIRD_PARTY_LICENSES（kit + Vue）
+- [x] R27 `npm pack` 干净安装 + require 冒烟（无 kit 运行时依赖）
 - [ ] R28 README/CONTRIBUTING 架构更新，本路线标记完成
-- [ ] R29 CI 双 Node 版本 + 可选浏览器套件
+- [x] R29 CI 双 Node 版本 + kit 准备步骤
 - [ ] R30 kit `0.8.0` 与插件 `0.2.0` 发布
+- [ ] R31 CHANGELOG 0.2.0
 
 ## 8. 风险登记
 
