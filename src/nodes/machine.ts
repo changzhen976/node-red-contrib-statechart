@@ -1,7 +1,7 @@
 import { EventBus, type MachineStateEvent } from '../runtime/bus'
-import { createMachineSession, getDomParser, type EngineMode } from '../runtime/engine'
+import { getDomParser } from '../runtime/dom'
 import { normalizeDoc, serializeToScxml, type ProjectDoc } from 'statechart-kit'
-import { validateScxml } from 'statechart-kit/engine'
+import { SessionRunner, validateScxml, type EngineMode } from 'statechart-kit/engine'
 import { runtimeStatus, runtimeT } from '../runtime/i18n'
 
 const DEFAULT_SOURCE = `<?xml version="1.0" encoding="UTF-8"?>
@@ -84,8 +84,8 @@ export function registerMachine(RED: any): void {
     machines.set(node.id, node)
 
     const bus = new EventBus()
-    let session: any = null
-    let startPromise: Promise<any> | null = null
+    let runner: SessionRunner | null = null
+    let startPromise: Promise<SessionRunner> | null = null
     let startError: Error | null = null
     let closed = false
     let currentEvent: string | undefined
@@ -129,7 +129,7 @@ export function registerMachine(RED: any): void {
       }
     }
 
-    function writePersistedVars(active: any): void {
+    function writePersistedVars(active: SessionRunner): void {
       if (!node.persistVars || !active) return
       try {
         const result = node.context().set(PERSIST_KEY, active.snapshot())
@@ -140,16 +140,16 @@ export function registerMachine(RED: any): void {
     }
 
     function schedulePersistVars(): void {
-      if (!node.persistVars || !session || saveTimer) return
+      if (!node.persistVars || !runner || saveTimer) return
       saveTimer = setTimeout(() => {
         saveTimer = null
-        if (session) writePersistedVars(session)
+        if (runner) writePersistedVars(runner)
       }, 250)
     }
 
-    function publishState(): void {
-      const states = Array.isArray(session?.activeStateIds()) ? session.activeStateIds() : []
-      const vars = session && typeof session.snapshot === 'function' ? session.snapshot() : {}
+    function publishState(active: SessionRunner): void {
+      const states = active.activeStateIds()
+      const vars = active.snapshot()
       const key = JSON.stringify([states, vars])
       const changed = lastStateKey === null || key !== lastStateKey
       lastStateKey = key
@@ -172,8 +172,8 @@ export function registerMachine(RED: any): void {
       })
     }
 
-    node.ensureStarted = function ensureStarted(): Promise<any> {
-      if (session) return Promise.resolve(session)
+    node.ensureStarted = function ensureStarted(): Promise<SessionRunner> {
+      if (runner) return Promise.resolve(runner)
       if (startError) return Promise.reject(startError)
       if (startPromise) return startPromise
       if (closed) return Promise.reject(new Error('state machine is closed'))
@@ -199,59 +199,78 @@ export function registerMachine(RED: any): void {
         }
 
         const persisted = await readPersistedVars()
-        const created = await createMachineSession(resolved.xml, {
+        const created = new SessionRunner({
+          domParser,
           engine: node.engine,
           scriptTimeoutMs: node.scriptTimeoutMs,
           maxMicrosteps: node.maxMicrosteps,
-          data: persisted,
         })
+
+        created.on((event) => {
+          if (closed) return
+          switch (event.type) {
+            case 'active':
+              // The engine emits one empty active after done; keep the done state.
+              if (created.status === 'done') return
+              publishState(created)
+              break
+            case 'send':
+              bus.emit({
+                type: 'send',
+                event: event.name,
+                data: event.data,
+                target: event.target,
+                sendid: event.sendid,
+                ts: Date.now(),
+              })
+              break
+            case 'error': {
+              const err = new Error(runtimeT(RED, 'errors.runtime', { kind: event.kind, message: event.message }))
+              node.status({ fill: 'red', shape: 'ring', text: runtimeStatus('runtimeError') })
+              node.error(err)
+              bus.emit({ type: 'error', error: err, ts: Date.now() })
+              break
+            }
+            case 'done':
+              node.status({ fill: 'grey', shape: 'dot', text: runtimeStatus('done') })
+              bus.emit({ type: 'done', ts: Date.now() })
+              break
+            default:
+              break
+          }
+        })
+
         if (closed) {
-          created.dispose()
+          await created.stop()
           throw new Error(runtimeT(RED, 'errors.closedWhileStarting'))
         }
-        session = created
 
-        created.addEventListener('macrostep', () => {
-          if (!closed) publishState()
-        })
-        created.addEventListener('send', (event: any) => {
-          if (closed) return
-          const message = event?.message ?? {}
-          bus.emit({
-            type: 'send',
-            event: String(message.event ?? ''),
-            data: message.data,
-            target: message.target,
-            sendid: message.sendid,
-            ts: Date.now(),
-          })
-        })
-        created.addEventListener('error', (event: any) => {
-          if (closed) return
-          const err = new Error(runtimeT(RED, 'errors.runtime', { kind: event?.kind ?? 'error', message: event?.message ?? 'unknown error' }))
-          node.status({ fill: 'red', shape: 'ring', text: runtimeStatus('runtimeError') })
-          node.error(err)
-          bus.emit({ type: 'error', error: err, ts: Date.now() })
-        })
-        created.addEventListener('done', () => {
-          if (closed) return
-          node.status({ fill: 'grey', shape: 'dot', text: runtimeStatus('done') })
-          bus.emit({ type: 'done', ts: Date.now() })
-        })
-
-        created.start()
+        runner = created
+        try {
+          await created.start(resolved.xml, persisted ? { data: persisted } : {})
+        } catch (err) {
+          runner = null
+          await created.stop().catch(() => {})
+          throw err
+        }
         return created
       })()
 
-      startPromise = promise.catch((err) => {
-        startPromise = null
-        startError = err instanceof Error ? err : new Error(String(err))
-        if (!closed) {
-          node.status({ fill: 'red', shape: 'ring', text: runtimeStatus('invalidConfig') })
-          node.error(startError)
-        }
-        throw startError
-      })
+      startPromise = promise.then(
+        (created) => {
+          startPromise = null
+          return created
+        },
+        (err) => {
+          startPromise = null
+          startError = err instanceof Error ? err : new Error(String(err))
+          if (!closed) {
+            node.status({ fill: 'red', shape: 'ring', text: runtimeStatus('invalidConfig') })
+            node.error(startError)
+          }
+          throw startError
+        },
+      )
       return startPromise
     }
 
@@ -259,14 +278,14 @@ export function registerMachine(RED: any): void {
       return enqueue(async () => {
         const active = await node.ensureStarted()
         currentEvent = name
-        active.send(name, data)
+        active.send(name, data, null)
       })
     }
 
     node.setVars = function setVars(vars: Record<string, unknown>): Promise<void> {
       return enqueue(async () => {
         const active = await node.ensureStarted()
-        const datamodel = active.datamodel
+        const datamodel = active.sessionOrNull?.datamodel as any
         if (!datamodel) throw new Error(runtimeT(RED, 'errors.dataModel'))
         const entries = Object.entries(vars)
         for (const [id] of entries) {
@@ -275,12 +294,18 @@ export function registerMachine(RED: any): void {
           }
         }
         for (const [id, value] of entries) {
-          datamodel.assignValue(id, value)
+          const result = active.assignValue(id, value)
+          if (!result.ok) {
+            if (result.code === 'variable.unknown') {
+              throw new Error(runtimeT(RED, 'errors.unknownVariable', { id }))
+            }
+            throw new Error(runtimeT(RED, 'errors.dataModel'))
+          }
         }
         const updateEvent = String(node.updateEvent || '').trim()
         if (updateEvent) {
           currentEvent = updateEvent
-          active.send(updateEvent, {})
+          active.send(updateEvent, {}, null)
         }
       })
     }
@@ -295,8 +320,8 @@ export function registerMachine(RED: any): void {
             // Invalid configuration: reset clears the cached error and tries again.
           }
         }
-        const old = session
-        session = null
+        const old = runner
+        runner = null
         startPromise = null
         startError = null
         lastStates = []
@@ -306,9 +331,9 @@ export function registerMachine(RED: any): void {
         currentEvent = undefined
         if (old) {
           try {
-            old.dispose()
+            await old.stop()
           } catch {
-            // dispose is best-effort
+            // stop is best-effort
           }
         }
         node.status({ fill: 'blue', shape: 'dot', text: runtimeStatus('resetting') })
@@ -328,7 +353,7 @@ export function registerMachine(RED: any): void {
     }
 
     node.isRunning = function isRunning(): boolean {
-      return !!session
+      return !!runner
     }
 
     node.subscribe = function subscribe(listener: (event: any) => void): () => void {
@@ -343,17 +368,14 @@ export function registerMachine(RED: any): void {
         clearTimeout(saveTimer)
         saveTimer = null
       }
-      const active = session
+      const active = runner
       if (active) writePersistedVars(active)
-      session = null
+      runner = null
       startPromise = null
       startError = null
       if (active) {
-        try {
-          active.dispose()
-        } catch {
-          // dispose is best-effort; never block Node-RED shutdown
-        }
+        // SessionRunner.stop() is async but disposes synchronously; never block shutdown.
+        void active.stop().catch(() => {})
       }
       node.status({})
       done()

@@ -506,3 +506,34 @@ test('ships statechart types, palette labels and a custom icon', () => {
   assert.ok(!spaBundle.includes('mqv_ 表示 MQTT'), 'variable rules must not describe an MQTT bridge')
   assert.ok(!spaBundle.includes('ge_/mqe_ 为事件前缀'), 'variable rules must not describe broadcast/MQTT events')
 })
+
+const FINAL = `<?xml version="1.0" encoding="UTF-8"?>
+<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="a">
+  <state id="a"><transition event="go" target="done"/></state>
+  <final id="done"/>
+</scxml>`
+
+test('does not emit an empty state after reaching a final state', async () => {
+  await loadFlow(flowFor(FINAL))
+  try {
+    await waitFor(() => sinkMessages('s1').length > 0, 'initial state')
+    const machine = helper.getNode('conf1')
+    const done = new Promise((resolve) => {
+      const off = machine.subscribe((event) => {
+        if (event.type !== 'done') return
+        off()
+        resolve()
+      })
+    })
+    helper.getNode('in1').receive({ topic: 'go' })
+    await done
+    await sleep(80)
+    const messages = sinkMessages('s1')
+    assert.ok(
+      messages.every((msg) => !(Array.isArray(msg.payload) && msg.payload.length === 0)),
+      'done must not be followed by an empty state payload',
+    )
+  } finally {
+    await unloadFlow()
+  }
+})

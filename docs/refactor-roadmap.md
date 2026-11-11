@@ -1,6 +1,6 @@
 # 重构路线：以 statechart-kit 为核心
 
-> 状态：执行中（2026-11-11）— M0/M1 完成，M2–M5 待开始
+> 状态：执行中（2026-11-11）— M0–M2 完成，M3–M5 待开始
 > 目标版本：`0.2.0`
 > 核心依赖：`statechart-kit@0.8.0`（已打 tag；npm `latest` 仍为 0.7.0）
 > 关联文档：[完整编辑器设计](p4-standalone-editor.md)（历史方案）、[资源消耗评估](resource-profile.md)
@@ -206,27 +206,27 @@ Build
 
 ### M0 准备
 
-- [ ] R01 建分支 `refactor/kit-core`，打基线 tag `v0.1.3-pre-kit`
-- [ ] R02 `statechart-kit` 加入 devDependencies（本地 `file:` 或 `0.8.0`）
-- [ ] R03 新增 `scripts/check-kit.mjs` 并接入 `verify:all`
-- [ ] R04 CI 增加 kit 获取步骤（clone pin 或 `next`）
-- [ ] R05 README「更多文档」加入本路线链接
+- [x] R01 建分支 `refactor/kit-core`，打基线 tag `v0.1.3-pre-kit`
+- [x] R02 `statechart-kit` 加入 devDependencies（本地 `file:` 或 `0.8.0`）
+- [x] R03 新增 `scripts/check-kit.mjs` 并接入 `verify:all`
+- [x] R04 CI 增加 kit 获取步骤（clone pin 或 `next`）
+- [x] R05 README「更多文档」加入本路线链接
 
 ### M1 core
 
-- [ ] R06 删除 `src/vendor/scxml-core/`，改 kit 导入
-- [ ] R07 `validate-doc.ts` 改用 kit 类型；M4 再换 `validateStructure` + uid/code 映射
-- [ ] R08 删除 `sync-vendor` / `check-vendor` / `vendor-patch`
-- [ ] R09 简化 `esbuild.config.mjs`（去 donor patch 与 17 条替换）
-- [ ] R10 core 用例（serialize/import/validate）通过
+- [x] R06 删除 `src/vendor/scxml-core/`，改 kit 导入
+- [x] R07 `validate-doc.ts` 改用 kit 类型；M4 再换 `validateStructure` + uid/code 映射
+- [x] R08 删除 `sync-vendor` / `check-vendor` / `vendor-patch`
+- [x] R09 简化 `esbuild.config.mjs`（去 donor patch 与 17 条替换）
+- [x] R10 core 用例（serialize/import/validate）通过
 
 ### M2 runtime
 
-- [ ] R11 删除 `src/runtime/engine.ts`，改用 `SessionRunner`
-- [ ] R12 `machine.ts` typed 事件映射 + done 守卫
-- [ ] R13 `out.ts` 内部 send 过滤保持 `target/sendid`
-- [ ] R14 `setVars` 改用 `assignValue` 返回 code
-- [ ] R15 运行时用例 + 50 次重部署通过
+- [x] R11 删除 `src/runtime/engine.ts`，改用 `SessionRunner`
+- [x] R12 `machine.ts` typed 事件映射 + done 守卫
+- [x] R13 `out.ts` 内部 send 过滤保持 `target/sendid`
+- [x] R14 `setVars` 改用 `assignValue` 返回 code
+- [x] R15 运行时用例 + 50 次重部署通过
 
 ### M3 editor
 
