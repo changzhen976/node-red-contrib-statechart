@@ -1,6 +1,6 @@
 # 重构路线：以 statechart-kit 为核心
 
-> 状态：M0–M5 完成并发布（2026-11-11）；kit 0.8.0 与插件 0.2.0 均为 npm latest；完整浏览器 smoke 待补
+> 状态：M0–M5 完成，0.2.0 已发布（2026-11-11）；0.2.0 后修复（编辑器名称同步）待在批量修复后发 0.2.1；完整浏览器 smoke 待补
 > 目标版本：`0.2.0`
 > 核心依赖：`statechart-kit@0.8.0`（已打 tag；npm `latest` 仍为 0.7.0）
 > 关联文档：[完整编辑器设计](p4-standalone-editor.md)（历史方案）、[资源消耗评估](resource-profile.md)
@@ -348,3 +348,14 @@ STATECHART_BROWSER=1 GECKODRIVER=... NODERED_URL=http://localhost:1880/ npm run 
 - 2026-11-11：`statechart-kit@0.8.0` 已发布到 npm `latest`（gitHead `f880589`）；宿主 devDependency 改为精确 `0.8.0`，CI 不再 clone/build kit。
 - 2026-11-11：插件 `@changzhen976/node-red-contrib-statechart@0.2.0` 已发布到 npm `latest`（gitHead `4d75d7b`），tag `v0.2.0` 已推 GitHub/Gitea；从 npm 干净安装的 dist 与测试服务器哈希一致。
 - 待执行：完整浏览器 smoke（独立编辑器的关闭/二次确认 smoke 已通过）。
+
+## 15. 0.2.0 之后（未发布）
+
+- `fd90693 fix(editor): sync machine name between Node-RED and ProjectDoc`：
+  编辑器打开/保存时统一 Node-RED 配置节点名、`ProjectDoc.name` 与导出 SCXML 的
+  `<scxml name>`；测试服务器已部署该构建。
+- npm 上的 `0.2.0` **不包含**该修复。计划在本轮批量 bug 修复完成后发布 `0.2.1`
+  （先补 `CHANGELOG` 的 `Unreleased`，再 bump/tag/publish）。
+- `main` 有未推送提交（`fd90693` 名称同步 + 本次文档整理）；按用户要求等批量修复完成后再统一推送。
+- 完整浏览器套件（`test:browser` / `test:p4`）仍待补；独立编辑器的关闭/名称同步
+  已用针对性 Selenium 脚本验证。

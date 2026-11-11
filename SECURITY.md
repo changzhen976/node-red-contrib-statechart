@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-The latest published `0.1.x` release receives fixes. Older versions are not
+The latest published `0.2.x` release receives fixes. Older versions are not
 maintained.
 
 ## Reporting a vulnerability
@@ -23,7 +23,7 @@ reproduction when possible. Expect an initial response within a week.
 The nodes run inside the user's Node-RED instance, so they inherit its trust
 boundary. What the package itself does:
 
-- The monitor page, the standalone editor and their APIs are served from
+- The monitor page, the full-page editor and their APIs are served from
   Node-RED's admin HTTP server (`RED.httpAdmin`) and are not part of the
   runtime endpoints.
 - Those routes are gated by a per-process capability token that the editor

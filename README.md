@@ -87,7 +87,7 @@ npm install /path/to/changzhen976-node-red-contrib-statechart-<version>.tgz
 
 支持添加/删除、父/子状态选择、根 initial、结构化 actions 编辑和实时结构校验；高级区可编辑原始 SCXML 或 ProjectDoc JSON。
 
-配置窗口还提供 **打开完整编辑器**：在新标签页打开全屏 Vue 编辑器，可切换所有状态图（state chart），编辑后通过 **保存到 Node-RED** 回写，再回到 Node-RED 点 Update/Deploy。
+配置窗口还提供 **打开完整编辑器**：在新标签页打开 `statechart-kit` 的全屏 Vue 编辑器；一次打开一台机器，编辑后通过 **保存到 Node-RED** 回写，再回到 Node-RED 点 Update/Deploy。
 
 ## 输入命令
 
@@ -161,6 +161,7 @@ msg.topic
 | Node-RED | 5.x（实测 5.0.9） |
 | Node.js | ≥ 22.9（推荐 24） |
 | 引擎 | `@tinyactors/scxmljs@0.2.0-dev.0` |
+| 编辑器 | `statechart-kit/vue`（构建期内联，运行时无额外依赖） |
 | XML | `@xmldom/xmldom` |
 | 模块格式 | CJS 入口，ESM 引擎动态加载 |
 
@@ -181,10 +182,11 @@ STATECHART_BROWSER=1 GECKODRIVER=/path/to/geckodriver \
 
 更多文档：
 
+- [文档索引](docs/README.md)
 - [重构路线：以 statechart-kit 为核心](docs/refactor-roadmap.md)
 - [示例说明](examples/README.md)
 - [资源消耗评估](docs/resource-profile.md)
-- [完整编辑器设计](docs/p4-standalone-editor.md)（历史方案，0.2.0 将被 kit 编辑器替换）
+- [完整编辑器设计（历史）](docs/p4-standalone-editor.md)（0.2.0 已由 kit 编辑器替换）
 - [贡献指南](CONTRIBUTING.md)
 
 ## 许可

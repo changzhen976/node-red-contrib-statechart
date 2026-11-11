@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- The full-page editor now keeps the Node-RED config-node name, `ProjectDoc.name`
+  and the exported SCXML `<scxml name="…">` in sync. Opening the editor prefers
+  the dialog's Name field; saving from the editor updates the config node name.
+
 ## 0.2.0 — 2026-11-11
 
 ### Changed

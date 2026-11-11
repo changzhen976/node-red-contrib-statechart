@@ -3,6 +3,9 @@
 Thanks for taking a look. This package is a Node-RED node set plus a browser
 editor, so changes usually touch the runtime contract and the editor together.
 
+Project docs are indexed in [docs/README.md](docs/README.md); historical designs
+are marked there so they are not mistaken for current implementation notes.
+
 ## Setup
 
 ```sh

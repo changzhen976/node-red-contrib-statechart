@@ -87,7 +87,7 @@ The `statechart-machine` dialog has three tables:
 
 Add/remove rows, select parents and initial states, edit structured actions and see structural validation. The advanced section accepts raw SCXML or ProjectDoc JSON.
 
-**Open full editor** launches a full-screen Vue editor in a new tab. It can switch between all state charts, edit them, and **Save to Node-RED** back into the parent editor; then click Update/Deploy in Node-RED.
+**Open full editor** launches the `statechart-kit` full-screen Vue editor in a new tab. One machine opens per window; use **Save to Node-RED** to write the document back, then click Update/Deploy in Node-RED.
 
 ## Commands
 
@@ -161,6 +161,7 @@ The default workflow is fully visual; you never need to touch XML. At runtime th
 | Node-RED | 5.x (tested 5.0.9) |
 | Node.js | ≥ 22.9 (24 recommended) |
 | Engine | `@tinyactors/scxmljs@0.2.0-dev.0` |
+| Editor | `statechart-kit/vue` (bundled at build time; no extra runtime dependency) |
 | XML | `@xmldom/xmldom` |
 | Module format | CJS entry; ESM engine loaded dynamically |
 
@@ -181,9 +182,11 @@ STATECHART_BROWSER=1 GECKODRIVER=/path/to/geckodriver \
 
 More documentation:
 
+- [Documentation index](docs/README.md)
+- [Refactor roadmap](docs/refactor-roadmap.md)
 - [Examples](examples/README.md)
 - [Resource profile](docs/resource-profile.md)
-- [Full editor design](docs/p4-standalone-editor.md)
+- [Full editor design (historical)](docs/p4-standalone-editor.md) — replaced by the kit editor in 0.2.0
 - [Contributing](CONTRIBUTING.md)
 
 ## License
