@@ -18,7 +18,7 @@ Useful scripts:
 | `npm run build` | Bundles `dist/` with esbuild: node runtime (kit inlined), tray form, full-page editor and monitor |
 | `npm test` | Build plus the Node-RED runtime tests (`node --test test/*.test.cjs`) |
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm run check:kit` | Verify the local `statechart-kit` dependency (version, fresh dist, inlined bundle) |
+| `npm run check:kit` | Verify the `statechart-kit` dependency (version, dist, inlined bundle) |
 | `npm run release:check` | Pre-release gate: required files, `npm pack` manifest, no stale names |
 | `npm run verify:all` | Typecheck, tests, kit check and release check, optionally browser suites |
 | `npm run test:browser` / `npm run test:p4` | Browser regressions; need Firefox, geckodriver and a live Node-RED (`NODERED_URL`, default `http://localhost:1880/`) |

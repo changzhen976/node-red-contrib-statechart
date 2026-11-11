@@ -1,6 +1,6 @@
 # 重构路线：以 statechart-kit 为核心
 
-> 状态：M0–M5 发布准备完成（2026-11-11）；浏览器 smoke 与 npm 发布待执行
+> 状态：M0–M5 发布准备完成（2026-11-11）；kit 0.8.0 已发布（npm latest）；插件 0.2.0 发布与浏览器 smoke 待执行
 > 目标版本：`0.2.0`
 > 核心依赖：`statechart-kit@0.8.0`（已打 tag；npm `latest` 仍为 0.7.0）
 > 关联文档：[完整编辑器设计](p4-standalone-editor.md)（历史方案）、[资源消耗评估](resource-profile.md)
@@ -249,8 +249,9 @@ Build
 - [x] R26 NOTICE / THIRD_PARTY_LICENSES（kit + Vue）
 - [x] R27 `npm pack` 干净安装 + require 冒烟（无 kit 运行时依赖）
 - [x] R28 README/CONTRIBUTING 架构更新
-- [x] R29 CI 双 Node 版本 + kit 准备步骤
-- [ ] R30 kit `0.8.0` 与插件 `0.2.0` 发布
+- [x] R29 CI 双 Node 版本（从 npm 安装 kit）
+- [x] R30 kit `0.8.0` 发布（npm latest）
+- [ ] R30b 插件 `0.2.0` 发布
 - [x] R31 CHANGELOG 0.2.0
 
 ## 8. 风险登记
@@ -334,7 +335,7 @@ STATECHART_BROWSER=1 GECKODRIVER=... NODERED_URL=http://localhost:1880/ npm run 
 - [x] `npm test` / `typecheck` / `release:check` 全绿（`verify:all` 通过）
 - [ ] 浏览器 smoke（需 geckodriver + 运行中的 Node-RED）
 - [x] `npm pack` 干净安装 + require 冒烟通过，无 kit 运行时依赖
-- [ ] 真实 Node-RED 实例冒烟（需本地实例）
+- [x] 真实 Node-RED 实例冒烟（测试服务器 0.2.0 部署，API/编辑器资产通过）
 - [x] 文档、CHANGELOG、NOTICE、README、CONTRIBUTING 更新
 - [x] kit 0.8.0 与插件 0.2.0 的版本对应关系可追溯
 
@@ -344,4 +345,5 @@ STATECHART_BROWSER=1 GECKODRIVER=... NODERED_URL=http://localhost:1880/ npm run 
 - M0–M4 完成；M5 发布准备完成：版本 `0.2.0`、CHANGELOG、NOTICE/THIRD_PARTY、干净安装。
 - `npm run verify:all`：24/24、Node 22.9/24、`check:kit`、`release:check` 全绿。
 - `npm pack` 0.2.0 干净安装：`node_modules` 无 `statechart-kit`，`require(plugin)` 正常。
-- 待执行：浏览器 smoke（geckodriver + live Node-RED）、`npm publish`、发布后把 kit 提升为 `latest`。
+- 2026-11-11：`statechart-kit@0.8.0` 已发布到 npm `latest`（gitHead `f880589`）；宿主 devDependency 改为精确 `0.8.0`，CI 不再 clone/build kit。
+- 待执行：插件 `0.2.0` 的 `npm publish`、完整浏览器 smoke（独立编辑器的 close smoke 已通过）。

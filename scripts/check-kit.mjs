@@ -1,5 +1,5 @@
 /**
- * Guard the local `statechart-kit` dependency.
+ * Guard the `statechart-kit` dependency.
  *
  * The kit is a devDependency that is bundled into `dist/`; the published package
  * must never require it at runtime. This check makes a stale or accidentally
@@ -58,6 +58,7 @@ if (kitRoot) {
   }
 
   // A file: dependency is edited in place; make sure its dist is not stale.
+  // Registry installs have no src/, so the stat() calls fall through.
   const pairs = [
     ['src/core/model.ts', 'dist/index.js'],
     ['src/engine/session-runner.ts', 'dist/engine.js'],

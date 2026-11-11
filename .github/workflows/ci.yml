@@ -21,12 +21,6 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
-      - name: Prepare statechart-kit
-        run: |
-          git clone --depth 1 --branch v0.8.0 https://github.com/changzhen976/statechart-kit.git ../statechart-kit
-          npm --prefix ../statechart-kit ci --no-audit --no-fund
-          npm --prefix ../statechart-kit run build
-
       - name: Install
         run: npm ci
 
