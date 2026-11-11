@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.2.0 — 2026-11-11
+
+### Changed
+
+- The runtime is now built on `statechart-kit@0.8.0`: document model, SCXML
+  serializer/importer, structure validation and `SessionRunner` all come from the
+  kit. `src/vendor/scxml-core` and the local engine loader are gone.
+- The full-screen editor now uses `statechart-kit/vue` (`mountEditor` with a
+  Node-RED `EditorAdapter`). The donor SPA build (`editor-app/`) and the 17
+  build-time string replacements are removed.
+- The runtime event bridge uses the kit's typed `send` / `error` / `done`
+  events; a terminal state no longer produces an extra empty state message.
+- Tray-form validation now delegates to the kit's `validateStructure` (delays
+  below 10 ms are rejected; event-name syntax is still checked by the host).
+
+### Added
+
+- `/statechart/editor/` is served by the new `editor-page/` bundle (kit Vue
+  editor + postMessage adapter). The editor does not autosave; the explicit
+  "保存到 Node-RED" button writes `node.doc` / `node.source`.
+- `npm run check:kit` guards the bundled kit version, dist freshness and that
+  the runtime bundle never `require`s `statechart-kit`.
+- CI checks out/builds `statechart-kit@v0.8.0` before installing the package.
+
+### Removed
+
+- `src/vendor/`, `editor-app/`, `scripts/{sync,check}-vendor.mjs`,
+  `scripts/vendor-patch.mjs` and the donor build patching in `esbuild.config.mjs`.
+
+### Compatibility
+
+- `ProjectDoc` and stored flow data are unchanged; no migration is required.
+- `delayMs < 10` is now rejected by the tray validator (previously only `<= 0`).
+- The full-page editor opens one machine per window; the donor multi-machine
+  selector is no longer part of the Node-RED editor.
+
 ## 0.1.3 — 2026-11-10
 
 ### Fixed

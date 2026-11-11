@@ -1,6 +1,6 @@
 # 重构路线：以 statechart-kit 为核心
 
-> 状态：执行中（2026-11-11）— M0–M3 完成（浏览器 smoke 待跑）；M5 打包/干净安装已验证；M4 与发布待开始
+> 状态：执行中（2026-11-11）— M0–M4 完成（浏览器 smoke 待跑）；M5 发布准备完成，发布待执行
 > 目标版本：`0.2.0`
 > 核心依赖：`statechart-kit@0.8.0`（已打 tag；npm `latest` 仍为 0.7.0）
 > 关联文档：[完整编辑器设计](p4-standalone-editor.md)（历史方案）、[资源消耗评估](resource-profile.md)
@@ -34,7 +34,7 @@ kit 0.8.0 已经提供文档模型、SCXML 序列化/导入、命名策略、结
 | --- | --- | --- |
 | `src/vendor/scxml-core/` | 1,267 行 | **删除**，改 kit core |
 | `src/runtime/engine.ts` | 58 行 | **删除**，改 kit engine |
-| `src/editor/{core-bridge,validate-doc}.ts` | 190 行 | core-bridge 改 kit；validate-doc 暂留，M4 换 `validateStructure` |
+| `src/editor/{core-bridge,validate-doc}.ts` | 190 行 | core-bridge 改 kit；validate-doc 已换 `validateStructure`（M4） |
 | `editor/statechart.html` | 1,182 行 | 重写：设置窗 + 打开编辑器（或保留精简三表，见 D2） |
 | `editor-app/` | 1.3 MB 生成物 | **删除**，改为 kit 编辑器页 |
 | `monitor/` + `src/runtime/monitor.ts` | 476 行 | **保留**（已只依赖 `<scxml-view>`） |
@@ -239,19 +239,19 @@ Build
 ### M4 tray/i18n
 
 - [x] R21 tray 决策：保持三表（B）；校验适配并入 R22
-- [ ] R22 `validate-doc` 换 `validateStructure`，诊断 code → 三语文案
-- [ ] R23 节点帮助/README/示例回归
-- [ ] R24 监控页回归（token/缩放/并行高亮）
+- [x] R22 `validate-doc` 换 `validateStructure`，诊断 code → 三语文案
+- [x] R23 节点帮助/README/示例回归
+- [ ] R24 监控页浏览器回归（token/缩放/并行高亮）
 
 ### M5 release
 
 - [x] R25 重写 `release-check.mjs`（新编辑器、kit 署名）
 - [x] R26 NOTICE / THIRD_PARTY_LICENSES（kit + Vue）
 - [x] R27 `npm pack` 干净安装 + require 冒烟（无 kit 运行时依赖）
-- [ ] R28 README/CONTRIBUTING 架构更新，本路线标记完成
+- [x] R28 README/CONTRIBUTING 架构更新
 - [x] R29 CI 双 Node 版本 + kit 准备步骤
 - [ ] R30 kit `0.8.0` 与插件 `0.2.0` 发布
-- [ ] R31 CHANGELOG 0.2.0
+- [x] R31 CHANGELOG 0.2.0
 
 ## 8. 风险登记
 
@@ -314,7 +314,7 @@ STATECHART_BROWSER=1 GECKODRIVER=... NODERED_URL=http://localhost:1880/ npm run 
 | `src/vendor/scxml-core/**` | 删除 | `statechart-kit` core |
 | `src/runtime/engine.ts` | 删除 | `statechart-kit/engine` |
 | `src/editor/core-bridge.ts` | 删除 | 由 `editor-page/` 直接 import kit |
-| `src/editor/validate-doc.ts` | M4 替换 | `validateStructure` + uid 映射 |
+| `src/editor/validate-doc.ts` | 已替换 | `validateStructure` + uid/code 映射 |
 | `editor/statechart.html` | 重写/精简 | 机器设置 + 打开编辑器 |
 | `editor-app/**` | 删除 | `editor-page/` → `dist/editor/` |
 | `esbuild.config.mjs` donor patch | 删除 | 简化复制流程 |

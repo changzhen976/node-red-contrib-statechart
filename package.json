@@ -1,6 +1,6 @@
 {
   "name": "@changzhen976/node-red-contrib-statechart",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "State chart editor and runtime for Node-RED — SCXML 1.0 compatible",
   "license": "MIT",
   "publishConfig": {
