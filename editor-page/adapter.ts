@@ -14,15 +14,27 @@ const LOAD_TIMEOUT_MS = 4000
 let machineId = new URLSearchParams(location.search).get('id') ?? ''
 let resolveLoad: ((doc: ProjectDoc | null) => void) | null = null
 let resolveAck: (() => void) | null = null
+let dirty = false
 
 const loaded = new Promise<ProjectDoc | null>((resolve) => {
   resolveLoad = resolve
 })
 
+function cloneDoc (doc: ProjectDoc): ProjectDoc {
+  // The editor store hands over a Vue reactive Proxy; postMessage cannot
+  // structured-clone a Proxy (DataCloneError), so send plain JSON.
+  return JSON.parse(JSON.stringify(doc)) as ProjectDoc
+}
+
 function post (type: string, payload: Record<string, unknown> = {}): boolean {
   if (!window.opener || window.opener.closed) return false
-  window.opener.postMessage({ type, id: machineId, ...payload }, location.origin)
-  return true
+  try {
+    window.opener.postMessage({ type, id: machineId, ...payload }, location.origin)
+    return true
+  } catch (err) {
+    console.error('[statechart] postMessage failed', err)
+    return false
+  }
 }
 
 function settleLoad (doc: ProjectDoc | null): void {
@@ -45,9 +57,16 @@ window.addEventListener('message', (event) => {
   }
 })
 
-function saveToNodeRed (doc: ProjectDoc): Promise<void> {
-  if (!post('scxml:save', { doc })) return Promise.resolve()
-  return new Promise((resolve) => {
+async function saveToNodeRed (doc: ProjectDoc): Promise<boolean> {
+  let payload: ProjectDoc
+  try {
+    payload = cloneDoc(doc)
+  } catch (err) {
+    console.error('[statechart] failed to serialize document', err)
+    return false
+  }
+  if (!post('scxml:save', { doc: payload })) return false
+  await new Promise<void>((resolve) => {
     const timer = setTimeout(() => {
       resolveAck = null
       resolve()
@@ -57,6 +76,7 @@ function saveToNodeRed (doc: ProjectDoc): Promise<void> {
       resolve()
     }
   })
+  return true
 }
 
 function download (xml: string, doc: ProjectDoc): void {
@@ -67,6 +87,15 @@ function download (xml: string, doc: ProjectDoc): void {
   anchor.download = `${doc.name || 'chart'}.scxml`
   anchor.click()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+function closeWindow (): void {
+  window.close()
+  setTimeout(() => {
+    if (!window.closed) {
+      console.warn('[statechart] the browser refused to close this window')
+    }
+  }, 300)
 }
 
 export function createNodeRedAdapter (): EditorAdapter {
@@ -82,13 +111,25 @@ export function createNodeRedAdapter (): EditorAdapter {
     },
     // No autosave: the kit only marks dirty until the explicit save button posts
     // scxml:save. This keeps Node-RED flows from becoming dirty on every edit.
-    exportProject: (doc) => saveToNodeRed(doc),
+    exportProject: async (doc) => {
+      if (!(await saveToNodeRed(doc))) throw new Error('failed to save to Node-RED')
+    },
     exportScxml: (xml, doc) => download(xml, doc),
     exit: (doc) => {
-      void saveToNodeRed(doc).finally(() => window.close())
+      if (dirty && !window.confirm('状态机有未保存的修改，确定保存并关闭？')) return
+      void (async () => {
+        if (dirty) {
+          if (!(await saveToNodeRed(doc))) {
+            window.alert('保存到 Node-RED 失败，未关闭页面。')
+            return
+          }
+        }
+        closeWindow()
+      })()
     },
-    onDirtyChange: (dirty) => {
-      document.title = `${dirty ? '● ' : ''}State chart editor — Node-RED`
+    onDirtyChange: (value) => {
+      dirty = value
+      document.title = `${value ? '● ' : ''}State chart editor — Node-RED`
     },
     onLog: (entry) => {
       if (entry.level === 'error') console.error('[statechart]', entry.text)

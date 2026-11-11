@@ -16,6 +16,14 @@ Node-RED 全页编辑器的宿主页：用 `statechart-kit/vue` 的 `mountEditor
 编辑器不提供自动保存：`adapter` 不实现 `save`，只有显式“保存到 Node-RED”或
 “关闭”才会 `postMessage('scxml:save')`，避免每次编辑都把 flow 标脏。
 
+关闭行为：
+
+- 没有修改时直接关闭窗口；
+- `onDirtyChange` 为 true 时先 `window.confirm` 二次确认；确认后保存到 Node-RED
+  再关闭，保存失败则留在页面并提示；
+- `postMessage` 前必须对 `ProjectDoc` 做 JSON 克隆：编辑器 store 的 `doc` 是 Vue
+  reactive Proxy，直接发送会抛 `DataCloneError`，表现为保存/关闭无响应。
+
 ## 构建
 
 `npm run build` 中的 esbuild 步骤把 `editor-page/main.ts` 打成

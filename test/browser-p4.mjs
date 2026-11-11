@@ -91,6 +91,13 @@ async function main() {
     assert.ok(parent.docLen > 0, 'parent node.doc was not updated by P4 save')
     assert.ok(parent.states >= 3, 'parent node.doc does not contain the loaded states')
 
+    await call('POST', '/window', { handle: childHandle, name: 'p4' })
+    const close = await execute(`const btn = [...document.querySelectorAll('button')].find((b) => (b.textContent || '').trim() === '关闭'); if (!btn) return 'NO_BUTTON'; btn.click(); return 'CLICKED';`)
+    assert.equal(close, 'CLICKED')
+    await sleep(2500)
+    const afterClose = (await call('GET', '/window/handles')).value
+    assert.ok(!afterClose.includes(childHandle), 'editor window did not close')
+
     console.log(JSON.stringify({ ok: true, title: child.title, parentDocLen: parent.docLen, parentStates: parent.states }, null, 2))
     await call('DELETE', `/session/${sessionId}`).catch(() => {})
     sessionId = null

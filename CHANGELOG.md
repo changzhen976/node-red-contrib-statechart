@@ -20,6 +20,14 @@
 - `/statechart/editor/` is served by the new `editor-page/` bundle (kit Vue
   editor + postMessage adapter). The editor does not autosave; the explicit
   "保存到 Node-RED" button writes `node.doc` / `node.source`.
+
+### Fixed
+
+- The standalone editor's close button now closes the window. Unsaved edits
+  trigger a confirmation; confirming saves to Node-RED before closing.
+- `postMessage` now sends a JSON clone of the document. The Vue reactive Proxy
+  previously raised `DataCloneError`, which made save and close silently do
+  nothing.
 - `npm run check:kit` guards the bundled kit version, dist freshness and that
   the runtime bundle never `require`s `statechart-kit`.
 - CI checks out/builds `statechart-kit@v0.8.0` before installing the package.
