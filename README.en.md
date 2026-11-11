@@ -31,7 +31,7 @@ The default workflow is entirely GUI-based — no XML required. Charts are execu
 - Read-only live state chart;
 - Multiple independent state charts;
 - English and Simplified Chinese UI/help;
-- Full-screen editor reusing the creator Vue UI.
+- Full-screen editor built on the `statechart-kit` Vue UI.
 
 ## Requirements
 

@@ -6,8 +6,8 @@ Third-party software
 --------------------
 - @tinyactors/scxmljs (MIT) — W3C SCXML 1.0 interpreter used as the runtime engine.
 - @xmldom/xmldom (MIT) — XML parser used to parse SCXML in Node.js.
-- scxml-creator (MIT) — vendored core at commit 6b5cfb6: ProjectDoc model,
-  serializer, action parser, validator, naming and SCXML importer. See
-  src/vendor/scxml-core/UPSTREAM.md.
+- statechart-kit (MIT) — document model, SCXML serializer/importer, structure
+  validation, SessionRunner and the Vue editor; bundled at 0.8.0.
+- Vue (MIT) — bundled into the full-page editor.
 
 Full license texts for the components above are in THIRD_PARTY_LICENSES.md.

@@ -71,31 +71,19 @@ async function main() {
     assert.ok(handles.length >= 2, 'standalone editor window did not open')
     const childHandle = handles.find((h) => h !== parentHandle)
     await call('POST', '/window', { handle: childHandle, name: 'p4' })
-    await sleep(2500)
-
+    await waitFor(`return !!document.querySelector('.sce-root');`, 'kit editor root', 20000)
     const child = await execute(`return {
-      bar: !!document.querySelector('#scxml-nodered-bar'),
-      hash: location.hash,
-      text: (document.body.innerText || '').slice(0, 500),
+      root: !!document.querySelector('.sce-root'),
+      text: (document.body.innerText || '').slice(0, 1200),
       title: document.title,
-      machineSelect: (() => {
-        const select = document.querySelector('#scxml-nodered-machine');
-        return select ? { visible: select.offsetParent !== null, options: Array.from(select.options).map((o) => o.textContent) } : null;
-      })(),
     }`)
-    assert.equal(child.bar, true, 'Node-RED bridge bar missing')
-    assert.equal(child.hash, '#/editor')
+    assert.equal(child.root, true, 'kit editor did not mount')
     assert.match(child.text, /red/)
     assert.match(child.text, /green/)
-    assert.ok(child.machineSelect && child.machineSelect.options.length >= 2, 'expected the multi-machine selector')
-    await execute(`location.hash = '#/gallery'; return true`)
-    await sleep(500)
-    const locked = await execute(`return location.hash`)
-    assert.equal(locked, '#/editor', 'standalone page should stay on the editor view')
 
-    const save = await execute(`const bar = document.querySelector('#scxml-nodered-bar'); const btn = bar && bar.querySelectorAll('button')[0]; if (!btn) return 'NO_BUTTON'; btn.click(); return 'CLICKED';`)
+    const save = await execute(`const btn = [...document.querySelectorAll('button')].find((b) => (b.textContent || '').trim() === '保存到 Node-RED'); if (!btn) return 'NO_BUTTON'; btn.click(); return 'CLICKED';`)
     assert.equal(save, 'CLICKED')
-    await sleep(1000)
+    await sleep(1500)
 
     await call('POST', '/window', { handle: parentHandle, name: 'nodered' })
     await sleep(500)
@@ -103,7 +91,7 @@ async function main() {
     assert.ok(parent.docLen > 0, 'parent node.doc was not updated by P4 save')
     assert.ok(parent.states >= 3, 'parent node.doc does not contain the loaded states')
 
-    console.log(JSON.stringify({ ok: true, childHash: child.hash, machineOptions: child.machineSelect.options, parentDocLen: parent.docLen, parentStates: parent.states }, null, 2))
+    console.log(JSON.stringify({ ok: true, title: child.title, parentDocLen: parent.docLen, parentStates: parent.states }, null, 2))
     await call('DELETE', `/session/${sessionId}`).catch(() => {})
     sessionId = null
   } finally {

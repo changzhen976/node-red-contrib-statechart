@@ -58,7 +58,7 @@ export function registerMonitor(RED: any): void {
   })
 
   const monitorDir = path.join(__dirname, 'monitor')
-  const editorDir = path.join(__dirname, 'editor-app')
+  const editorDir = path.join(__dirname, 'editor')
   const assetBase = `${normalizeAdminRoot(RED.settings?.httpAdminRoot)}statechart/assets/`
   const htmlPath = path.join(monitorDir, 'index.html')
 

@@ -12,7 +12,7 @@ const pkg = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'))
 const required = [
   'LICENSE', 'NOTICE', 'README.md', 'README.en.md',
   'dist/statechart.js', 'dist/statechart.html',
-  'dist/editor-app/index.html', 'dist/editor-app/assets',
+  'dist/editor/index.html', 'dist/editor/main.js', 'dist/editor/main.css',
   'dist/locales/en-US/statechart.json', 'dist/locales/zh-CN/statechart.json',
   'dist/locales/zh-CN/statechart.html',
   'dist/icons/statechart.svg',
@@ -23,18 +23,15 @@ for (const file of required) {
   try { await access(resolve(root, file)) } catch { missing.push(file) }
 }
 
-const editorIndex = await readFile(resolve(root, 'dist/editor-app/index.html'), 'utf8')
+const editorIndex = await readFile(resolve(root, 'dist/editor/index.html'), 'utf8')
 if (editorIndex.includes('scxmljs-creator')) {
-  missing.push('dist/editor-app/index.html: old product title still present')
+  missing.push('dist/editor/index.html: old product title still present')
 }
-if (!editorIndex.includes('dock the Node-RED bar')) {
-  missing.push('dist/editor-app/index.html: standalone bar layout override missing')
-}
-if (!editorIndex.includes('.toolbar .exit-btn')) {
-  missing.push('dist/editor-app/index.html: standalone exit button hide rule missing')
+if (!editorIndex.includes('main.js') || !editorIndex.includes('main.css')) {
+  missing.push('dist/editor/index.html: main.js/main.css references missing')
 }
 const notice = await readFile(resolve(root, 'NOTICE'), 'utf8')
-if (!notice.includes('6b5cfb6')) missing.push('NOTICE: vendor commit 6b5cfb6 missing')
+if (!notice.includes('statechart-kit')) missing.push('NOTICE: statechart-kit attribution missing')
 if (!pkg['node-red']?.nodes?.statechart) missing.push('package.json: node-red.nodes.statechart missing')
 if (!pkg.engines?.node) missing.push('package.json: engines.node missing')
 if (!pkg.license) missing.push('package.json: license missing')
@@ -44,7 +41,7 @@ if (pkg.name.startsWith('@') && pkg.publishConfig?.access !== 'public') {
 
 const pack = JSON.parse(execFileSync('npm', ['pack', '--dry-run', '--json'], { cwd: root, encoding: 'utf8' }))[0]
 const files = pack.files.map((file) => file.path)
-for (const requiredFile of ['dist/editor-app/index.html', 'dist/locales/zh-CN/statechart.json', 'dist/icons/statechart.svg', 'examples/demo-suite.json', 'LICENSE', 'NOTICE']) {
+for (const requiredFile of ['dist/editor/index.html', 'dist/editor/main.js', 'dist/locales/zh-CN/statechart.json', 'dist/icons/statechart.svg', 'examples/demo-suite.json', 'LICENSE', 'NOTICE']) {
   if (!files.includes(requiredFile)) missing.push(`npm pack: ${requiredFile} missing`)
 }
 if (files.some((file) => file.startsWith('.tmp/') || file.startsWith('test/') || file.startsWith('.opencode/'))) {
@@ -76,11 +73,11 @@ const DONOR_TEXT = [
   '开头时绑定全局变量',
   'sys. 为系统保留前缀',
 ]
-for (const entry of await readdir(resolve(root, 'dist/editor-app'), { recursive: true })) {
+for (const entry of await readdir(resolve(root, 'dist/editor'), { recursive: true })) {
   if (!/\.(js|mjs|css|html|json)$/.test(entry)) continue
-  const text = await readFile(resolve(root, 'dist/editor-app', entry), 'utf8').catch(() => '')
+  const text = await readFile(resolve(root, 'dist/editor', entry), 'utf8').catch(() => '')
   for (const needle of DONOR_TEXT) {
-    if (text.includes(needle)) missing.push(`dist/editor-app/${entry}: donor naming copy still present ("${needle}")`)
+    if (text.includes(needle)) missing.push(`dist/editor/${entry}: donor naming copy still present ("${needle}")`)
   }
 }
 

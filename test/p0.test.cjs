@@ -487,24 +487,20 @@ test('ships statechart types, palette labels and a custom icon', () => {
   assert.ok(html.includes('scxml-full-editor-callout'), 'full editor CTA should be a top callout')
   assert.ok(html.indexOf('scxml-full-editor-callout') < html.indexOf('id="node-config-input-name"'), 'full editor CTA should be above the name field')
   assert.ok(html.includes('id="node-config-input-open-full-editor"'))
-  const standalone = fs.readFileSync(path.join(root, 'dist', 'editor-app', 'index.html'), 'utf8')
-  assert.ok(standalone.includes('<title>State chart editor'))
-  assert.ok(!standalone.includes('scxmljs-creator'))
-  assert.ok(standalone.includes('dock the Node-RED bar'), 'standalone bar must reserve layout space')
-  assert.ok(standalone.includes('100dvh - 44px'))
-  assert.ok(standalone.includes('.toolbar .exit-btn'), 'donor exit button should be hidden in Node-RED mode')
-  assert.ok(standalone.includes('MutationObserver'), 'donor service/API entry points should be hidden')
+  const editorIndex = fs.readFileSync(path.join(root, 'dist', 'editor', 'index.html'), 'utf8')
+  assert.ok(editorIndex.includes('<title>State chart editor'))
+  assert.ok(editorIndex.includes('./main.js'))
+  assert.ok(editorIndex.includes('./main.css'))
+  assert.ok(!editorIndex.includes('scxmljs-creator'))
 
-  // Donor-only concepts must not leak into the node form or the variable help.
+  const editorBundle = fs.readFileSync(path.join(root, 'dist', 'editor', 'main.js'), 'utf8')
+  const editorCss = fs.readFileSync(path.join(root, 'dist', 'editor', 'main.css'), 'utf8')
+  assert.ok(editorBundle.includes('scxml-view'), 'editor bundle must register <scxml-view>')
+  assert.ok(editorCss.includes('.sce-root'), 'editor styles must ship with the page')
+
+  // Donor-only concepts must not leak into the node form.
   assert.ok(!html.includes('gv_'), 'node form must not ship the donor global-variable prefix')
   assert.ok(!html.includes('mqv_'), 'node form must not ship the donor MQTT variable prefix')
-  const spaAsset = /src="\.\/assets\/(index-[^"]+\.js)"/.exec(standalone)
-  assert.ok(spaAsset, 'standalone editor bundle should be referenced from index.html')
-  const spaBundle = fs.readFileSync(path.join(root, 'dist', 'editor-app', 'assets', spaAsset[1]), 'utf8')
-  assert.ok(spaBundle.includes('所有变量都是本机变量'), 'variable help should describe local variables only')
-  assert.ok(!spaBundle.includes('开头时绑定全局变量'), 'variable help must not describe a globals registry')
-  assert.ok(!spaBundle.includes('mqv_ 表示 MQTT'), 'variable rules must not describe an MQTT bridge')
-  assert.ok(!spaBundle.includes('ge_/mqe_ 为事件前缀'), 'variable rules must not describe broadcast/MQTT events')
 })
 
 const FINAL = `<?xml version="1.0" encoding="UTF-8"?>

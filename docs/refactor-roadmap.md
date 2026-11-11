@@ -1,6 +1,6 @@
 # 重构路线：以 statechart-kit 为核心
 
-> 状态：执行中（2026-11-11）— M0–M2 完成，M3–M5 待开始
+> 状态：执行中（2026-11-11）— M0–M2 完成；M3 代码完成（浏览器 smoke 待跑），M4–M5 待开始
 > 目标版本：`0.2.0`
 > 核心依赖：`statechart-kit@0.8.0`（已打 tag；npm `latest` 仍为 0.7.0）
 > 关联文档：[完整编辑器设计](p4-standalone-editor.md)（历史方案）、[资源消耗评估](resource-profile.md)
@@ -161,15 +161,15 @@ Build
 
 ### W5 编辑器页（2.5–3.5 天）
 
-- 新建 `editor-page/`：`index.html`、`main.ts`、`adapter.ts`、`bridge.ts`；
-- `mountEditor` + `features`（无示例/部署/退出按需裁剪）；
+- 新建 `editor-page/`：`index.html`、`main.ts`、`adapter.ts`；
+- `mountEditor` + `features`（`examples:false`、`deploy:false`，保存走 `exportProject`）；
 - `EditorAdapter`：
-  - `load` 等待 `scxml:load`；`save` 缓冲，显式保存时 `postMessage('scxml:save')`；
-  - `deploy`/`exit` 复用现有协议；`readOnly` 可接草稿锁；
-- Vite 构建到 `dist/editor/`；kit/vue 与 `<scxml-view>` 内联；sandboxed 模拟需要 QuickJS WASM 时，优先固定 `engine: 'trusted'`（与监控页一致）；
+  - `load` 等待 `scxml:load`；不提供自动 `save`；显式保存/退出走 `postMessage('scxml:save')`；
+  - `exit` 保存后关闭；`readOnly` 可接草稿锁；
+- esbuild 构建到 `dist/editor/`（与 monitor 同一 splitting 策略）；kit/vue 与 `<scxml-view>` 内联；模拟固定 `engine: 'trusted'`，避免在管理页拉取 QuickJS WASM；
 - 路由 `/statechart/editor/` 指向新构建；token 与静态资产规则保持。
 
-**验收**：打开→编辑→保存回写→Update/Deploy；两台机器可切换打开；无 donor 产物。
+**验收**：打开→编辑→保存回写→Update/Deploy；每台机器独立打开；无 donor 产物。
 
 ### W6 tray 与 i18n（2–3 天，含决策）
 
@@ -230,11 +230,11 @@ Build
 
 ### M3 editor
 
-- [ ] R16 新建 `editor-page/` 与 Vite 构建
-- [ ] R17 `EditorAdapter` + postMessage + token
-- [ ] R18 删除 `editor-app/` 与 donor release-check 断言
-- [ ] R19 `/statechart/editor/` 路由切换
-- [ ] R20 浏览器 smoke：编辑→保存→部署；多机
+- [x] R16 新建 `editor-page/` 与 esbuild 构建
+- [x] R17 `EditorAdapter` + postMessage + token
+- [x] R18 删除 `editor-app/` 与 donor release-check 断言
+- [x] R19 `/statechart/editor/` 路由切换
+- [ ] R20 浏览器 smoke（待跑）：编辑→保存→回写
 
 ### M4 tray/i18n
 

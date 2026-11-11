@@ -15,7 +15,7 @@ Useful scripts:
 
 | Script | What it does |
 |---|---|
-| `npm run build` | Bundles `dist/` with esbuild, copies the editor, locales, icons and `editor-app/` |
+| `npm run build` | Bundles `dist/` with esbuild: node runtime (kit inlined), tray form, full-page editor and monitor |
 | `npm test` | Build plus the Node-RED runtime tests (`node --test test/*.test.cjs`) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run check:kit` | Verify the local `statechart-kit` dependency (version, fresh dist, inlined bundle) |
@@ -24,28 +24,26 @@ Useful scripts:
 | `npm run test:browser` / `npm run test:p4` | Browser regressions; need Firefox, geckodriver and a live Node-RED (`NODERED_URL`, default `http://localhost:1880/`) |
 
 Browser suites are not part of CI; run them locally when touching the editor,
-the standalone page or the monitor.
+the full-page editor or the monitor.
 
 ## Layout
 
-> 重构进行中：`src/vendor/` 与 `editor-app/` 将在 0.2.0 移除，统一改用
-> `statechart-kit`；`sync:vendor` / `check:vendor` 随之退役。改这两处之前先看
-> [重构路线](docs/refactor-roadmap.md)。
+> 0.2.0 起：`src/vendor/` 与 `editor-app/` 已移除，核心统一为 `statechart-kit`；
+> 详见 [重构路线](docs/refactor-roadmap.md)。
 
 ```
 src/nodes/          Node-RED nodes (machine config node, in, out)
-src/runtime/        engine session handling, bus, i18n, monitor routes
+src/runtime/        session bridge, bus, i18n, dom parser, monitor routes
 src/editor/         browser-side bridge injected into the node edit form
-src/vendor/         vendored core (do not edit by hand)
 editor/             node edit form HTML and locales
-editor-app/         standalone editor build (do not edit by hand)
+editor-page/        full-page kit editor host (adapter / postMessage)
 monitor/            read-only monitor page shell
 examples/           importable flows
 test/               runtime and browser tests
 ```
 
-`src/vendor/**` and `editor-app/**` are copies of another project. Fix them
-upstream and re-sync; `npm run check:vendor` fails if the vendored files drift.
+`statechart-kit` is a devDependency and is bundled into `dist/` at build time;
+the published package has no runtime dependency on it.
 
 ## Commits
 
