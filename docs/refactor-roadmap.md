@@ -1,6 +1,6 @@
 # 重构路线：以 statechart-kit 为核心
 
-> 状态：M0–M5 发布准备完成（2026-11-11）；kit 0.8.0 已发布（npm latest）；插件 0.2.0 发布与浏览器 smoke 待执行
+> 状态：M0–M5 完成并发布（2026-11-11）；kit 0.8.0 与插件 0.2.0 均为 npm latest；完整浏览器 smoke 待补
 > 目标版本：`0.2.0`
 > 核心依赖：`statechart-kit@0.8.0`（已打 tag；npm `latest` 仍为 0.7.0）
 > 关联文档：[完整编辑器设计](p4-standalone-editor.md)（历史方案）、[资源消耗评估](resource-profile.md)
@@ -251,7 +251,7 @@ Build
 - [x] R28 README/CONTRIBUTING 架构更新
 - [x] R29 CI 双 Node 版本（从 npm 安装 kit）
 - [x] R30 kit `0.8.0` 发布（npm latest）
-- [ ] R30b 插件 `0.2.0` 发布
+- [x] R30b 插件 `0.2.0` 发布（npm latest）
 - [x] R31 CHANGELOG 0.2.0
 
 ## 8. 风险登记
@@ -346,4 +346,5 @@ STATECHART_BROWSER=1 GECKODRIVER=... NODERED_URL=http://localhost:1880/ npm run 
 - `npm run verify:all`：24/24、Node 22.9/24、`check:kit`、`release:check` 全绿。
 - `npm pack` 0.2.0 干净安装：`node_modules` 无 `statechart-kit`，`require(plugin)` 正常。
 - 2026-11-11：`statechart-kit@0.8.0` 已发布到 npm `latest`（gitHead `f880589`）；宿主 devDependency 改为精确 `0.8.0`，CI 不再 clone/build kit。
-- 待执行：插件 `0.2.0` 的 `npm publish`、完整浏览器 smoke（独立编辑器的 close smoke 已通过）。
+- 2026-11-11：插件 `@changzhen976/node-red-contrib-statechart@0.2.0` 已发布到 npm `latest`（gitHead `4d75d7b`），tag `v0.2.0` 已推 GitHub/Gitea；从 npm 干净安装的 dist 与测试服务器哈希一致。
+- 待执行：完整浏览器 smoke（独立编辑器的关闭/二次确认 smoke 已通过）。
