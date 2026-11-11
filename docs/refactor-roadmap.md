@@ -1,6 +1,6 @@
 # 重构路线：以 statechart-kit 为核心
 
-> 状态：执行中（2026-11-11）— M0–M4 完成（浏览器 smoke 待跑）；M5 发布准备完成，发布待执行
+> 状态：M0–M5 发布准备完成（2026-11-11）；浏览器 smoke 与 npm 发布待执行
 > 目标版本：`0.2.0`
 > 核心依赖：`statechart-kit@0.8.0`（已打 tag；npm `latest` 仍为 0.7.0）
 > 关联文档：[完整编辑器设计](p4-standalone-editor.md)（历史方案）、[资源消耗评估](resource-profile.md)
@@ -327,11 +327,21 @@ STATECHART_BROWSER=1 GECKODRIVER=... NODERED_URL=http://localhost:1880/ npm run 
 
 ## 13. 完成定义（DoD）
 
-- [ ] `src/vendor/`、`editor-app/`、vendor 脚本、17 条替换全部删除
-- [ ] 运行时只经 `statechart-kit` core/engine，无本地副本
-- [ ] `done` 守卫、typed send/error/done 映射有测试
-- [ ] 全页编辑器使用 kit `mountEditor`，tray 决策已落地
-- [ ] `npm test` / `typecheck` / `release:check` / 浏览器 smoke 全绿
-- [ ] `npm pack` 干净安装 + Node-RED 冒烟通过，无 kit 运行时依赖
-- [ ] 文档、CHANGELOG、NOTICE、README、CONTRIBUTING 更新
-- [ ] kit 0.8.0 与插件 0.2.0 的版本对应关系可追溯
+- [x] `src/vendor/`、`editor-app/`、vendor 脚本、17 条替换全部删除
+- [x] 运行时只经 `statechart-kit` core/engine，无本地副本
+- [x] `done` 守卫、typed send/error/done 映射有测试
+- [x] 全页编辑器使用 kit `mountEditor`，tray 决策已落地
+- [x] `npm test` / `typecheck` / `release:check` 全绿（`verify:all` 通过）
+- [ ] 浏览器 smoke（需 geckodriver + 运行中的 Node-RED）
+- [x] `npm pack` 干净安装 + require 冒烟通过，无 kit 运行时依赖
+- [ ] 真实 Node-RED 实例冒烟（需本地实例）
+- [x] 文档、CHANGELOG、NOTICE、README、CONTRIBUTING 更新
+- [x] kit 0.8.0 与插件 0.2.0 的版本对应关系可追溯
+
+## 14. 执行记录（2026-11-11）
+
+- 分支 `refactor/kit-core`；基线 tag `v0.1.3-pre-kit`。
+- M0–M4 完成；M5 发布准备完成：版本 `0.2.0`、CHANGELOG、NOTICE/THIRD_PARTY、干净安装。
+- `npm run verify:all`：24/24、Node 22.9/24、`check:kit`、`release:check` 全绿。
+- `npm pack` 0.2.0 干净安装：`node_modules` 无 `statechart-kit`，`require(plugin)` 正常。
+- 待执行：浏览器 smoke（geckodriver + live Node-RED）、`npm publish`、发布后把 kit 提升为 `latest`。
