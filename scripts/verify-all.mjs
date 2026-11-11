@@ -17,7 +17,7 @@ const run = (label, command, args, env = {}) => {
 run('runtime tests (current Node)', 'npm', ['test'])
 const node22 = process.env.NODE22_BIN || 'node@22.9.0'
 run('runtime tests (Node 22.9)', 'npx', ['-y', node22, '--test', ...tests])
-run('vendor sync check', 'node', ['scripts/check-vendor.mjs'])
+run('kit dependency check', 'node', ['scripts/check-kit.mjs'])
 run('release package check', 'node', ['scripts/release-check.mjs'])
 
 if (process.env.STATECHART_BROWSER === '1') {

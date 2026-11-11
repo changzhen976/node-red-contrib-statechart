@@ -37,9 +37,8 @@
     "build": "node esbuild.config.mjs",
     "test": "npm run build && node --test test/*.test.cjs",
     "typecheck": "tsc --noEmit",
+    "check:kit": "node scripts/check-kit.mjs",
     "prepack": "npm run build",
-    "sync:vendor": "node scripts/sync-vendor.mjs",
-    "check:vendor": "node scripts/check-vendor.mjs",
     "test:browser": "node test/browser-smoke.mjs",
     "release:check": "node scripts/release-check.mjs",
     "test:p4": "node test/browser-p4.mjs",
@@ -60,6 +59,7 @@
     "esbuild": "^0.28.2",
     "node-red": "5.0.9",
     "node-red-node-test-helper": "0.3.6",
+    "statechart-kit": "file:../statechart-kit",
     "typescript": "^5.9.3"
   },
   "keywords": [
