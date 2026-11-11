@@ -142,11 +142,15 @@
     "compoundNoInitial": "Compound state “__id__” has no initial child selected.",
     "transitionSourceMissing": "Transition source “__source__” is missing.",
     "transitionTargetMissing": "Transition target “__target__” is missing.",
-    "invalidDelay": "Delay “__delay__” must be a positive number of ms.",
+    "invalidDelay": "Delay “__delay__” must be at least 10 ms.",
     "delayNeedsEvent": "A delayed transition needs an event name.",
     "invalidEvent": "Invalid event name “__event__”.",
     "invalidVarId": "Invalid variable id “__id__”.",
-    "duplicateVarId": "Duplicate variable id “__id__”."
+    "duplicateVarId": "Duplicate variable id “__id__”.",
+    "historyHasActions": "History “__id__” cannot have entry/exit actions.",
+    "initialIgnored": "State “__id__” ignores initial (kind=__kind__).",
+    "transitionMissingId": "A transition is missing an id (event “__event__”).",
+    "transitionDuplicateId": "Duplicate transition id “__id__”."
   },
   "status": {
     "notStarted": "not started",

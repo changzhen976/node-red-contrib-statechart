@@ -142,11 +142,15 @@
     "compoundNoInitial": "compound 状态 “__id__” 未选择 initial 子状态。",
     "transitionSourceMissing": "转移的源状态 “__source__” 不存在。",
     "transitionTargetMissing": "转移的目标状态 “__target__” 不存在。",
-    "invalidDelay": "延时 “__delay__” 必须是正数毫秒。",
+    "invalidDelay": "延时 “__delay__” 必须至少 10 毫秒。",
     "delayNeedsEvent": "带延时的转移必须填写事件名。",
     "invalidEvent": "事件名 “__event__” 无效。",
     "invalidVarId": "变量 id “__id__” 无效。",
-    "duplicateVarId": "变量 id “__id__” 重复。"
+    "duplicateVarId": "变量 id “__id__” 重复。",
+    "historyHasActions": "历史状态 “__id__” 不能有 entry/exit 动作。",
+    "initialIgnored": "状态 “__id__” 的 initial 会被忽略（kind=__kind__）。",
+    "transitionMissingId": "转移缺少 id（事件 “__event__”）。",
+    "transitionDuplicateId": "转移 id “__id__” 重复。"
   },
   "status": {
     "notStarted": "未启动",
