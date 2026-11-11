@@ -78,6 +78,7 @@ test('standalone editor save lands on a brand-new machine dialog', () => {
 
   assert.ok(node.doc, 'the dialog node should carry the saved document')
   assert.equal(JSON.parse(node.doc).name, 'Traffic Light')
+  assert.equal(node.name, 'Traffic Light', 'dialog node name should follow doc.name')
   assert.equal(node.source, '<scxml version="1.0"/>')
   assert.equal(calls.prepared, 1, 'the dialog form should be re-rendered')
   assert.equal(JSON.stringify(calls.ack[0]), '{"type":"scxml:save-ack","ok":true}')
@@ -87,13 +88,14 @@ test('standalone editor save lands on a brand-new machine dialog', () => {
 
 test('standalone editor save still targets an existing machine config node', () => {
   const existing = { id: 'existing-1', type: 'statechart-machine', name: 'Plant' }
-  const doc = { formatVersion: 1, name: 'Plant', states: [{ uid: 's1', id: 'idle' }], transitions: [] }
+  const doc = { formatVersion: 1, name: 'Plant 2', states: [{ uid: 's1', id: 'idle' }], transitions: [] }
   const { node, calls } = runHandler({
     registered: existing,
     data: { type: 'scxml:save', id: 'existing-1', doc },
   })
 
   assert.equal(existing.doc, JSON.stringify(doc))
+  assert.equal(existing.name, 'Plant 2', 'existing config node name should follow doc.name')
   assert.equal(existing.source, '<scxml version="1.0"/>')
   assert.equal(node.doc, undefined, 'the open dialog must not be touched')
   assert.equal(JSON.stringify(calls.ack[0]), '{"type":"scxml:save-ack","ok":true}')

@@ -641,6 +641,10 @@
       }
     }
     doc = c.normalizeDoc(JSON.parse(JSON.stringify(doc)));
+    // The dialog's Name field may be edited but not saved yet; prefer it.
+    var dialogName = $('#node-config-input-name').val();
+    if (dialogName) doc.name = dialogName;
+    else if (node.name) doc.name = node.name;
     function collectMachines() {
       var list = [];
       RED.nodes.eachConfig(function (config) {
@@ -689,11 +693,19 @@
         if (!target && !isEditingSelf) return;
         if (target && target.type !== 'statechart-machine') return;
         var machine = target || node;
+        var incomingName = typeof data.doc.name === 'string' ? data.doc.name.trim() : '';
         machine.doc = JSON.stringify(data.doc);
         try {
           machine.source = c.serializeToScxml(data.doc);
         } catch (err) {
           // Keep the previous source; doc remains authoritative.
+        }
+        if (incomingName) {
+          machine.name = incomingName;
+          if (isEditingSelf) {
+            node.name = incomingName;
+            if (typeof $ === 'function') $('#node-config-input-name').val(incomingName);
+          }
         }
         if (isEditingSelf) {
           node._scxmlEditor = node._scxmlEditor || {};
@@ -950,6 +962,9 @@
       }
     }
     if (!doc) doc = c.emptyDoc(node.name || 'state machine');
+    // The Node-RED config-node name is the user-facing machine name; keep the
+    // ProjectDoc/SCXML name in sync so the editor header and exports agree.
+    if (node.name) doc.name = node.name;
     if (!node.updateEvent) node.updateEvent = 'update';
     $('#node-config-input-updateEvent').val(node.updateEvent);
     if (!doc.initial) {
@@ -973,6 +988,8 @@
       return;
     }
     editor.doc = doc;
+    var nodeName = $('#node-config-input-name').val() || '';
+    if (nodeName) doc.name = nodeName;
     var issues = c.validateDoc ? c.validateDoc(doc) : [];
     if (issues.length) {
       notify(t('message.validationSummary', { count: issues.length }), 'warning');
@@ -988,7 +1005,7 @@
     // Assign the authoritative fields directly so `oneditsave` actually persists.
     node.doc = JSON.stringify(doc);
     if (serialized) node.source = serialized;
-    node.name = $('#node-config-input-name').val() || '';
+    node.name = nodeName;
     node.engine = $('#node-config-input-engine').val() || 'sandboxed';
     node.scriptTimeoutMs = Number($('#node-config-input-scriptTimeoutMs').val()) || 500;
     node.maxMicrosteps = Number($('#node-config-input-maxMicrosteps').val()) || 10000;
