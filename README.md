@@ -181,9 +181,10 @@ STATECHART_BROWSER=1 GECKODRIVER=/path/to/geckodriver \
 
 更多文档：
 
+- [重构路线：以 statechart-kit 为核心](docs/refactor-roadmap.md)
 - [示例说明](examples/README.md)
 - [资源消耗评估](docs/resource-profile.md)
-- [完整编辑器设计](docs/p4-standalone-editor.md)
+- [完整编辑器设计](docs/p4-standalone-editor.md)（历史方案，0.2.0 将被 kit 编辑器替换）
 - [贡献指南](CONTRIBUTING.md)
 
 ## 许可

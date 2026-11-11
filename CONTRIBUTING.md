@@ -28,6 +28,10 @@ the standalone page or the monitor.
 
 ## Layout
 
+> 重构进行中：`src/vendor/` 与 `editor-app/` 将在 0.2.0 移除，统一改用
+> `statechart-kit`；`sync:vendor` / `check:vendor` 随之退役。改这两处之前先看
+> [重构路线](docs/refactor-roadmap.md)。
+
 ```
 src/nodes/          Node-RED nodes (machine config node, in, out)
 src/runtime/        engine session handling, bus, i18n, monitor routes
