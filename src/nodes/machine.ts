@@ -1,8 +1,7 @@
 import { EventBus, type MachineStateEvent } from '../runtime/bus'
 import { createMachineSession, getDomParser, type EngineMode } from '../runtime/engine'
-import { normalizeDoc, type ProjectDoc } from '../vendor/scxml-core/model'
-import { serializeToScxml } from '../vendor/scxml-core/serializer'
-import { validateScxml } from '../vendor/scxml-core/validator'
+import { normalizeDoc, serializeToScxml, type ProjectDoc } from 'statechart-kit'
+import { validateScxml } from 'statechart-kit/engine'
 import { runtimeStatus, runtimeT } from '../runtime/i18n'
 
 const DEFAULT_SOURCE = `<?xml version="1.0" encoding="UTF-8"?>
@@ -188,7 +187,13 @@ export function registerMachine(RED: any): void {
         const domParser = await getDomParser()
         const validation = await validateScxml(resolved.xml, domParser)
         if (!validation.ok) {
-          const err = new Error(runtimeT(RED, 'errors.configInvalid', { message: validation.message }))
+          const detail = validation.issues
+            .map((issue) => {
+              const value = issue.params?.detail
+              return typeof value === 'string' ? value : issue.code
+            })
+            .join('; ')
+          const err = new Error(runtimeT(RED, 'errors.configInvalid', { message: detail || 'invalid SCXML' }))
           ;(err as any).issues = validation.issues
           throw err
         }

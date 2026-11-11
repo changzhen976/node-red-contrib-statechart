@@ -1,6 +1,6 @@
 # 重构路线：以 statechart-kit 为核心
 
-> 状态：计划中（2026-11-11）
+> 状态：执行中（2026-11-11）— M0/M1 完成，M2–M5 待开始
 > 目标版本：`0.2.0`
 > 核心依赖：`statechart-kit@0.8.0`（已打 tag；npm `latest` 仍为 0.7.0）
 > 关联文档：[完整编辑器设计](p4-standalone-editor.md)（历史方案）、[资源消耗评估](resource-profile.md)
@@ -34,7 +34,7 @@ kit 0.8.0 已经提供文档模型、SCXML 序列化/导入、命名策略、结
 | --- | --- | --- |
 | `src/vendor/scxml-core/` | 1,267 行 | **删除**，改 kit core |
 | `src/runtime/engine.ts` | 58 行 | **删除**，改 kit engine |
-| `src/editor/{core-bridge,validate-doc}.ts` | 190 行 | **删除/改映射**，改 kit `validateStructure` |
+| `src/editor/{core-bridge,validate-doc}.ts` | 190 行 | core-bridge 改 kit；validate-doc 暂留，M4 换 `validateStructure` |
 | `editor/statechart.html` | 1,182 行 | 重写：设置窗 + 打开编辑器（或保留精简三表，见 D2） |
 | `editor-app/` | 1.3 MB 生成物 | **删除**，改为 kit 编辑器页 |
 | `monitor/` + `src/runtime/monitor.ts` | 476 行 | **保留**（已只依赖 `<scxml-view>`） |
@@ -133,7 +133,7 @@ Build
 
 - 删除 `src/vendor/scxml-core/`；
 - `machine.ts` / `core-bridge.ts` 改从 `statechart-kit` 导入 `normalizeDoc`、`serializeToScxml`、`scxmlToDoc`、`parseActionLine`、`validateStructure`；
-- `validate-doc.ts` 用 `validateStructure` + `BASE_POLICY`，保留 uid 定位映射（kit 用 state id/uid，宿主表格用 uid）；
+- `validate-doc.ts` 先改用 kit 类型并保留宿主行级规则；M4 再换 `validateStructure` + code→locale 映射（避免与三语文案同批改动）；
 - 删除 `scripts/{sync-vendor,check-vendor,vendor-patch}.mjs` 与 `verify-all` 中的 vendor 检查。
 
 **验收**：序列化/导入/结构校验用例通过；`editor` 侧不再有 vendor 引用。
@@ -177,6 +177,7 @@ Build
   - B：保留三表，适配 kit 校验（低风险，保留无 token/快速编辑路径）；
   - C：tray 精简为机器设置 + “打开编辑器” + 高级 JSON（删 900 行表单，单一编辑入口）。
 - 诊断 code 映射：结构/导入/变量/引擎错误 → `zh-CN`/`zh`/`en-US`；
+- `validate-doc.ts` 换 `validateStructure` + uid 映射，补齐新增 code 的 locale 文案；
 - 节点帮助、README、示例回归；
 - `delayMs < 10` 等行为差异的迁移提示。
 
@@ -214,7 +215,7 @@ Build
 ### M1 core
 
 - [ ] R06 删除 `src/vendor/scxml-core/`，改 kit 导入
-- [ ] R07 `validate-doc.ts` 改 `validateStructure` + uid 映射
+- [ ] R07 `validate-doc.ts` 改用 kit 类型；M4 再换 `validateStructure` + uid/code 映射
 - [ ] R08 删除 `sync-vendor` / `check-vendor` / `vendor-patch`
 - [ ] R09 简化 `esbuild.config.mjs`（去 donor patch 与 17 条替换）
 - [ ] R10 core 用例（serialize/import/validate）通过
@@ -312,7 +313,7 @@ STATECHART_BROWSER=1 GECKODRIVER=... NODERED_URL=http://localhost:1880/ npm run 
 | `src/vendor/scxml-core/**` | 删除 | `statechart-kit` core |
 | `src/runtime/engine.ts` | 删除 | `statechart-kit/engine` |
 | `src/editor/core-bridge.ts` | 删除 | 由 `editor-page/` 直接 import kit |
-| `src/editor/validate-doc.ts` | 删除/替换 | `validateStructure` + uid 映射 |
+| `src/editor/validate-doc.ts` | M4 替换 | `validateStructure` + uid 映射 |
 | `editor/statechart.html` | 重写/精简 | 机器设置 + 打开编辑器 |
 | `editor-app/**` | 删除 | `editor-page/` → `dist/editor/` |
 | `esbuild.config.mjs` donor patch | 删除 | 简化复制流程 |

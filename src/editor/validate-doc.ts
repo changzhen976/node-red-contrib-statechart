@@ -5,7 +5,7 @@
  * the browser does not bundle the engine, and this checker can point at
  * individual rows before deployment. The runtime remains authoritative.
  */
-import { ID_RE, type ProjectDoc, type StateNode } from '../vendor/scxml-core/model'
+import { ID_RE, type ProjectDoc, type StateNode } from 'statechart-kit'
 
 export interface DocIssue {
   code: string

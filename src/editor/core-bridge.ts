@@ -13,12 +13,23 @@ import {
   newUid,
   normalizeDoc,
   uniqueStateId,
+  serializeToScxml,
+  scxmlToDoc,
+  actionToLine,
+  parseActionLine,
   type ProjectDoc,
-} from '../vendor/scxml-core/model'
-import { serializeToScxml } from '../vendor/scxml-core/serializer'
-import { scxmlToDoc } from '../vendor/scxml-core/scxml-import'
-import { actionToLine, parseActionLine } from '../vendor/scxml-core/action-parse'
+} from 'statechart-kit'
+import { formatImportWarning } from 'statechart-kit/diagnostics/zh'
 import { validateDoc } from './validate-doc'
+
+/** Kit returns `{ code, params }`; the form still renders plain warning strings. */
+function scxmlToDocCompat (xml: string, domParser?: DOMParser) {
+  const result = scxmlToDoc(xml, domParser)
+  return {
+    ...result,
+    warnings: result.warnings.map((warning) => formatImportWarning(warning)),
+  }
+}
 
 ;(globalThis as any).SCXMLCore = {
   autoDelayEventName,
@@ -30,7 +41,7 @@ import { validateDoc } from './validate-doc'
   normalizeDoc,
   uniqueStateId,
   serializeToScxml,
-  scxmlToDoc,
+  scxmlToDoc: scxmlToDocCompat,
   actionToLine,
   parseActionLine,
   validateDoc,

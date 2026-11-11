@@ -18,10 +18,10 @@ Useful scripts:
 | `npm run build` | Bundles `dist/` with esbuild, copies the editor, locales, icons and `editor-app/` |
 | `npm test` | Build plus the Node-RED runtime tests (`node --test test/*.test.cjs`) |
 | `npm run typecheck` | `tsc --noEmit` |
+| `npm run check:kit` | Verify the local `statechart-kit` dependency (version, fresh dist, inlined bundle) |
 | `npm run release:check` | Pre-release gate: required files, `npm pack` manifest, no stale names |
-| `npm run verify:all` | Typecheck, tests, vendor check and release check, optionally browser suites |
+| `npm run verify:all` | Typecheck, tests, kit check and release check, optionally browser suites |
 | `npm run test:browser` / `npm run test:p4` | Browser regressions; need Firefox, geckodriver and a live Node-RED (`NODERED_URL`, default `http://localhost:1880/`) |
-| `npm run sync:vendor` / `npm run check:vendor` | Refresh and verify `src/vendor/scxml-core` from the upstream project |
 
 Browser suites are not part of CI; run them locally when touching the editor,
 the standalone page or the monitor.
