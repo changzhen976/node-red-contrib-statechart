@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.1 — 2026-11-12
+
+### Changed
+
+- Docs-only release: publish the Hub-focused README/README.en, the
+  `docs/images/hub-demo.png` usage screenshot and `docs/hub-contract.md`.
+- No runtime, API or ProjectDoc changes.
+
 ## 0.6.0 — 2026-11-12
 
 ### Changed
