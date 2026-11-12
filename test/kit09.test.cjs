@@ -28,7 +28,7 @@ test('kit 0.9 imports and serializes targetless transitions', async () => {
   assert.equal(ping.transitionType, 'internal')
 
   const out = serializeToScxml(doc)
-  assert.match(out, /<transition event="ping" type="internal">/)
+  assert.match(out, /<transition[^>]*\bevent="ping"[^>]*\btype="internal"[^>]*>/)
   assert.doesNotMatch(out, /<transition event="ping"[^>]*target=/)
 })
 

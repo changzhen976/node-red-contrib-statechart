@@ -1,8 +1,45 @@
-import { EventBus, type MachineStateEvent } from '../runtime/bus'
+import { EventBus, type MachineErrorLocation, type MachineStateEvent } from '../runtime/bus'
 import { getDomParser } from '../runtime/dom'
 import { normalizeDoc, serializeToScxml, type ProjectDoc } from 'statechart-kit'
 import { SessionRunner, validateScxml, type EngineMode } from 'statechart-kit/engine'
 import { runtimeStatus, runtimeT } from '../runtime/i18n'
+
+/** Compare active configurations without relying on order. */
+function sameStateSet(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false
+  const set = new Set(a)
+  return b.every((id) => set.has(id))
+}
+
+/** Kit 0.11+ supplies `done.states`; 0.10 falls back to the last fired targets. */
+function doneStatesFromEvent(event: unknown, fallback: string[]): string[] {
+  const states = (event as { states?: unknown } | null)?.states
+  if (Array.isArray(states)) {
+    const clean = states.filter((id): id is string => typeof id === 'string' && id.length > 0)
+    if (clean.length) return clean
+  }
+  return fallback
+}
+
+/** Kit 0.11+ supplies optional error location fields; older versions do not. */
+function errorLocationFromEvent(event: unknown): MachineErrorLocation | undefined {
+  const source = event as Record<string, any> | null
+  if (!source || typeof source !== 'object') return undefined
+  const location: MachineErrorLocation = {}
+  if (typeof source.stateId === 'string' && source.stateId) location.stateId = source.stateId
+  if (typeof source.transitionId === 'string' && source.transitionId) location.transitionId = source.transitionId
+  if (source.slot === 'entry' || source.slot === 'exit' || source.slot === 'transition') location.slot = source.slot
+  if (typeof source.actionIndex === 'number' && Number.isInteger(source.actionIndex) && source.actionIndex >= 0) {
+    location.actionIndex = source.actionIndex
+  }
+  if (source.element && typeof source.element.localName === 'string') {
+    location.element = {
+      localName: source.element.localName,
+      ...(typeof source.element.id === 'string' ? { id: source.element.id } : {}),
+    }
+  }
+  return Object.keys(location).length ? location : undefined
+}
 
 const DEFAULT_SOURCE = `<?xml version="1.0" encoding="UTF-8"?>
 <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="idle">
@@ -245,21 +282,24 @@ export function registerMachine(RED: any): void {
               break
             case 'error': {
               const err = new Error(runtimeT(RED, 'errors.runtime', { kind: event.kind, message: event.message }))
+              const location = errorLocationFromEvent(event)
               node.status({ fill: 'red', shape: 'ring', text: runtimeStatus('runtimeError') })
               node.error(err)
-              bus.emit({ type: 'error', error: err, ts: Date.now() })
+              bus.emit({ type: 'error', error: err, ...(location ? { location } : {}), ts: Date.now() })
               break
             }
-            case 'done':
-              // The engine clears its configuration before `done`; publish the
-              // final transition target so the terminal state remains visible.
-              if (lastFiredTargets.length) {
-                publishState(created, lastFiredTargets)
-                lastFiredTargets = []
+            case 'done': {
+              // Kit 0.11+ provides the final configuration and emits the terminal
+              // active itself; 0.10 needs the last fired targets as a fallback.
+              const doneStates = doneStatesFromEvent(event, lastFiredTargets)
+              if (doneStates.length && !sameStateSet(lastStates, doneStates)) {
+                publishState(created, doneStates)
               }
+              lastFiredTargets = []
               node.status({ fill: 'grey', shape: 'dot', text: runtimeStatus('done') })
-              bus.emit({ type: 'done', ts: Date.now() })
+              bus.emit({ type: 'done', ...(doneStates.length ? { states: doneStates } : {}), ts: Date.now() })
               break
+            }
             default:
               break
           }

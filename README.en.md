@@ -216,7 +216,7 @@ Known limits:
 
 ```sh
 npm install --include=dev
-npm test                 # build + 41 runtime/lifecycle cases
+npm test                 # build + 44 runtime/lifecycle cases
 npm run typecheck
 npm run verify:all       # typecheck, Node 22.9, kit and package checks
 ```

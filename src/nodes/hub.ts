@@ -1,3 +1,4 @@
+import type { MachineErrorLocation } from '../runtime/bus'
 import { runtimeStatus, runtimeT } from '../runtime/i18n'
 import { eventMessage, stateMessage } from './messages'
 
@@ -8,6 +9,18 @@ function toJsonData(value: unknown): unknown {
   } catch {
     throw new Error('msg.payload is not JSON-serializable')
   }
+}
+
+/** Forward kit 0.11+ error location fields without emitting undefined keys. */
+function errorLocationFields(location?: MachineErrorLocation): Record<string, unknown> {
+  if (!location) return {}
+  const fields: Record<string, unknown> = {}
+  if (location.stateId !== undefined) fields.stateId = location.stateId
+  if (location.transitionId !== undefined) fields.transitionId = location.transitionId
+  if (location.slot !== undefined) fields.slot = location.slot
+  if (location.actionIndex !== undefined) fields.actionIndex = location.actionIndex
+  if (location.element !== undefined) fields.element = location.element
+  return fields
 }
 
 /**
@@ -32,13 +45,14 @@ export function registerHub(RED: any): void {
     let claimed = false
     let unsubscribe: (() => void) | null = null
 
-    function sendError(error: Error, msg?: any): void {
+    function sendError(error: Error, msg?: any, location?: MachineErrorLocation): void {
       if (closed) return
       node.send([null, null, {
         payload: error.message,
         error,
         machine: machine ? machine.name : String(config.machine || ''),
         topic: 'statechart/error',
+        ...errorLocationFields(location),
       }])
       node.error(error, msg)
     }
@@ -96,14 +110,15 @@ export function registerHub(RED: any): void {
           node.send([null, eventMessage(machine, event, eventTopic), null])
         } else if (event.type === 'error') {
           const error = event.error instanceof Error ? event.error : new Error(String(event.error))
-          sendError(error)
+          sendError(error, undefined, event.location)
         } else if (event.type === 'done') {
           const current = machine.getCurrentState()
+          const states = event.states?.length ? event.states : current?.states ?? []
           node.send([null, null, {
             payload: 'done',
             done: true,
             machine: machine.name,
-            states: current?.states ?? [],
+            states,
             vars: current?.vars ?? {},
             ts: Date.now(),
           }])

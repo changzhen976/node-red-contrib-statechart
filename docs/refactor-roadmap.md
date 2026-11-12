@@ -377,13 +377,14 @@ STATECHART_BROWSER=1 GECKODRIVER=... NODERED_URL=http://localhost:1880/ npm run 
 
 ### 测试补全
 
-- `test/lifecycle.test.cjs`：9 个生命周期/错误路径用例；
+- `test/lifecycle.test.cjs`：11 个生命周期/错误路径用例；
 - `test/browser-lib.mjs` + 重写的 `browser-smoke` / `browser-p4`：每个 WebDriver
   命令独立超时，覆盖托盘编辑器、监控侧栏、action 对话框、独立编辑器保存/关闭；
 - `test/e2e-server.mjs`：Admin API 临时部署 Hub flow，走真实 HTTP 验证
   next/reset/read/done 与未选 Machine 的本地化错误，结束后清理；
 - `npm run test:live`：临时 Node-RED + 全部 live 套件；GitHub Actions 每周/手动
   运行 `live-e2e`；
+- `test/kit-compat.test.cjs`：kit 0.11 诊断 code 目录与宿主映射的覆盖检查；
 - `verify:all` 增加 typecheck，`STATECHART_BROWSER=1` / `STATECHART_E2E=1` 可选纳入。
 
 ### 遗留

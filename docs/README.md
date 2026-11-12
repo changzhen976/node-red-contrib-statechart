@@ -43,7 +43,7 @@
 
 ## 测试与 CI
 
-- 运行时：`npm test`（41 个用例，含生命周期/错误路径）；
+- 运行时：`npm test`（44 个用例，含生命周期/错误路径）；
 - 干净实例 live 套件：`GECKODRIVER=/path/to/geckodriver npm run test:live`，
   自动启动临时 Node-RED 并跑托盘编辑器、独立编辑器、服务端 E2E 和级联示例；
 - GitHub Actions：`.github/workflows/ci.yml` 跑单测/类型/打包门禁；

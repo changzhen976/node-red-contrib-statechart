@@ -526,6 +526,11 @@ test('emits the final state and does not follow it with an empty state', async (
       messages.some((msg) => msg.payload === 'done'),
       'the terminal state must be observable',
     )
+    assert.equal(
+      messages.filter((msg) => msg.payload === 'done').length,
+      1,
+      'the terminal state must be emitted exactly once',
+    )
     assert.ok(
       messages.every((msg) => !(Array.isArray(msg.payload) && msg.payload.length === 0)),
       'done must not be followed by an empty state payload',

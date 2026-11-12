@@ -16,14 +16,29 @@ export interface MachineSendEvent {
   ts: number
 }
 
+export type MachineErrorSlot = 'entry' | 'exit' | 'transition'
+
+/** Optional runtime-error location supplied by newer statechart-kit versions. */
+export interface MachineErrorLocation {
+  stateId?: string
+  transitionId?: string
+  slot?: MachineErrorSlot
+  actionIndex?: number
+  element?: { localName: string; id?: string }
+}
+
 export interface MachineErrorEvent {
   type: 'error'
   error: Error
+  /** Present when kit can locate the failing state/transition/action. */
+  location?: MachineErrorLocation
   ts: number
 }
 
 export interface MachineDoneEvent {
   type: 'done'
+  /** Final configuration supplied by newer kit versions; absent on 0.10. */
+  states?: string[]
   ts: number
 }
 

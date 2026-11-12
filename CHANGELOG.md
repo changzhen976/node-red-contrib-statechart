@@ -19,12 +19,17 @@
   transition action 之前执行，导致变量结果取决于时序。
 - 独立编辑器保存 ACK 超时现在返回失败，不再静默当作保存成功；`exit` 会保留
   页面并提示，避免丢失修改。
+- `statechart-hub` 输出 3 前向兼容 kit 0.11 的可选错误定位字段（`stateId` /
+  `transitionId` / `slot` / `actionIndex` / `element`）；kit 0.10 下不产生这些字段。
+- `done` 输出优先使用 kit 0.11 的 `done.states`，并避免终态被重复发布；
+  kit 0.10 继续使用最后一次 `fired` 目标作为回退。
+- tray 表单补上 `structure.state.donedata-param-duplicate` 的中英文映射。
 
 ### Tests
 
-- 新增 `test/lifecycle.test.cjs`（9 个用例）：Hub 配置错误出口、冲突接管、
-  unknown variable、非法 ProjectDoc JSON、运行时脚本错误、事件/赋值顺序、
-  reset 恢复与延时取消、read 初始状态。
+- 新增 `test/lifecycle.test.cjs`（11 个用例）：Hub 配置错误出口、冲突接管、
+  unknown variable、非法 ProjectDoc JSON、运行时脚本错误、错误定位字段转发、
+  done.states、事件/赋值顺序、reset 恢复与延时取消、read 初始状态。
 - 新增 `test/browser-lib.mjs`：所有 WebDriver 命令带独立超时；不再把 Node-RED
   的 Promise 返回给 WebDriver；重写 `test/browser-smoke.mjs` 与
   `test/browser-p4.mjs`，覆盖托盘编辑器、监控侧栏、action 对话框、独立编辑器
@@ -38,8 +43,18 @@
 - `browser-p4` 增加保存 ACK 超时回归：阻断 `postMessage` 后保存必须失败、父节点
   `doc` 不变且编辑器保持 dirty；恢复后再保存成功。
 - `test:cascade` 增加预检与导入提示，缺失级联 tab 时给出可执行指引。
+- 新增 `test/kit-compat.test.cjs`：kit 0.11 起校验 `STRUCTURE_ISSUE_CODES`
+  与宿主 `CODE_MAP` / 中英文文案的覆盖；在 0.10 下自动跳过。
+- `kit09` 测试允许 kit 0.11 序列化器新增的 `data-kit-transition-id` 属性。
 - `npm run verify:all` 增加 typecheck，并可用 `STATECHART_BROWSER=1` /
   `STATECHART_E2E=1` 纳入浏览器与服务端 E2E。
+
+### Compatibility
+
+- 宿主消息层已前向兼容 kit 0.11 的 `RunnerDoneEvent.states` 和可选错误定位字段；
+  安装 kit 0.10 时行为不变。
+- kit 0.11 预发布预演发现：`errorElementInfo()` 依赖 `Element.closest`，在 Node 侧
+  `@xmldom/xmldom` 下会抛错并吞掉运行时 `error` 事件；升级依赖前需先在 kit 修复。
 
 ## 0.6.1 — 2026-11-12
 

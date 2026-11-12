@@ -174,6 +174,40 @@ test('runtime script errors go to output 3 and later events still work', async (
   await waitFor(() => sink('s-state').some((msg) => msg.payload === 'a'), 'machine still responsive')
 })
 
+test('forwards kit error location fields on hub output 3', async () => {
+  await load(hubFlow(IDLE_RUNNING))
+  await waitFor(() => sink('s-state').length > 0, 'initial state')
+  const machine = helper.getNode('conf')
+  machine.bus.emit({
+    type: 'error',
+    error: new Error('located boom'),
+    location: {
+      stateId: 'idle',
+      transitionId: 't1',
+      slot: 'transition',
+      actionIndex: 2,
+      element: { localName: 'script', id: 'boom' },
+    },
+    ts: Date.now(),
+  })
+  await waitFor(() => sink('s-error').length > 0, 'located runtime error')
+  const message = sink('s-error').at(-1)
+  assert.equal(message.payload, 'located boom')
+  assert.equal(message.stateId, 'idle')
+  assert.equal(message.transitionId, 't1')
+  assert.equal(message.slot, 'transition')
+  assert.equal(message.actionIndex, 2)
+  assert.deepEqual(message.element, { localName: 'script', id: 'boom' })
+})
+
+test('uses done.states from the machine event when available', async () => {
+  await load(hubFlow(IDLE_RUNNING))
+  await waitFor(() => sink('s-state').length > 0, 'initial state')
+  helper.getNode('conf').bus.emit({ type: 'done', states: ['done'], ts: Date.now() })
+  await waitFor(() => sink('s-error').some((msg) => msg.done === true), 'done output')
+  assert.deepEqual(sink('s-error').at(-1).states, ['done'])
+})
+
 test('rapid event and set commands keep arrival order', async () => {
   await load(hubFlow(COUNTING, { hub: { emitInitial: false } }))
   const hub = helper.getNode('hub')

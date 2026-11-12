@@ -88,12 +88,18 @@ msg.topic   // eventTopic 展开后的 topic
   payload: "错误消息",
   error: Error,
   machine: "…",
-  topic: "statechart/error"
+  topic: "statechart/error",
+  // statechart-kit 0.11+，能定位出错位置时附带；0.10 没有这些字段
+  stateId?: "idle",
+  transitionId?: "t1",
+  slot?: "entry" | "exit" | "transition",
+  actionIndex?: 0,
+  element?: { localName: "script", id?: "…" }
 }
 ```
 
 未选择 Machine 或冲突发生在部署/首帧启动时，也会直接发到输出 3，不需要先给
-Hub 一条输入。
+Hub 一条输入。错误定位字段只在 kit 能确定时出现，宿主不应假设它们一定存在。
 
 完成：
 
@@ -102,7 +108,7 @@ Hub 一条输入。
   payload: "done",
   done: true,
   machine: "…",
-  states: [...],
+  states: [...],   // kit 0.11+ 优先使用 done.states；0.10 使用最后 fired 目标
   vars: {...},
   ts: 179...
 }

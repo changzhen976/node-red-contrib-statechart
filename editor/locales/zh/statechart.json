@@ -196,6 +196,7 @@
     "donedataEmpty": "final 状态 “__id__” 的 donedata 为空。",
     "donedataAmbiguous": "final 状态 “__id__” 的 donedata 不能同时使用 content/expr/param。",
     "donedataParamInvalid": "final 状态 “__id__” 的 donedata param 无效。",
+    "donedataParamDuplicate": "final 状态 “__id__” 的 donedata param 名称重复。",
     "historyTargetless": "历史默认转移 “__id__” 必须有 target。",
     "internalEventless": "无 target 的内部转移 “__id__” 必须有事件名。",
     "finalTransition": "final 状态 “__id__” 不能有 __count__ 条出边。"

@@ -26,6 +26,7 @@ const CODE_MAP: Record<string, string> = {
   'structure.state.donedata-empty': 'donedataEmpty',
   'structure.state.donedata-not-final': 'donedataNotFinal',
   'structure.state.donedata-param-invalid': 'donedataParamInvalid',
+  'structure.state.donedata-param-duplicate': 'donedataParamDuplicate',
   'structure.state.duplicate-id': 'duplicateStateId',
   'structure.state.duplicate-uid': 'duplicateStateId',
   'structure.state.final-children': 'finalHasChildren',
