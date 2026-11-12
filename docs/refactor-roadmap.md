@@ -388,5 +388,6 @@ STATECHART_BROWSER=1 GECKODRIVER=... NODERED_URL=http://localhost:1880/ npm run 
 
 ### 遗留
 
-- 浏览器套件仍依赖外部 Firefox/geckodriver，不进入 CI；
+- 浏览器套件仍依赖外部 Firefox/geckodriver，不进入每次 PR 的 CI；已由
+  `live-e2e` 每周/手动运行；
 - `<scxml-view>` 对 parallel 下直接挂 history 的上游布局限制（KIT-002/005）未变。
