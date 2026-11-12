@@ -1,7 +1,7 @@
 # 文档索引
 
-> 更新：2026-11-12 · 当前 npm 版本：`0.6.1` · 测试服务器：`0.6.0`（待更新）
-> 0.6.0 集成 `statechart-kit@0.10.0`；历史变更见 [`CHANGELOG.md`](../CHANGELOG.md)。
+> 更新：2026-11-12 · npm 最新发布：`0.6.1` · 当前开发：`0.7.0-dev.0`（测试服务器部署中，未打 tag）
+> 0.6.0 集成 `statechart-kit@0.10.0`；0.7.0 为稳定性与测试补全版本；历史变更见 [`CHANGELOG.md`](../CHANGELOG.md)。
 
 ## 用户文档
 
@@ -19,7 +19,7 @@
 
 | 文档 | 内容 | 状态 |
 | --- | --- | --- |
-| [CONTRIBUTING](../CONTRIBUTING.md) | 本地开发、构建、测试、提交约定 | 当前 |
+| [CONTRIBUTING](../CONTRIBUTING.md) | 本地开发、构建、运行时/浏览器/服务端 E2E、提交约定 | 当前 |
 | [重构路线](refactor-roadmap.md) | 以 `statechart-kit` 为核心的迁移记录、验收与发布状态 | 当前（含 0.2.1 计划） |
 | [资源消耗评估](resource-profile.md) | tarball、浏览器资源、服务端内存/CPU | 当前（2026-11-11 复测） |
 | [完整编辑器宿主](../editor-page/README.md) | `mountEditor` + postMessage adapter、关闭/保存约定 | 当前 |

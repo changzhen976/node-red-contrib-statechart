@@ -158,7 +158,7 @@ Key:     cellState
 | 输入 | `event` / `topic` + 可选 `payload`；`command: set/reset/read` |
 | 输出 1 状态 | `payload`、`states`、`vars`、`changed`、`event`、`machine`、`topic` |
 | 输出 2 图内事件 | `payload`、`event`、`machine`、`topic` |
-| 输出 3 错误/done | `payload`、`error` 或 `done` |
+| 输出 3 错误/done | `payload`、`error` 或 `done`；未选 Machine、Hub 冲突也走这里 |
 
 完整字段、配置项和从旧 in/out 迁移的说明见 [docs/hub-contract.md](docs/hub-contract.md)。
 
@@ -216,15 +216,24 @@ CASCADE_BASE=http://localhost:1880 npm run test:cascade
 
 ```sh
 npm install --include=dev
-npm test
-npm run verify:all
+npm test                 # 构建 + 41 个运行时/生命周期用例
+npm run typecheck
+npm run verify:all       # typecheck、Node 22.9、kit 与打包检查
 ```
 
-浏览器回归需要 Firefox、geckodriver 和运行中的 Node-RED：
+真实环境回归：
 
 ```sh
-STATECHART_BROWSER=1 GECKODRIVER=/path/to/geckodriver \
-  NODERED_URL=http://localhost:1880/ npm run verify:all
+# 服务端 E2E：临时部署一个 Hub flow，跑完自动删除
+NODERED_URL=http://localhost:1880/ npm run test:e2e
+
+# 浏览器：托盘编辑器 + 监控，以及独立编辑器
+GECKODRIVER=/path/to/geckodriver NODERED_URL=http://localhost:1880/ npm run test:browser
+GECKODRIVER=/path/to/geckodriver NODERED_URL=http://localhost:1880/ npm run test:p4
+
+# 或一起跑
+STATECHART_BROWSER=1 STATECHART_E2E=1 \
+  GECKODRIVER=/path/to/geckodriver NODERED_URL=http://localhost:1880/ npm run verify:all
 ```
 
 更多文档：

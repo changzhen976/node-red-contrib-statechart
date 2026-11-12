@@ -1,6 +1,6 @@
 {
   "name": "@changzhen976/node-red-contrib-statechart",
-  "version": "0.6.1",
+  "version": "0.7.0-dev.0",
   "description": "State chart editor and runtime for Node-RED — SCXML 1.0 compatible",
   "license": "MIT",
   "publishConfig": {
@@ -41,8 +41,9 @@
     "check:kit": "node scripts/check-kit.mjs",
     "prepack": "npm run build",
     "test:browser": "node test/browser-smoke.mjs",
-    "release:check": "node scripts/release-check.mjs",
     "test:p4": "node test/browser-p4.mjs",
+    "test:e2e": "node test/e2e-server.mjs",
+    "release:check": "node scripts/release-check.mjs",
     "verify:all": "node scripts/verify-all.mjs",
     "test:cascade": "node scripts/test-cascade.mjs"
   },

@@ -81,7 +81,7 @@ msg.topic   // eventTopic 展开后的 topic
 
 ### 输出 3：错误 / done
 
-错误：
+错误（运行时错误、未选择 Machine、Hub 占用冲突共用此出口）：
 
 ```js
 {
@@ -91,6 +91,9 @@ msg.topic   // eventTopic 展开后的 topic
   topic: "statechart/error"
 }
 ```
+
+未选择 Machine 或冲突发生在部署/首帧启动时，也会直接发到输出 3，不需要先给
+Hub 一条输入。
 
 完成：
 
@@ -110,8 +113,9 @@ msg.topic   // eventTopic 展开后的 topic
 `statechart-machine` 在运行时记录 Hub owner：
 
 - 第一个 Hub 启动成功并占用；
-- 第二个 Hub 状态变红，`node.error` 报 `hubConflict`，且不订阅、不输出；
-- 删除/禁用占用的 Hub 并重新部署后，第二个 Hub 才能接管；
+- 第二个 Hub 状态变红，输出 3 报 `hubConflict`，且不订阅状态、不输出状态；
+- 占用者关闭/释放后，第二个 Hub 会在下一次输入时重新尝试 claim；claim 成功后
+  恢复正常输出（无需为它单独重新部署）；
 - 编辑器会扫描同 Machine 的其他 Hub 并显示警告，但最终约束在运行时。
 
 ## 3. `statechart-event`
@@ -218,7 +222,12 @@ Hub 收到后重建会话并回到初始状态。
 ## 9. 常见问题
 
 **Hub 红灯：已被其他 Hub 占用**  
-删除占用中的 Hub，重新部署；或检查是否复制了旧 Hub。
+输出 3 会带 `hubConflict` 错误。删除占用中的 Hub 后重新部署，或让等待中的 Hub
+再收到一条输入以重新 claim；也请检查是否复制了旧 Hub。
+
+**Hub 红灯：没有选择 Machine**  
+输出 3 会带 `noMachine` 错误；检查 Hub 的 Machine 选择。
+
 
 **read 报 context key 为空**  
 `scope` 不是 `none` 时必须填 `key`。

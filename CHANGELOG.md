@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.7.0 — 未发布（测试中）
+
+稳定性与测试补全版本：不新增节点，不改变 `ProjectDoc`、SCXML 输出或消息字段。
+
+### Fixed
+
+- `statechart-hub` 在「未选择 Machine」或「Machine 已被其他 Hub 占用」时，除
+  `node.error` 外还会向输出 3 发送 `{ payload, error, machine, topic:
+  "statechart/error" }`，与运行时错误使用同一出口。
+- 被占用 Hub 释放后，等待中的第二个 Hub 会在下一次输入时重新尝试 claim，不再
+  永久停留在红灯状态（无需为它单独重新部署）。
+- 连续「事件 → 设变量」时，`sendEvent` / `setVars` 现在等待
+  `SessionRunner.settled()`。此前引擎的异步宏步可能让 `set` 抢在上一事件的
+  transition action 之前执行，导致变量结果取决于时序。
+- 独立编辑器保存 ACK 超时现在返回失败，不再静默当作保存成功；`exit` 会保留
+  页面并提示，避免丢失修改。
+
+### Tests
+
+- 新增 `test/lifecycle.test.cjs`（9 个用例）：Hub 配置错误出口、冲突接管、
+  unknown variable、非法 ProjectDoc JSON、运行时脚本错误、事件/赋值顺序、
+  reset 恢复与延时取消、read 初始状态。
+- 新增 `test/browser-lib.mjs`：所有 WebDriver 命令带独立超时；不再把 Node-RED
+  的 Promise 返回给 WebDriver；重写 `test/browser-smoke.mjs` 与
+  `test/browser-p4.mjs`，覆盖托盘编辑器、监控侧栏、action 对话框、独立编辑器
+  保存回写、名称同步、dirty 标记与关闭。
+- 新增 `test/e2e-server.mjs`：通过 Admin API 临时部署一个 Hub flow，走真实
+  HTTP 验证初始状态、next/reset、read 快照和终态 done，结束后删除临时流程。
+- `npm run verify:all` 增加 typecheck，并可用 `STATECHART_BROWSER=1` /
+  `STATECHART_E2E=1` 纳入浏览器与服务端 E2E。
+
 ## 0.6.1 — 2026-11-12
 
 ### Changed

@@ -158,7 +158,7 @@ For parallel machines, inspect `msg.states`. Snapshots are not cleared automatic
 | Input | `event` / `topic` + optional `payload`; `command: set/reset/read` |
 | Output 1 state | `payload`, `states`, `vars`, `changed`, `event`, `machine`, `topic` |
 | Output 2 chart events | `payload`, `event`, `machine`, `topic` |
-| Output 3 error/done | `payload`, `error` or `done` |
+| Output 3 error/done | `payload`, `error` or `done`; missing-machine and Hub conflicts also report here |
 
 See [docs/hub-contract.md](docs/hub-contract.md) for full fields, config and migration from in/out.
 
@@ -216,15 +216,24 @@ Known limits:
 
 ```sh
 npm install --include=dev
-npm test
-npm run verify:all
+npm test                 # build + 41 runtime/lifecycle cases
+npm run typecheck
+npm run verify:all       # typecheck, Node 22.9, kit and package checks
 ```
 
-Browser tests require Firefox, geckodriver and a running Node-RED:
+Live-environment regressions:
 
 ```sh
-STATECHART_BROWSER=1 GECKODRIVER=/path/to/geckodriver \
-  NODERED_URL=http://localhost:1880/ npm run verify:all
+# Server E2E: deploys a temporary Hub flow and removes it afterwards
+NODERED_URL=http://localhost:1880/ npm run test:e2e
+
+# Browser: tray editor + monitor, and the standalone editor
+GECKODRIVER=/path/to/geckodriver NODERED_URL=http://localhost:1880/ npm run test:browser
+GECKODRIVER=/path/to/geckodriver NODERED_URL=http://localhost:1880/ npm run test:p4
+
+# Or everything
+STATECHART_BROWSER=1 STATECHART_E2E=1 \
+  GECKODRIVER=/path/to/geckodriver NODERED_URL=http://localhost:1880/ npm run verify:all
 ```
 
 More documentation:

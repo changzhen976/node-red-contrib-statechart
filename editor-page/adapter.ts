@@ -66,17 +66,20 @@ async function saveToNodeRed (doc: ProjectDoc): Promise<boolean> {
     return false
   }
   if (!post('scxml:save', { doc: payload })) return false
+  let acknowledged = false
   await new Promise<void>((resolve) => {
     const timer = setTimeout(() => {
       resolveAck = null
+      console.warn('[statechart] Node-RED did not acknowledge the save in time')
       resolve()
     }, ACK_TIMEOUT_MS)
     resolveAck = () => {
+      acknowledged = true
       clearTimeout(timer)
       resolve()
     }
   })
-  return true
+  return acknowledged
 }
 
 function download (xml: string, doc: ProjectDoc): void {

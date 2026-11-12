@@ -27,37 +27,47 @@ export function registerHub(RED: any): void {
       ? config.eventTopic
       : 'statechart/{machine}/evt/{event}'
 
-    if (!machine) {
-      const error = new Error(runtimeT(RED, 'errors.noMachine'))
-      node.status({ fill: 'red', shape: 'ring', text: runtimeStatus('machineNotFound') })
-      node.on('input', function (_msg: any, _send: any, done: (err?: Error) => void) { done(error) })
-      node.on('close', function (_removed: boolean, done: () => void) { done() })
-      return
-    }
-
-    const claim = machine.claimHub(node)
-    if (!claim.ok) {
-      const ownerName = claim.owner?.name || claim.owner?.id || '?'
-      const error = new Error(runtimeT(RED, 'errors.hubConflict', { name: ownerName }))
-      node.status({ fill: 'red', shape: 'ring', text: runtimeStatus('hubConflict') })
-      node.error(error)
-      node.on('input', function (_msg: any, _send: any, done: (err?: Error) => void) { done(error) })
-      node.on('close', function (_removed: boolean, done: () => void) { done() })
-      return
-    }
-
     let closed = false
     let sawState = false
+    let claimed = false
+    let unsubscribe: (() => void) | null = null
 
     function sendError(error: Error, msg?: any): void {
       if (closed) return
       node.send([null, null, {
         payload: error.message,
         error,
-        machine: machine.name,
+        machine: machine ? machine.name : String(config.machine || ''),
         topic: 'statechart/error',
       }])
       node.error(error, msg)
+    }
+
+    /**
+     * Claim the machine lazily so a standby hub can take over after the previous
+     * owner is removed, instead of staying broken until the flow is redeployed.
+     */
+    function claimOrError(): Error | null {
+      if (!machine) return new Error(runtimeT(RED, 'errors.noMachine'))
+      if (claimed) return null
+      const claim = machine.claimHub(node)
+      if (claim.ok) {
+        claimed = true
+        subscribeToMachine()
+        node.status({ fill: 'blue', shape: 'dot', text: runtimeStatus('starting') })
+        return null
+      }
+      const ownerName = claim.owner?.name || claim.owner?.id || '?'
+      return new Error(runtimeT(RED, 'errors.hubConflict', { name: ownerName }))
+    }
+
+    const initialClaimError = claimOrError()
+    if (initialClaimError) {
+      node.status({ fill: 'red', shape: 'ring', text: runtimeStatus(machine ? 'hubConflict' : 'machineNotFound') })
+      // Report through output 3 as well, so the error is visible without an input.
+      setTimeout(() => {
+        if (!claimed) sendError(initialClaimError)
+      }, 0)
     }
 
     function emitState(event: any): void {
@@ -69,38 +79,45 @@ export function registerHub(RED: any): void {
     }
 
     function emitCurrent(): void {
+      if (!machine) return
       const current = machine.getCurrentState()
       if (current) emitState(current)
     }
 
-    const unsubscribe = machine.subscribe((event: any) => {
-      if (closed) return
-      if (event.type === 'state') {
-        emitState(event)
-      } else if (event.type === 'send') {
-        const internal = event.target === '#_internal' || !!event.sendid
-        if (internal && !includeInternalSends) return
-        node.send([null, eventMessage(machine, event, eventTopic), null])
-      } else if (event.type === 'error') {
-        const error = event.error instanceof Error ? event.error : new Error(String(event.error))
-        sendError(error)
-      } else if (event.type === 'done') {
-        const current = machine.getCurrentState()
-        node.send([null, null, {
-          payload: 'done',
-          done: true,
-          machine: machine.name,
-          states: current?.states ?? [],
-          vars: current?.vars ?? {},
-          ts: Date.now(),
-        }])
-        node.status({ fill: 'grey', shape: 'dot', text: runtimeStatus('done') })
-      }
-    })
+    function subscribeToMachine(): void {
+      if (!machine || unsubscribe) return
+      unsubscribe = machine.subscribe((event: any) => {
+        if (closed) return
+        if (event.type === 'state') {
+          emitState(event)
+        } else if (event.type === 'send') {
+          const internal = event.target === '#_internal' || !!event.sendid
+          if (internal && !includeInternalSends) return
+          node.send([null, eventMessage(machine, event, eventTopic), null])
+        } else if (event.type === 'error') {
+          const error = event.error instanceof Error ? event.error : new Error(String(event.error))
+          sendError(error)
+        } else if (event.type === 'done') {
+          const current = machine.getCurrentState()
+          node.send([null, null, {
+            payload: 'done',
+            done: true,
+            machine: machine.name,
+            states: current?.states ?? [],
+            vars: current?.vars ?? {},
+            ts: Date.now(),
+          }])
+          node.status({ fill: 'grey', shape: 'dot', text: runtimeStatus('done') })
+        }
+      })
+    }
 
     node.on('input', async function onInput(msg: any, _send: any, done: (err?: Error) => void) {
       try {
         if (closed) throw new Error(runtimeT(RED, 'errors.closed'))
+        if (!machine) throw new Error(runtimeT(RED, 'errors.noMachine'))
+        const claimError = claimOrError()
+        if (claimError) throw claimError
         const command = String(msg.command || 'event').toLowerCase()
         if (command === 'set') {
           const vars = toJsonData(msg.payload)
@@ -141,7 +158,7 @@ export function registerHub(RED: any): void {
       }
     })
 
-    if (emitInitial) {
+    if (machine && emitInitial && claimed) {
       setTimeout(async () => {
         if (closed) return
         try {
@@ -155,8 +172,8 @@ export function registerHub(RED: any): void {
 
     node.on('close', function onClose(_removed: boolean, done: () => void) {
       closed = true
-      unsubscribe()
-      machine.releaseHub(node)
+      unsubscribe?.()
+      if (claimed && machine) machine.releaseHub(node)
       done()
     })
   }

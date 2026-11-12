@@ -24,10 +24,13 @@ Useful scripts:
 | `npm run check:kit` | Verify the `statechart-kit` dependency (version, dist, inlined bundle) |
 | `npm run release:check` | Pre-release gate: required files, `npm pack` manifest, no stale names |
 | `npm run verify:all` | Typecheck, tests, kit check and release check, optionally browser suites |
+| `npm run test:e2e` | Server E2E: deploys a temporary Hub flow over the Admin API, drives it over HTTP and deletes it |
 | `npm run test:browser` / `npm run test:p4` | Browser regressions; need Firefox, geckodriver and a live Node-RED (`NODERED_URL`, default `http://localhost:1880/`) |
 
 Browser suites are not part of CI; run them locally when touching the editor,
-the full-page editor or the monitor.
+the full-page editor or the monitor. `test/e2e-server.mjs` needs a live Node-RED
+but no browser and is safe against a shared test server (it only adds/removes
+one labelled tab).
 
 ## Layout
 

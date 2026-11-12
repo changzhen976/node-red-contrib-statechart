@@ -1,7 +1,7 @@
 # 重构路线：以 statechart-kit 为核心
 
-> 状态：M0–M5 完成，0.6.0 已发布；0.6.1 为文档发布（2026-11-12）；完整浏览器 smoke 待补
-> 目标版本：`0.6.1`
+> 状态：M0–M5 完成；0.6.1 文档发布；0.7.0 稳定性轮开发中（2026-11-12，未打 tag）
+> 目标版本：`0.7.0`
 > 核心依赖：`statechart-kit@0.9.0`（2026-11-11 升级；重构基线为 0.8.0）
 > 关联文档：[完整编辑器设计](p4-standalone-editor.md)（历史方案）、[资源消耗评估](resource-profile.md)、[Kit 需求记录](kit-requirements.md)
 > 适用范围：运行时、编辑器、构建与发布
@@ -362,3 +362,28 @@ STATECHART_BROWSER=1 GECKODRIVER=... NODERED_URL=http://localhost:1880/ npm run 
 - `main` 有未推送提交（`fd90693` 名称同步 + 本次文档整理）；按用户要求等批量修复完成后再统一推送。
 - 完整浏览器套件（`test:browser` / `test:p4`）仍待补；独立编辑器的关闭/名称同步
   已用针对性 Selenium 脚本验证。
+
+## 16. 0.7.0 稳定性轮（2026-11-12）
+
+0.7.0 不增加节点或改动契约，只处理运行时边界与测试缺口。
+
+### 运行时修复
+
+- Hub 的配置错误（`noMachine` / `hubConflict`）统一走输出 3，与运行时错误同出口；
+- 冲突 Hub 在占用者释放后可在下一次输入时重新 claim；
+- `sendEvent` / `setVars` 等待 `SessionRunner.settled()`，保证「事件 → 赋值」顺序；
+- 独立编辑器保存 ACK 超时返回失败，不再静默成功。
+
+### 测试补全
+
+- `test/lifecycle.test.cjs`：9 个生命周期/错误路径用例；
+- `test/browser-lib.mjs` + 重写的 `browser-smoke` / `browser-p4`：每个 WebDriver
+  命令独立超时，覆盖托盘编辑器、监控侧栏、action 对话框、独立编辑器保存/关闭；
+- `test/e2e-server.mjs`：Admin API 临时部署 Hub flow，走真实 HTTP 验证
+  next/reset/read/done，结束后清理；
+- `verify:all` 增加 typecheck，`STATECHART_BROWSER=1` / `STATECHART_E2E=1` 可选纳入。
+
+### 遗留
+
+- 浏览器套件仍依赖外部 Firefox/geckodriver，不进入 CI；
+- `<scxml-view>` 对 parallel 下直接挂 history 的上游布局限制（KIT-002/005）未变。

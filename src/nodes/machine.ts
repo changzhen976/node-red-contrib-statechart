@@ -304,12 +304,18 @@ export function registerMachine(RED: any): void {
         const active = await node.ensureStarted()
         currentEvent = name
         active.send(name, data, null)
+        // The engine queues external events; wait for that macrostep so a
+        // following set/read command observes the post-transition state.
+        await active.settled()
       })
     }
 
     node.setVars = function setVars(vars: Record<string, unknown>): Promise<void> {
       return enqueue(async () => {
         const active = await node.ensureStarted()
+        // Preserve command order: let an event queued just before this set run
+        // its transition actions before values are written.
+        await active.settled()
         const datamodel = active.sessionOrNull?.datamodel as any
         if (!datamodel) throw new Error(runtimeT(RED, 'errors.dataModel'))
         const entries = Object.entries(vars)
@@ -331,6 +337,7 @@ export function registerMachine(RED: any): void {
         if (updateEvent) {
           currentEvent = updateEvent
           active.send(updateEvent, {}, null)
+          await active.settled()
         }
       })
     }
