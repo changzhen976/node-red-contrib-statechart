@@ -1,10 +1,13 @@
 # 重构路线：以 statechart-kit 为核心
 
-> 状态：M0–M5 完成，0.2.0 已发布（2026-11-11）；0.2.0 后修复（编辑器名称同步）待在批量修复后发 0.2.1；完整浏览器 smoke 待补
-> 目标版本：`0.2.0`
-> 核心依赖：`statechart-kit@0.8.0`（已打 tag；npm `latest` 仍为 0.7.0）
-> 关联文档：[完整编辑器设计](p4-standalone-editor.md)（历史方案）、[资源消耗评估](resource-profile.md)
+> 状态：M0–M5 完成，0.5.0 已发布并部署测试服务器（2026-11-12）；完整浏览器 smoke 待补
+> 目标版本：`0.5.0`
+> 核心依赖：`statechart-kit@0.9.0`（2026-11-11 升级；重构基线为 0.8.0）
+> 关联文档：[完整编辑器设计](p4-standalone-editor.md)（历史方案）、[资源消耗评估](resource-profile.md)、[Kit 需求记录](kit-requirements.md)
 > 适用范围：运行时、编辑器、构建与发布
+
+> 0.9.0 适配：KIT-001（左栏滚动，0.8.1）与 KIT-003/KIT-004（doneData、targetless）
+> 已随 `statechart-kit@0.9.0` 解决；KIT-002/KIT-005 仍属上游 `@tinyactors/scxmljs`。
 
 ## 1. 背景与目标
 

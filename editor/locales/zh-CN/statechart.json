@@ -2,8 +2,14 @@
   "category": "状态机",
   "label": {
     "scxmlMachine": "状态机",
-    "scxmlIn": "状态机输入",
-    "scxmlOut": "状态机输出"
+    "scxmlHub": "状态机中枢",
+    "scxmlEvent": "状态机事件",
+    "scxmlSet": "状态机变量",
+    "scxmlReset": "状态机复位",
+    "hubState": "状态",
+    "hubEvents": "事件",
+    "hubErrors": "错误",
+    "scxmlRead": "状态机读取"
   },
   "sidebar": {
     "label": "状态机",
@@ -50,7 +56,6 @@
     "includeVars": "包含变量",
     "emitInitial": "输出初始状态",
     "includeInternalSends": "包含内部 send",
-    "outputMode": "输出模式",
     "stateTopic": "状态 topic",
     "eventTopic": "事件 topic",
     "outputHint": "输出 1：状态；输出 2：图内 <send> 事件。",
@@ -92,7 +97,43 @@
     "typeScript": "自定义 JS",
     "openFullEditor": "打开完整编辑器",
     "openFullEditorTitle": "完整编辑器",
-    "openFullEditorHint": "画布、撤销/重做、仿真与 SCXML 导入/导出。"
+    "openFullEditorHint": "画布、撤销/重做、仿真与 SCXML 导入/导出。",
+    "internalTransition": "（内部转移）",
+    "eventDataMode": "事件数据",
+    "dataNone": "仅事件",
+    "dataPayload": "msg.payload",
+    "dataJson": "固定 JSON",
+    "dataValue": "JSON 值",
+    "setMode": "设置模式",
+    "setSingle": "单变量",
+    "setObject": "msg.payload 对象",
+    "variable": "变量",
+    "valueType": "值类型",
+    "valuePayload": "msg.payload",
+    "valueJson": "固定 JSON",
+    "valueString": "字符串",
+    "valueNumber": "数字",
+    "valueBoolean": "布尔",
+    "value": "值",
+    "hubOutputHint": "输出 1：状态；输出 2：图内 send 事件；输出 3：运行时错误。",
+    "resetHint": "向连接的状态机中枢/输入发送 reset 命令。",
+    "readMode": "读取值",
+    "readSnapshot": "快照",
+    "readState": "状态",
+    "readVariable": "变量",
+    "contextScope": "上下文存储",
+    "contextNone": "不写入",
+    "contextFlow": "flow",
+    "contextGlobal": "global",
+    "contextKey": "上下文 key",
+    "readHint": "读取状态机当前状态或变量，可选写入 flow/global context。",
+    "dataFlow": "flow 上下文",
+    "dataGlobal": "global 上下文",
+    "dataKey": "上下文 key",
+    "valueFlow": "flow 上下文",
+    "valueGlobal": "global 上下文",
+    "valueKey": "上下文 key",
+    "hubConflictWarning": "该状态机已被 Hub「__name__」占用；一台状态机只允许一个 Hub。"
   },
   "option": {
     "topic": "msg.topic",
@@ -150,7 +191,13 @@
     "historyHasActions": "历史状态 “__id__” 不能有 entry/exit 动作。",
     "initialIgnored": "状态 “__id__” 的 initial 会被忽略（kind=__kind__）。",
     "transitionMissingId": "转移缺少 id（事件 “__event__”）。",
-    "transitionDuplicateId": "转移 id “__id__” 重复。"
+    "transitionDuplicateId": "转移 id “__id__” 重复。",
+    "donedataNotFinal": "donedata 只能用于 final 状态 “__id__”。",
+    "donedataEmpty": "final 状态 “__id__” 的 donedata 为空。",
+    "donedataAmbiguous": "final 状态 “__id__” 的 donedata 不能同时使用 content/expr/param。",
+    "donedataParamInvalid": "final 状态 “__id__” 的 donedata param 无效。",
+    "historyTargetless": "历史默认转移 “__id__” 必须有 target。",
+    "internalEventless": "无 target 的内部转移 “__id__” 必须有事件名。"
   },
   "status": {
     "notStarted": "未启动",
@@ -163,7 +210,9 @@
     "machineNotFound": "未找到状态机",
     "error": "错误",
     "setVars": "变量已设置",
-    "reset": "已重置"
+    "reset": "已重置",
+    "hubConflict": "状态机已被其他 Hub 占用",
+    "read": "读取"
   },
   "errors": {
     "noMachine": "未配置 statechart-machine",
@@ -176,6 +225,9 @@
     "closedWhileStarting": "状态机在启动期间被关闭",
     "configInvalid": "状态机配置无效：__message__",
     "dataModel": "数据模型不可用",
-    "runtime": "__kind__：__message__"
+    "runtime": "__kind__：__message__",
+    "hubConflict": "状态机已被 Hub「__name__」占用",
+    "noState": "没有可读取的状态或变量",
+    "emptyContextKey": "上下文 key 为空"
   }
 }

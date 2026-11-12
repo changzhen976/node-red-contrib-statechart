@@ -1,9 +1,78 @@
 # Changelog
 
-## Unreleased
+## 0.5.0 — 2026-11-12
+
+### Changed
+
+- **BREAKING**: removed `statechart-in` and `statechart-out`. Use one
+  `statechart-hub` per machine; action nodes (`statechart-event`,
+  `statechart-set`, `statechart-reset`) feed its input and its three outputs
+  carry state, chart sends, and errors/done.
+- Migrated `examples/demo-suite.json`, `examples/cascade-test.json`,
+  `examples/traffic-light.json` and the test suite from in/out to Hub.
+- Updated README, help and node documentation for the Hub-only architecture.
+
+## 0.4.0 — 2026-11-11
+
+### Added
+
+- Hub editor warning when another hub already references the same machine
+  (the runtime claim remains authoritative).
+- Hub output 3 now emits a `done` message (`payload: "done"`, `done: true`)
+  before the node status changes.
+- `statechart-read`: reads a snapshot/state/variable from a machine or incoming
+  Hub state, and can copy the result to flow/global context.
+- `statechart-event` supports `msg.event` event source plus flow/global context
+  data; `statechart-set` supports flow/global value sources.
+- Hub demo now includes a read/context step.
+
+## 0.3.0 — 2026-11-11
+
+### Added
+
+- `statechart-hub`: flow-visible machine hub with one input and three outputs
+  (state, chart `<send>` events, errors). A machine can be claimed by only one
+  hub at runtime; a second hub fails with a clear error instead of duplicating
+  outputs.
+- `statechart-event`, `statechart-set` and `statechart-reset`: low-code action
+  nodes that produce event/set/reset messages without selecting a Machine.
+- `examples/hub-demo.json` and `test/hub.test.cjs` covering hub output,
+  event/set/reset flow, and the single-hub claim.
+
+## 0.2.1 — 2026-11-11
+
+### Added
+
+- `examples/cascade-test.json`: a three-machine cascade test bed (Cell parallel
+  history, Supervisor hierarchy/timeout, Job nested/parallel/deep history) with
+  a shared event router and global-context state/event recorders.
+- `npm run test:cascade` (`scripts/test-cascade.mjs`): drives the example over
+  the Node-RED admin API and asserts the main state-machine scenarios.
+- `test/kit09.test.cjs`: targetless transition and `<donedata>` import/serialize
+  coverage for the 0.9 kit contract.
+
+### Changed
+
+- Upgrade the bundled `statechart-kit` from 0.8.0 to 0.9.0. This picks up the
+  KIT-001 sidebar scroll fix (0.8.1), `<donedata>` roundtrip (KIT-003) and
+  targetless/internal transitions (KIT-004). The tray editor now offers an
+  “internal transition” target and maps the new validation codes.
+- `TransitionEdge.target` is now `string | null`; host code that renders the
+  Node-RED tray form handles the null target. The runtime bundle and existing
+  ProjectDoc/raw-SCXML data need no migration.
 
 ### Fixed
 
+- The runtime now publishes the final transition target immediately before
+  `done`, so a terminal state remains visible in state output and the monitor
+  instead of disappearing behind an empty configuration.
+- The cascade example models Supervisor/Cell terminal states as visible
+  compound states with nested finals, and clears a stale Job on stop/fault/
+  shutdown or on a re-start while the Cell is already running.
+- Cell now wraps its parallel regions in a `running` compound state so the
+  shallow/deep history pseudo-states are ordinary compound children. This
+  avoids an upstream `<scxml-view>` layout crash with history directly under
+  `<parallel>` and keeps the full editor import warning-free.
 - The full-page editor now keeps the Node-RED config-node name, `ProjectDoc.name`
   and the exported SCXML `<scxml name="…">` in sync. Opening the editor prefers
   the dialog's Name field; saving from the editor updates the config node name.

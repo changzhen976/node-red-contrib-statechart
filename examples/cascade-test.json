@@ -1,0 +1,1389 @@
+[
+  {
+    "id": "tab-scxml-cascade",
+    "type": "tab",
+    "label": "SCXML 级联测试床",
+    "disabled": false,
+    "info": "三机级联：Supervisor <-> Cell / Job。事件走 Hub 输出 2，按 cell.* / job.* 路由。"
+  },
+  {
+    "id": "cascade-help",
+    "type": "comment",
+    "z": "tab-scxml-cascade",
+    "name": "测试床说明",
+    "info": "三机级联：\n  Supervisor（层级/守卫/超时/final）\n    ├─ cell.* -> Cell（并行/浅深历史/延时）\n    └─ job.*  -> Job（嵌套/并行/深历史/done.state）\n\n事件总线：\n  Supervisor.out2 -> switch -> Cell.in / Job.in\n  Cell.out2 / Job.out2 -> Supervisor.in\n  out1 -> global context scxml_Cell / scxml_Supervisor / scxml_Job\n  out2 -> global context scxml_events\n\n推荐顺序：\n  1) sys.ready\n  2) cmd.start（自动跑完 Cell.ready -> Job.create -> Job.accepted -> Job.start）\n  3) job.step x2, quality.ok（观察 Job -> archived -> empty，Supervisor -> idle）\n  4) 重新 cmd.start，测 power/conveyor/历史/overheat/estop\n  5) 可用 reset 按钮复位各机器\n",
+    "x": 60,
+    "y": 20,
+    "wires": []
+  },
+  {
+    "id": "cascade-sup-label",
+    "type": "comment",
+    "z": "tab-scxml-cascade",
+    "name": "Supervisor 输入",
+    "info": "sys.ready / cmd.* / reset / set cellTemp",
+    "x": 110,
+    "y": 60,
+    "wires": []
+  },
+  {
+    "id": "cascade-cell-label",
+    "type": "comment",
+    "z": "tab-scxml-cascade",
+    "name": "Cell 输入",
+    "info": "cell.* / power.* / conveyor.* / safety.* / sensor.temp",
+    "x": 110,
+    "y": 470,
+    "wires": []
+  },
+  {
+    "id": "cascade-job-label",
+    "type": "comment",
+    "z": "tab-scxml-cascade",
+    "name": "Job 输入",
+    "info": "job.* / quality.*",
+    "x": 110,
+    "y": 1130,
+    "wires": []
+  },
+  {
+    "id": "cascade-conf-cell",
+    "type": "statechart-machine",
+    "z": "tab-scxml-cascade",
+    "name": "Cell (parallel+history)",
+    "doc": "",
+    "source": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<scxml xmlns=\"http://www.w3.org/2005/07/scxml\" version=\"1.0\" datamodel=\"ecmascript\" name=\"Cell\" initial=\"offline\">\n  <datamodel>\n    <data id=\"temp\" expr=\"20\"/>\n    <data id=\"cycles\" expr=\"0\"/>\n    <data id=\"lastFault\" expr=\"''\"/>\n  </datamodel>\n\n  <state id=\"offline\">\n    <transition event=\"cell.start\" target=\"running\">\n      <send event=\"cell.ready\"><content expr=\"{temp: temp, cycles: cycles, mode: 'running'}\"/></send>\n    </transition>\n    <transition event=\"cell.decommission\" target=\"decommissioned\">\n      <send event=\"sys.cell.decommissioned\"/>\n    </transition>\n  </state>\n\n  <state id=\"running\" initial=\"p\">\n    <history id=\"hShallow\" type=\"shallow\"><transition target=\"p\"/></history>\n    <history id=\"hDeep\" type=\"deep\"><transition target=\"p\"/></history>\n\n    <parallel id=\"p\">\n      <state id=\"power\" initial=\"off\">\n        <state id=\"off\">\n          <transition event=\"power.on\" target=\"on\"><send event=\"cell.power\"><content expr=\"{on: true}\"/></send></transition>\n        </state>\n        <state id=\"on\">\n          <transition event=\"power.off\" target=\"off\"><send event=\"cell.power\"><content expr=\"{on: false}\"/></send></transition>\n        </state>\n      </state>\n\n      <state id=\"conveyor\" initial=\"idle\">\n        <state id=\"idle\">\n          <transition event=\"conveyor.start\" target=\"moving\"/>\n        </state>\n        <state id=\"moving\">\n          <onentry>\n            <send id=\"moveTimer\" event=\"move.done\" delay=\"1500ms\"/>\n            <send event=\"cell.conveyor\"><content expr=\"{state: 'moving'}\"/></send>\n          </onentry>\n          <onexit><cancel sendid=\"moveTimer\"/></onexit>\n          <transition event=\"move.done\" target=\"idle\">\n            <assign location=\"cycles\" expr=\"cycles + 1\"/>\n            <send event=\"cell.moved\"><content expr=\"{cycles: cycles}\"/></send>\n          </transition>\n          <transition event=\"conveyor.stop\" target=\"idle\"/>\n          <transition event=\"conveyor.fault\" target=\"fault\">\n            <assign location=\"lastFault\" expr=\"'conveyor'\"/>\n            <send event=\"cell.fault\"><content expr=\"{reason: 'conveyor'}\"/></send>\n          </transition>\n        </state>\n        <state id=\"fault\">\n          <transition event=\"conveyor.reset\" target=\"idle\"/>\n        </state>\n      </state>\n\n      <state id=\"safety\" initial=\"clear\">\n        <state id=\"clear\">\n          <transition event=\"safety.estop\" target=\"estop\"/>\n        </state>\n        <state id=\"estop\">\n          <onentry><send event=\"cell.estop\"><content expr=\"{reason: 'operator', temp: temp}\"/></send></onentry>\n          <transition event=\"safety.reset\" target=\"clear\" cond=\"temp &lt; 80\"/>\n        </state>\n      </state>\n    </parallel>\n\n    <transition event=\"cell.start\" target=\"hDeep\">\n      <send event=\"cell.ready\"><content expr=\"{temp: temp, cycles: cycles, mode: 'running'}\"/></send>\n    </transition>\n    <transition event=\"sensor.temp\" cond=\"_event.data &amp;&amp; _event.data.value &gt; 80\" target=\"overheat\">\n      <assign location=\"temp\" expr=\"_event.data.value\"/>\n    </transition>\n    <transition event=\"cell.pause\" target=\"paused\"/>\n    <transition event=\"cell.stop\" target=\"offline\">\n      <send event=\"cell.stopped\"><content expr=\"{cycles: cycles}\"/></send>\n    </transition>\n  </state>\n\n  <state id=\"paused\">\n    <transition event=\"cell.resumeShallow\" target=\"hShallow\"/>\n    <transition event=\"cell.resumeDeep\" target=\"hDeep\"/>\n    <transition event=\"cell.stop\" target=\"offline\">\n      <send event=\"cell.stopped\"><content expr=\"{cycles: cycles}\"/></send>\n    </transition>\n  </state>\n\n  <state id=\"overheat\">\n    <onentry><send event=\"cell.overheat\"><content expr=\"{temp: temp}\"/></send></onentry>\n    <transition event=\"sensor.temp\" cond=\"_event.data &amp;&amp; _event.data.value &lt; 60\" target=\"hDeep\">\n      <assign location=\"temp\" expr=\"_event.data.value\"/>\n      <send event=\"cell.cooled\"><content expr=\"{temp: temp}\"/></send>\n    </transition>\n    <transition event=\"cell.stop\" target=\"offline\">\n      <send event=\"cell.stopped\"><content expr=\"{cycles: cycles}\"/></send>\n    </transition>\n  </state>\n\n  <state id=\"decommissioned\" initial=\"decommissioned.done\">\n    <final id=\"decommissioned.done\"/>\n  </state>\n</scxml>\n",
+    "engine": "sandboxed",
+    "scriptTimeoutMs": 500,
+    "maxMicrosteps": 10000,
+    "monitorShowVars": true,
+    "persistVars": false,
+    "updateEvent": "update",
+    "x": 140,
+    "y": 1900
+  },
+  {
+    "id": "cascade-conf-sup",
+    "type": "statechart-machine",
+    "z": "tab-scxml-cascade",
+    "name": "Supervisor (hierarchy+timeout)",
+    "doc": "",
+    "source": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<scxml xmlns=\"http://www.w3.org/2005/07/scxml\" version=\"1.0\" datamodel=\"ecmascript\" name=\"Supervisor\" initial=\"booting\">\n  <datamodel>\n    <data id=\"jobId\" expr=\"100\"/>\n    <data id=\"cellTemp\" expr=\"20\"/>\n    <data id=\"faults\" expr=\"0\"/>\n  </datamodel>\n\n  <state id=\"booting\">\n    <transition event=\"sys.ready\" target=\"idle\"/>\n  </state>\n\n  <state id=\"idle\">\n    <transition event=\"cmd.start\" cond=\"cellTemp &lt; 80\" target=\"starting\">\n      <send event=\"job.reset\"/>\n      <send event=\"cell.start\"/>\n    </transition>\n    <transition event=\"cmd.shutdown\" target=\"shutdown\">\n      <send event=\"job.reset\"/>\n      <send event=\"sys.supervisor.shutdown\"/>\n    </transition>\n    <transition event=\"cell.estop\" target=\"fault\">\n      <assign location=\"faults\" expr=\"faults + 1\"/>\n      <send event=\"cell.stop\"/>\n    </transition>\n  </state>\n\n  <state id=\"starting\">\n    <onentry><send id=\"startTimeout\" event=\"timeout.start\" delay=\"5s\"/></onentry>\n    <onexit><cancel sendid=\"startTimeout\"/></onexit>\n    <transition event=\"cell.ready\" target=\"running\">\n      <assign location=\"cellTemp\" expr=\"_event.data.temp\"/>\n      <send event=\"job.create\"><content expr=\"{id: jobId, priority: 'high'}\"/></send>\n    </transition>\n    <transition event=\"timeout.start\" target=\"fault\">\n      <send event=\"cell.stop\"/>\n    </transition>\n    <transition event=\"cell.estop\" target=\"fault\">\n      <assign location=\"faults\" expr=\"faults + 1\"/>\n      <send event=\"cell.stop\"/>\n    </transition>\n  </state>\n\n  <state id=\"running\" initial=\"normal\">\n    <history id=\"hRun\" type=\"shallow\"><transition target=\"normal\"/></history>\n\n    <state id=\"normal\">\n      <transition event=\"cell.overheat\" target=\"degraded\">\n        <assign location=\"cellTemp\" expr=\"_event.data.temp\"/>\n        <send event=\"cell.pause\"/>\n      </transition>\n    </state>\n\n    <state id=\"degraded\">\n      <transition event=\"cell.cooled\" target=\"normal\">\n        <assign location=\"cellTemp\" expr=\"_event.data.temp\"/>\n      </transition>\n      <transition event=\"cell.overheat\" target=\"degraded\">\n        <assign location=\"cellTemp\" expr=\"_event.data.temp\"/>\n        <send event=\"cell.pause\"/>\n      </transition>\n    </state>\n\n    <transition event=\"cell.estop\" target=\"fault\">\n      <assign location=\"faults\" expr=\"faults + 1\"/>\n      <send event=\"cell.stop\"/>\n    </transition>\n    <transition event=\"job.accepted\" target=\"hRun\">\n      <send event=\"job.start\"/>\n    </transition>\n    <transition event=\"job.finished\" target=\"stopping\">\n      <assign location=\"jobId\" expr=\"jobId + 1\"/>\n      <send event=\"job.reset\"/>\n    </transition>\n    <transition event=\"cmd.maintain\" target=\"maintenance\"/>\n    <transition event=\"cmd.stop\" target=\"stopping\"/>\n  </state>\n\n  <state id=\"maintenance\">\n    <onentry><send event=\"cell.pause\"/></onentry>\n    <transition event=\"cmd.resume\" target=\"hRun\">\n      <send event=\"cell.resumeDeep\"/>\n    </transition>\n    <transition event=\"cell.estop\" target=\"fault\">\n      <assign location=\"faults\" expr=\"faults + 1\"/>\n      <send event=\"cell.stop\"/>\n    </transition>\n  </state>\n\n  <state id=\"stopping\">\n    <onentry>\n      <send event=\"cell.stop\"/>\n      <send event=\"job.reset\"/>\n    </onentry>\n    <transition event=\"cell.stopped\" target=\"idle\"/>\n  </state>\n\n  <state id=\"fault\">\n    <onentry>\n      <send event=\"cell.stop\"/>\n      <send event=\"job.reset\"/>\n    </onentry>\n    <transition event=\"cmd.reset\" target=\"idle\"/>\n  </state>\n\n  <state id=\"shutdown\" initial=\"shutdown.done\">\n    <final id=\"shutdown.done\"/>\n  </state>\n</scxml>\n",
+    "engine": "sandboxed",
+    "scriptTimeoutMs": 500,
+    "maxMicrosteps": 10000,
+    "monitorShowVars": true,
+    "persistVars": false,
+    "updateEvent": "update",
+    "x": 140,
+    "y": 2050
+  },
+  {
+    "id": "cascade-conf-job",
+    "type": "statechart-machine",
+    "z": "tab-scxml-cascade",
+    "name": "Job (nested+deep history)",
+    "doc": "",
+    "source": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<scxml xmlns=\"http://www.w3.org/2005/07/scxml\" version=\"1.0\" datamodel=\"ecmascript\" name=\"Job\" initial=\"empty\">\n  <datamodel>\n    <data id=\"jobId\" expr=\"0\"/>\n    <data id=\"priority\" expr=\"'normal'\"/>\n    <data id=\"progress\" expr=\"0\"/>\n    <data id=\"result\" expr=\"''\"/>\n  </datamodel>\n\n  <state id=\"empty\">\n    <transition event=\"job.create\" cond=\"_event.data &amp;&amp; _event.data.id &gt; 0\" target=\"active\">\n      <assign location=\"jobId\" expr=\"_event.data.id\"/>\n      <assign location=\"priority\" expr=\"_event.data.priority\"/>\n      <assign location=\"progress\" expr=\"0\"/>\n      <assign location=\"result\" expr=\"''\"/>\n      <send event=\"job.accepted\"><content expr=\"{id: jobId, priority: priority}\"/></send>\n    </transition>\n    <transition event=\"job.create\" cond=\"_event.data &amp;&amp; _event.data.id &lt;= 0\" target=\"rejected\">\n      <send event=\"job.rejected\"><content expr=\"{id: _event.data.id}\"/></send>\n    </transition>\n  </state>\n\n  <state id=\"active\" initial=\"queued\">\n    <transition event=\"job.reset\" target=\"empty\">\n      <send event=\"job.aborted\"/>\n    </transition>\n    <state id=\"queued\">\n      <transition event=\"job.start\" target=\"loading\"/>\n    </state>\n\n    <state id=\"loading\">\n      <onentry><send event=\"job.progress\"><content expr=\"{id: jobId, step: 'loading'}\"/></send></onentry>\n      <transition cond=\"true\" target=\"processing\"/>\n    </state>\n\n    <state id=\"processing\" initial=\"p\">\n      <history id=\"hDeep\" type=\"deep\"><transition target=\"work\"/></history>\n      <parallel id=\"p\">\n        <state id=\"work\" initial=\"step1\">\n          <state id=\"step1\">\n            <transition event=\"job.step\" target=\"step2\">\n              <assign location=\"progress\" expr=\"1\"/>\n              <send event=\"job.progress\"><content expr=\"{id: jobId, step: 1}\"/></send>\n            </transition>\n          </state>\n          <state id=\"step2\">\n            <transition event=\"job.step\" target=\"workDone\">\n              <assign location=\"progress\" expr=\"2\"/>\n              <send event=\"job.progress\"><content expr=\"{id: jobId, step: 2}\"/></send>\n            </transition>\n          </state>\n          <final id=\"workDone\"/>\n        </state>\n        <state id=\"quality\" initial=\"checking\">\n          <state id=\"checking\">\n            <transition event=\"quality.ok\" target=\"passed\">\n              <assign location=\"result\" expr=\"'ok'\"/>\n            </transition>\n            <transition event=\"quality.fail\" target=\"failed\">\n              <assign location=\"result\" expr=\"'failed'\"/>\n            </transition>\n          </state>\n          <final id=\"passed\"/>\n          <state id=\"failed\">\n            <transition event=\"quality.retry\" target=\"checking\"/>\n          </state>\n        </state>\n      </parallel>\n      <transition event=\"done.state.p\" target=\"done\">\n        <send event=\"job.finished\"><content expr=\"{id: jobId, result: result}\"/></send>\n      </transition>\n      <transition event=\"job.pause\" target=\"paused\"/>\n    </state>\n\n    <state id=\"paused\">\n      <transition event=\"job.resume\" target=\"hDeep\"/>\n    </state>\n\n    <final id=\"done\"/>\n    <transition event=\"done.state.active\" target=\"archived\"/>\n  </state>\n\n  <state id=\"rejected\">\n    <transition event=\"job.reset\" target=\"empty\"/>\n  </state>\n\n  <state id=\"archived\">\n    <transition event=\"job.reset\" target=\"empty\"/>\n  </state>\n</scxml>\n",
+    "engine": "sandboxed",
+    "scriptTimeoutMs": 500,
+    "maxMicrosteps": 10000,
+    "monitorShowVars": true,
+    "persistVars": false,
+    "updateEvent": "update",
+    "x": 140,
+    "y": 2200
+  },
+  {
+    "id": "cascade-cell-out",
+    "type": "statechart-hub",
+    "z": "tab-scxml-cascade",
+    "name": "Cell state/events",
+    "machine": "cascade-conf-cell",
+    "includeVars": true,
+    "emitInitial": true,
+    "includeInternalSends": true,
+    "stateTopic": "",
+    "eventTopic": "statechart/{machine}/evt/{event}",
+    "x": 560,
+    "y": 560,
+    "wires": [
+      [
+        "cascade-rec-state"
+      ],
+      [
+        "cascade-sup-out",
+        "cascade-evt-log"
+      ],
+      []
+    ]
+  },
+  {
+    "id": "cascade-sup-out",
+    "type": "statechart-hub",
+    "z": "tab-scxml-cascade",
+    "name": "Supervisor state/events",
+    "machine": "cascade-conf-sup",
+    "includeVars": true,
+    "emitInitial": true,
+    "includeInternalSends": true,
+    "stateTopic": "",
+    "eventTopic": "statechart/{machine}/evt/{event}",
+    "x": 560,
+    "y": 260,
+    "wires": [
+      [
+        "cascade-rec-state"
+      ],
+      [
+        "cascade-router",
+        "cascade-evt-log"
+      ],
+      []
+    ]
+  },
+  {
+    "id": "cascade-job-out",
+    "type": "statechart-hub",
+    "z": "tab-scxml-cascade",
+    "name": "Job state/events",
+    "machine": "cascade-conf-job",
+    "includeVars": true,
+    "emitInitial": true,
+    "includeInternalSends": true,
+    "stateTopic": "",
+    "eventTopic": "statechart/{machine}/evt/{event}",
+    "x": 560,
+    "y": 1260,
+    "wires": [
+      [
+        "cascade-rec-state"
+      ],
+      [
+        "cascade-sup-out",
+        "cascade-evt-log"
+      ],
+      []
+    ]
+  },
+  {
+    "id": "cascade-router",
+    "type": "switch",
+    "z": "tab-scxml-cascade",
+    "name": "event router",
+    "property": "event",
+    "propertyType": "msg",
+    "rules": [
+      {
+        "t": "regex",
+        "v": "^cell\\.",
+        "vt": "str"
+      },
+      {
+        "t": "regex",
+        "v": "^job\\.",
+        "vt": "str"
+      },
+      {
+        "t": "else",
+        "v": "",
+        "vt": "str"
+      }
+    ],
+    "checkall": "false",
+    "repair": false,
+    "outputs": 3,
+    "x": 780,
+    "y": 260,
+    "wires": [
+      [
+        "cascade-cell-out"
+      ],
+      [
+        "cascade-job-out"
+      ],
+      [
+        "cascade-dbg-unrouted"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-rec-state",
+    "type": "function",
+    "z": "tab-scxml-cascade",
+    "name": "record state",
+    "func": "const key = 'scxml_' + String(msg.machine || 'unknown').split(' ')[0].replace(/[^A-Za-z0-9_]/g, '_');\nglobal.set(key, {\n  states: msg.states || [],\n  vars: msg.vars || {},\n  changed: !!msg.changed,\n  event: msg.event ?? null,\n  ts: Date.now()\n});\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 800,
+    "y": 80,
+    "wires": [
+      [
+        "cascade-dbg-state"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-evt-log",
+    "type": "function",
+    "z": "tab-scxml-cascade",
+    "name": "record events",
+    "func": "const arr = global.get('scxml_events') || [];\narr.push({\n  event: msg.event ?? null,\n  payload: msg.payload,\n  machine: msg.machine ?? null,\n  topic: msg.topic ?? null,\n  ts: Date.now()\n});\nif (arr.length > 300) { arr.splice(0, arr.length - 300); }\nglobal.set('scxml_events', arr);\nreturn msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 800,
+    "y": 140,
+    "wires": [
+      [
+        "cascade-dbg-events"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-dbg-state",
+    "type": "debug",
+    "z": "tab-scxml-cascade",
+    "name": "state",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1060,
+    "y": 80,
+    "wires": []
+  },
+  {
+    "id": "cascade-dbg-events",
+    "type": "debug",
+    "z": "tab-scxml-cascade",
+    "name": "events",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1060,
+    "y": 140,
+    "wires": []
+  },
+  {
+    "id": "cascade-dbg-unrouted",
+    "type": "debug",
+    "z": "tab-scxml-cascade",
+    "name": "unrouted",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1060,
+    "y": 300,
+    "wires": []
+  },
+  {
+    "id": "cascade-dbg-error",
+    "type": "debug",
+    "z": "tab-scxml-cascade",
+    "name": "error",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1060,
+    "y": 1700,
+    "wires": []
+  },
+  {
+    "id": "cascade-catch",
+    "type": "catch",
+    "z": "tab-scxml-cascade",
+    "name": "catch",
+    "scope": null,
+    "uncaught": false,
+    "x": 800,
+    "y": 1700,
+    "wires": [
+      [
+        "cascade-dbg-error"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-sys-ready",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "sys.ready",
+    "props": [
+      {
+        "p": "topic",
+        "v": "sys.ready",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 100,
+    "wires": [
+      [
+        "cascade-sup-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-cmd-start",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "cmd.start",
+    "props": [
+      {
+        "p": "topic",
+        "v": "cmd.start",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 134,
+    "wires": [
+      [
+        "cascade-sup-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-cmd-stop",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "cmd.stop",
+    "props": [
+      {
+        "p": "topic",
+        "v": "cmd.stop",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 168,
+    "wires": [
+      [
+        "cascade-sup-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-cmd-maintain",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "cmd.maintain",
+    "props": [
+      {
+        "p": "topic",
+        "v": "cmd.maintain",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 202,
+    "wires": [
+      [
+        "cascade-sup-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-cmd-resume",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "cmd.resume",
+    "props": [
+      {
+        "p": "topic",
+        "v": "cmd.resume",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 236,
+    "wires": [
+      [
+        "cascade-sup-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-cmd-reset",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "cmd.reset",
+    "props": [
+      {
+        "p": "topic",
+        "v": "cmd.reset",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 270,
+    "wires": [
+      [
+        "cascade-sup-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-cmd-shutdown",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "cmd.shutdown",
+    "props": [
+      {
+        "p": "topic",
+        "v": "cmd.shutdown",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 304,
+    "wires": [
+      [
+        "cascade-sup-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-sup-reset",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "reset Supervisor",
+    "props": [
+      {
+        "p": "command",
+        "v": "reset",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 338,
+    "wires": [
+      [
+        "cascade-sup-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-sup-set-celltemp",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "set cellTemp=90",
+    "props": [
+      {
+        "p": "command",
+        "v": "set",
+        "vt": "str"
+      },
+      {
+        "p": "payload",
+        "v": "{\"cellTemp\": 90}",
+        "vt": "json"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 372,
+    "wires": [
+      [
+        "cascade-sup-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-cell-start",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "cell.start",
+    "props": [
+      {
+        "p": "topic",
+        "v": "cell.start",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 520,
+    "wires": [
+      [
+        "cascade-cell-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-cell-stop",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "cell.stop",
+    "props": [
+      {
+        "p": "topic",
+        "v": "cell.stop",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 554,
+    "wires": [
+      [
+        "cascade-cell-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-cell-pause",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "cell.pause",
+    "props": [
+      {
+        "p": "topic",
+        "v": "cell.pause",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 588,
+    "wires": [
+      [
+        "cascade-cell-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-cell-resume-shallow",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "cell.resumeShallow",
+    "props": [
+      {
+        "p": "topic",
+        "v": "cell.resumeShallow",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 622,
+    "wires": [
+      [
+        "cascade-cell-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-cell-resume-deep",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "cell.resumeDeep",
+    "props": [
+      {
+        "p": "topic",
+        "v": "cell.resumeDeep",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 656,
+    "wires": [
+      [
+        "cascade-cell-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-power-on",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "power.on",
+    "props": [
+      {
+        "p": "topic",
+        "v": "power.on",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 690,
+    "wires": [
+      [
+        "cascade-cell-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-power-off",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "power.off",
+    "props": [
+      {
+        "p": "topic",
+        "v": "power.off",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 724,
+    "wires": [
+      [
+        "cascade-cell-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-conveyor-start",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "conveyor.start",
+    "props": [
+      {
+        "p": "topic",
+        "v": "conveyor.start",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 758,
+    "wires": [
+      [
+        "cascade-cell-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-conveyor-stop",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "conveyor.stop",
+    "props": [
+      {
+        "p": "topic",
+        "v": "conveyor.stop",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 792,
+    "wires": [
+      [
+        "cascade-cell-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-conveyor-fault",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "conveyor.fault",
+    "props": [
+      {
+        "p": "topic",
+        "v": "conveyor.fault",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 826,
+    "wires": [
+      [
+        "cascade-cell-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-conveyor-reset",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "conveyor.reset",
+    "props": [
+      {
+        "p": "topic",
+        "v": "conveyor.reset",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 860,
+    "wires": [
+      [
+        "cascade-cell-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-safety-estop",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "safety.estop",
+    "props": [
+      {
+        "p": "topic",
+        "v": "safety.estop",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 894,
+    "wires": [
+      [
+        "cascade-cell-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-safety-reset",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "safety.reset",
+    "props": [
+      {
+        "p": "topic",
+        "v": "safety.reset",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 928,
+    "wires": [
+      [
+        "cascade-cell-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-temp-85",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "sensor.temp 85",
+    "props": [
+      {
+        "p": "topic",
+        "v": "sensor.temp",
+        "vt": "str"
+      },
+      {
+        "p": "payload",
+        "v": "{\"value\": 85}",
+        "vt": "json"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 962,
+    "wires": [
+      [
+        "cascade-cell-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-temp-55",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "sensor.temp 55",
+    "props": [
+      {
+        "p": "topic",
+        "v": "sensor.temp",
+        "vt": "str"
+      },
+      {
+        "p": "payload",
+        "v": "{\"value\": 55}",
+        "vt": "json"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 996,
+    "wires": [
+      [
+        "cascade-cell-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-cell-decommission",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "cell.decommission",
+    "props": [
+      {
+        "p": "topic",
+        "v": "cell.decommission",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 1030,
+    "wires": [
+      [
+        "cascade-cell-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-cell-reset",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "reset Cell",
+    "props": [
+      {
+        "p": "command",
+        "v": "reset",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 1064,
+    "wires": [
+      [
+        "cascade-cell-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-cell-set-temp",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "set temp=90",
+    "props": [
+      {
+        "p": "command",
+        "v": "set",
+        "vt": "str"
+      },
+      {
+        "p": "payload",
+        "v": "{\"temp\": 90}",
+        "vt": "json"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 1098,
+    "wires": [
+      [
+        "cascade-cell-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-job-start",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "job.start",
+    "props": [
+      {
+        "p": "topic",
+        "v": "job.start",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 1200,
+    "wires": [
+      [
+        "cascade-job-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-job-step",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "job.step",
+    "props": [
+      {
+        "p": "topic",
+        "v": "job.step",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 1234,
+    "wires": [
+      [
+        "cascade-job-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-quality-ok",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "quality.ok",
+    "props": [
+      {
+        "p": "topic",
+        "v": "quality.ok",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 1268,
+    "wires": [
+      [
+        "cascade-job-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-quality-fail",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "quality.fail",
+    "props": [
+      {
+        "p": "topic",
+        "v": "quality.fail",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 1302,
+    "wires": [
+      [
+        "cascade-job-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-quality-retry",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "quality.retry",
+    "props": [
+      {
+        "p": "topic",
+        "v": "quality.retry",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 1336,
+    "wires": [
+      [
+        "cascade-job-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-job-pause",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "job.pause",
+    "props": [
+      {
+        "p": "topic",
+        "v": "job.pause",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 1370,
+    "wires": [
+      [
+        "cascade-job-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-job-resume",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "job.resume",
+    "props": [
+      {
+        "p": "topic",
+        "v": "job.resume",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 1404,
+    "wires": [
+      [
+        "cascade-job-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-job-reset",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "job.reset",
+    "props": [
+      {
+        "p": "topic",
+        "v": "job.reset",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 1438,
+    "wires": [
+      [
+        "cascade-job-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-job-reset-cmd",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "reset Job",
+    "props": [
+      {
+        "p": "command",
+        "v": "reset",
+        "vt": "str"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 1472,
+    "wires": [
+      [
+        "cascade-job-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-job-create-invalid",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "job.create id=0",
+    "props": [
+      {
+        "p": "topic",
+        "v": "job.create",
+        "vt": "str"
+      },
+      {
+        "p": "payload",
+        "v": "{\"id\": 0, \"priority\": \"low\"}",
+        "vt": "json"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 1506,
+    "wires": [
+      [
+        "cascade-job-out"
+      ]
+    ]
+  },
+  {
+    "id": "cascade-inj-job-create-valid",
+    "type": "inject",
+    "z": "tab-scxml-cascade",
+    "name": "job.create id=1",
+    "props": [
+      {
+        "p": "topic",
+        "v": "job.create",
+        "vt": "str"
+      },
+      {
+        "p": "payload",
+        "v": "{\"id\": 1, \"priority\": \"normal\"}",
+        "vt": "json"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 140,
+    "y": 1540,
+    "wires": [
+      [
+        "cascade-job-out"
+      ]
+    ]
+  }
+]

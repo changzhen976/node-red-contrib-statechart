@@ -2,8 +2,14 @@
   "category": "state chart",
   "label": {
     "scxmlMachine": "State chart",
-    "scxmlIn": "State chart in",
-    "scxmlOut": "State chart out"
+    "scxmlHub": "State chart hub",
+    "scxmlEvent": "State chart event",
+    "scxmlSet": "State chart set",
+    "scxmlReset": "State chart reset",
+    "hubState": "state",
+    "hubEvents": "events",
+    "hubErrors": "errors",
+    "scxmlRead": "State chart read"
   },
   "sidebar": {
     "label": "State chart",
@@ -50,7 +56,6 @@
     "includeVars": "Include variables",
     "emitInitial": "Emit initial state",
     "includeInternalSends": "Include internal sends",
-    "outputMode": "Output mode",
     "stateTopic": "State topic",
     "eventTopic": "Event topic",
     "outputHint": "Output 1: state. Output 2: state chart <send> events.",
@@ -92,7 +97,43 @@
     "typeScript": "custom JS",
     "openFullEditor": "Open full editor",
     "openFullEditorTitle": "Full editor",
-    "openFullEditorHint": "Canvas, undo/redo, simulation and SCXML import/export."
+    "openFullEditorHint": "Canvas, undo/redo, simulation and SCXML import/export.",
+    "internalTransition": "(internal transition)",
+    "eventDataMode": "Event data",
+    "dataNone": "event only",
+    "dataPayload": "msg.payload",
+    "dataJson": "fixed JSON",
+    "dataValue": "JSON value",
+    "setMode": "Set mode",
+    "setSingle": "single variable",
+    "setObject": "msg.payload object",
+    "variable": "Variable",
+    "valueType": "Value type",
+    "valuePayload": "msg.payload",
+    "valueJson": "fixed JSON",
+    "valueString": "string",
+    "valueNumber": "number",
+    "valueBoolean": "boolean",
+    "value": "Value",
+    "hubOutputHint": "Output 1: state. Output 2: chart send events. Output 3: runtime errors.",
+    "resetHint": "Send a reset command to the connected state chart hub / input.",
+    "readMode": "Read value",
+    "readSnapshot": "snapshot",
+    "readState": "state",
+    "readVariable": "variable",
+    "contextScope": "Context store",
+    "contextNone": "none",
+    "contextFlow": "flow",
+    "contextGlobal": "global",
+    "contextKey": "Context key",
+    "readHint": "Reads the machine state or a variable. Optionally writes the value to flow/global context.",
+    "dataFlow": "flow context",
+    "dataGlobal": "global context",
+    "dataKey": "Context key",
+    "valueFlow": "flow context",
+    "valueGlobal": "global context",
+    "valueKey": "Context key",
+    "hubConflictWarning": "This state chart is already hosted by hub \"__name__\"; only one hub per state chart is allowed."
   },
   "option": {
     "topic": "msg.topic",
@@ -150,7 +191,13 @@
     "historyHasActions": "History “__id__” cannot have entry/exit actions.",
     "initialIgnored": "State “__id__” ignores initial (kind=__kind__).",
     "transitionMissingId": "A transition is missing an id (event “__event__”).",
-    "transitionDuplicateId": "Duplicate transition id “__id__”."
+    "transitionDuplicateId": "Duplicate transition id “__id__”.",
+    "donedataNotFinal": "donedata is only allowed on final state “__id__”.",
+    "donedataEmpty": "final state “__id__” has empty donedata.",
+    "donedataAmbiguous": "final state “__id__” cannot combine content/expr/param in donedata.",
+    "donedataParamInvalid": "final state “__id__” has an invalid donedata param.",
+    "historyTargetless": "history default transition “__id__” needs a target.",
+    "internalEventless": "targetless internal transition “__id__” needs an event."
   },
   "status": {
     "notStarted": "not started",
@@ -163,7 +210,9 @@
     "machineNotFound": "machine not found",
     "error": "error",
     "setVars": "variables set",
-    "reset": "reset"
+    "reset": "reset",
+    "hubConflict": "state chart already hosted by another hub",
+    "read": "read"
   },
   "errors": {
     "noMachine": "no statechart-machine configured",
@@ -176,6 +225,9 @@
     "closedWhileStarting": "state machine was closed while starting",
     "configInvalid": "invalid state chart configuration: __message__",
     "dataModel": "data model is not available",
-    "runtime": "__kind__: __message__"
+    "runtime": "__kind__: __message__",
+    "hubConflict": "state chart already hosted by hub \"__name__\"",
+    "noState": "no state or variables available to read",
+    "emptyContextKey": "context key is empty"
   }
 }

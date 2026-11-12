@@ -104,7 +104,7 @@ function testModule(RED) {
   })
 }
 
-function flowFor(source, outConfig = {}, machineConfig = {}) {
+function flowFor(source, hubConfig = {}, machineConfig = {}) {
   return [
     {
       id: 'conf1', type: 'statechart-machine', name: 'test machine', source,
@@ -112,14 +112,11 @@ function flowFor(source, outConfig = {}, machineConfig = {}) {
       ...machineConfig,
     },
     {
-      id: 'in1', type: 'statechart-in', machine: 'conf1',
-      eventSource: 'topic', fixedEvent: '', wires: [],
-    },
-    {
-      id: 'out1', type: 'statechart-out', machine: 'conf1',
+      id: 'hub', type: 'statechart-hub', machine: 'conf1',
       includeVars: true, emitInitial: true, includeInternalSends: false,
-      ...outConfig,
-      wires: [['s1'], ['s2']],
+      stateTopic: '', eventTopic: 'statechart/{machine}/evt/{event}',
+      ...hubConfig,
+      wires: [['s1'], ['s2'], []],
     },
     { id: 's1', type: 'p0-sink' },
     { id: 's2', type: 'p0-sink' },
@@ -143,10 +140,8 @@ function twoMachineFlow() {
       id: 'confB', type: 'statechart-machine', name: 'machine B', doc: DOC_B,
       engine: 'sandboxed', scriptTimeoutMs: 500, maxMicrosteps: 10000,
     },
-    { id: 'inA', type: 'statechart-in', machine: 'confA', eventSource: 'topic', fixedEvent: '', wires: [] },
-    { id: 'inB', type: 'statechart-in', machine: 'confB', eventSource: 'topic', fixedEvent: '', wires: [] },
-    { id: 'outA', type: 'statechart-out', machine: 'confA', includeVars: true, emitInitial: true, includeInternalSends: false, wires: [['sA'], ['sA2']] },
-    { id: 'outB', type: 'statechart-out', machine: 'confB', includeVars: true, emitInitial: true, includeInternalSends: false, wires: [['sB'], ['sB2']] },
+    { id: 'hubA', type: 'statechart-hub', machine: 'confA', includeVars: true, emitInitial: true, includeInternalSends: false, wires: [['sA'], ['sA2'], []] },
+    { id: 'hubB', type: 'statechart-hub', machine: 'confB', includeVars: true, emitInitial: true, includeInternalSends: false, wires: [['sB'], ['sB2'], []] },
     { id: 'sA', type: 'p0-sink' },
     { id: 'sA2', type: 'p0-sink' },
     { id: 'sB', type: 'p0-sink' },
@@ -215,9 +210,9 @@ test('drives transitions from msg.topic', async () => {
   await loadFlow(flowFor(TRAFFIC))
   try {
     await waitFor(() => sinkMessages('s1').length > 0, 'initial state')
-    helper.getNode('in1').receive({ topic: 'next' })
+    helper.getNode('hub').receive({ topic: 'next' })
     await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'green'), 'green')
-    helper.getNode('in1').receive({ topic: 'next' })
+    helper.getNode('hub').receive({ topic: 'next' })
     await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'yellow'), 'yellow')
   } finally {
     await unloadFlow()
@@ -228,7 +223,7 @@ test('emits chart <send> events on output 2', async () => {
   await loadFlow(flowFor(SEND))
   try {
     await waitFor(() => sinkMessages('s1').length > 0, 'initial state')
-    helper.getNode('in1').receive({ topic: 'go' })
+    helper.getNode('hub').receive({ topic: 'go' })
     await waitFor(() => sinkMessages('s2').some((m) => m.event === 'notify'), 'notify')
     const msg = sinkMessages('s2').find((m) => m.event === 'notify')
     assert.deepEqual(msg.payload, { n: 1 })
@@ -255,7 +250,7 @@ test('reports invalid SCXML without crashing', async () => {
   await loadFlow(flowFor(BAD))
   try {
     const errors = []
-    const inNode = helper.getNode('in1')
+    const inNode = helper.getNode('hub')
     inNode.on('call:error', (err) => errors.push(err))
     inNode.receive({ topic: 'go' })
     await waitFor(() => errors.length > 0, 'error event')
@@ -309,7 +304,7 @@ test('drives a ProjectDoc JSON machine and validates it before start', async () 
     await waitFor(() => sinkMessages('s1').length > 0, 'doc initial state')
     assert.equal(sinkMessages('s1')[0].payload, 'red')
     assert.equal(sinkMessages('s1')[0].vars.cycles, 1)
-    helper.getNode('in1').receive({ topic: 'next' })
+    helper.getNode('hub').receive({ topic: 'next' })
     await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'green'), 'doc green')
     const token = await monitorToken()
     const graph = await helper.request().get('/statechart/api/machines/conf1/graph?token=' + token).expect(200)
@@ -325,7 +320,7 @@ test('keeps two config-node machines independent', async () => {
     await waitFor(() => sinkMessages('sA').length > 0 && sinkMessages('sB').length > 0, 'both initial states')
     assert.equal(sinkMessages('sA')[0].payload, 'red')
     assert.equal(sinkMessages('sB')[0].payload, 'idleB')
-    helper.getNode('inA').receive({ topic: 'next' })
+    helper.getNode('hubA').receive({ topic: 'next' })
     await waitFor(() => sinkMessages('sA').some((m) => m.payload === 'green'), 'A green')
     assert.ok(sinkMessages('sB').every((m) => m.payload === 'idleB'), 'B must not change')
 
@@ -342,7 +337,7 @@ test('set command assigns variables and auto-sends update', async () => {
   await loadFlow(flowFor(SET_CONDITION))
   try {
     await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'a'), 'initial a')
-    helper.getNode('in1').receive({ command: 'set', payload: { temp: 85 } })
+    helper.getNode('hub').receive({ command: 'set', payload: { temp: 85 } })
     await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'b'), 'condition transition')
     const msg = sinkMessages('s1').find((m) => m.payload === 'b')
     assert.equal(msg.vars.temp, 85)
@@ -355,7 +350,7 @@ test('event command uses msg.event', async () => {
   await loadFlow(flowFor(TRAFFIC))
   try {
     await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'red'), 'initial red')
-    helper.getNode('in1').receive({ command: 'event', event: 'next' })
+    helper.getNode('hub').receive({ command: 'event', event: 'next' })
     await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'green'), 'event green')
   } finally {
     await unloadFlow()
@@ -366,9 +361,9 @@ test('reset command re-creates the session at the initial state', async () => {
   await loadFlow(flowFor(TRAFFIC))
   try {
     await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'red'), 'initial red')
-    helper.getNode('in1').receive({ topic: 'next' })
+    helper.getNode('hub').receive({ topic: 'next' })
     await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'green'), 'green before reset')
-    helper.getNode('in1').receive({ command: 'reset' })
+    helper.getNode('hub').receive({ command: 'reset' })
     await waitFor(() => {
       const list = sinkMessages('s1')
       const last = list[list.length - 1]
@@ -380,29 +375,26 @@ test('reset command re-creates the session at the initial state', async () => {
 })
 
 
-test('honours outputMode=state and stateTopic', async () => {
-  await loadFlow(flowFor(SEND, { outputMode: 'state', stateTopic: 'state/{machine}' }))
+test('honours stateTopic on the hub state output', async () => {
+  await loadFlow(flowFor(SEND, { stateTopic: 'state/{machine}' }))
   try {
     await waitFor(() => sinkMessages('s1').length > 0, 'initial state')
-    helper.getNode('in1').receive({ topic: 'go' })
+    helper.getNode('hub').receive({ topic: 'go' })
     await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'b'), 'state b')
-    await sleep(100)
-    assert.equal(sinkMessages('s2').length, 0, 'event output must be suppressed')
     assert.equal(sinkMessages('s1').find((m) => m.payload === 'b').topic, 'state/test machine')
   } finally {
     await unloadFlow()
   }
 })
 
-test('honours outputMode=event and eventTopic', async () => {
-  await loadFlow(flowFor(SEND, { outputMode: 'event', eventTopic: 'evt/{machine}/{event}' }))
+test('honours eventTopic on the hub event output', async () => {
+  await loadFlow(flowFor(SEND, { eventTopic: 'evt/{machine}/{event}' }))
   try {
-    await waitFor(() => sinkMessages('s1').length === 0, 'no initial state', 200)
-    helper.getNode('in1').receive({ topic: 'go' })
+    await waitFor(() => sinkMessages('s1').length > 0, 'initial state')
+    helper.getNode('hub').receive({ topic: 'go' })
     await waitFor(() => sinkMessages('s2').some((m) => m.event === 'notify'), 'notify')
     const msg = sinkMessages('s2').find((m) => m.event === 'notify')
     assert.equal(msg.topic, 'evt/test machine/notify')
-    assert.equal(sinkMessages('s1').length, 0, 'state output must be suppressed')
   } finally {
     await unloadFlow()
   }
@@ -412,11 +404,11 @@ test('restores shallow history', async () => {
   await loadFlow(flowFor(HISTORY))
   try {
     await waitFor(() => sinkMessages('s1').some((m) => m.states.includes('s1')), 'p/s1')
-    helper.getNode('in1').receive({ topic: 'next' })
+    helper.getNode('hub').receive({ topic: 'next' })
     await waitFor(() => sinkMessages('s1').some((m) => m.states.includes('s2')), 'p/s2')
-    helper.getNode('in1').receive({ topic: 'out' })
+    helper.getNode('hub').receive({ topic: 'out' })
     await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'out'), 'out state')
-    helper.getNode('in1').receive({ topic: 'back' })
+    helper.getNode('hub').receive({ topic: 'back' })
     await waitFor(() => sinkMessages('s1').some((m) => m.states.includes('s2')), 'history restored')
   } finally {
     await unloadFlow()
@@ -438,9 +430,9 @@ test('restores persisted variables with createSession data', async () => {
   try {
     const machine = helper.getNode('conf1')
     await machine.context().set('statechartVars', { temp: 85 })
-    helper.getNode('in1').receive({ command: 'reset' })
+    helper.getNode('hub').receive({ command: 'reset' })
     await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'a' && m.vars.temp === 85), 'restored vars')
-    helper.getNode('in1').receive({ topic: 'update' })
+    helper.getNode('hub').receive({ topic: 'update' })
     await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'b'), 'condition after restore')
   } finally {
     await unloadFlow()
@@ -470,17 +462,21 @@ test('ships statechart types, palette labels and a custom icon', () => {
   assert.equal(pkg.main, 'dist/statechart.js')
   assert.ok(pkg.keywords.includes('node-red'))
   assert.match(html, new RegExp("registerType\\('statechart-machine'"))
-  assert.match(html, new RegExp("registerType\\('statechart-in'"))
-  assert.match(html, new RegExp("registerType\\('statechart-out'"))
+  assert.match(html, new RegExp("registerType\\('statechart-hub'"))
+  assert.match(html, new RegExp("registerType\\('statechart-event'"))
+  assert.match(html, new RegExp("registerType\\('statechart-set'"))
+  assert.match(html, new RegExp("registerType\\('statechart-read'"))
+  assert.doesNotMatch(html, new RegExp("registerType\\('statechart-in'"))
+  assert.doesNotMatch(html, new RegExp("registerType\\('statechart-out'"))
   assert.ok(html.includes(pkg.name + '/statechart'), 'editor i18n namespace must match the package name')
-  assert.ok(html.includes("paletteLabel: scxmlI18n('label.scxmlIn')"))
-  assert.ok(html.includes("paletteLabel: scxmlI18n('label.scxmlOut')"))
+  assert.ok(html.includes("paletteLabel: scxmlI18n('label.scxmlHub')"))
+  assert.ok(html.includes("paletteLabel: scxmlI18n('label.scxmlEvent')"))
   assert.ok(html.includes("icon: 'statechart.svg'"))
   assert.ok(fs.existsSync(path.join(root, 'dist', 'icons', 'statechart.svg')))
 
   const en = JSON.parse(fs.readFileSync(path.join(root, 'dist', 'locales', 'en-US', 'statechart.json'), 'utf8'))
-  assert.equal(en.label.scxmlIn, 'State chart in')
-  assert.equal(en.label.scxmlOut, 'State chart out')
+  assert.equal(en.label.scxmlHub, 'State chart hub')
+  assert.equal(en.label.scxmlEvent, 'State chart event')
   assert.ok(en.form.openFullEditorTitle)
   assert.ok(en.form.openFullEditorHint)
 
@@ -509,7 +505,7 @@ const FINAL = `<?xml version="1.0" encoding="UTF-8"?>
   <final id="done"/>
 </scxml>`
 
-test('does not emit an empty state after reaching a final state', async () => {
+test('emits the final state and does not follow it with an empty state', async () => {
   await loadFlow(flowFor(FINAL))
   try {
     await waitFor(() => sinkMessages('s1').length > 0, 'initial state')
@@ -521,10 +517,15 @@ test('does not emit an empty state after reaching a final state', async () => {
         resolve()
       })
     })
-    helper.getNode('in1').receive({ topic: 'go' })
+    helper.getNode('hub').receive({ topic: 'go' })
     await done
+    await waitFor(() => sinkMessages('s1').some((msg) => msg.payload === 'done'), 'final state')
     await sleep(80)
     const messages = sinkMessages('s1')
+    assert.ok(
+      messages.some((msg) => msg.payload === 'done'),
+      'the terminal state must be observable',
+    )
     assert.ok(
       messages.every((msg) => !(Array.isArray(msg.payload) && msg.payload.length === 0)),
       'done must not be followed by an empty state payload',

@@ -72,10 +72,26 @@ npm install /path/to/changzhen976-node-red-contrib-statechart-<version>.tgz
 | 节点 | 类型 | 作用 |
 |---|---|---|
 | `statechart-machine` | config node | 保存状态机文档，持有独立会话和事件总线 |
-| `statechart-in` | 输入节点 | 把消息转换成状态机事件，或执行 `set/reset` 命令 |
-| `statechart-out` | 输出节点 | 输出状态/变量、图内 `<send>` 事件和运行错误 |
+| `statechart-hub` | 中枢节点 | 一个输入、三个输出（状态/事件/错误）；一台状态机只能由一个 Hub 占用 |
+| `statechart-event` | 动作节点 | 低代码发送固定事件，支持仅事件/msg.payload/固定 JSON |
+| `statechart-set` | 动作节点 | 低代码设置单变量或对象变量；值可来自 payload/JSON/flow/global |
+| `statechart-reset` | 动作节点 | 低代码发送 reset 命令 |
+| `statechart-read` | 读取节点 | 读取状态/变量/快照，可写入 flow/global context |
 
-`statechart-machine` 是 config node，不在左侧 palette 中。添加 `statechart-in` 或 `statechart-out` 后，在 **Machine** 下拉右侧点 **＋** 即可新建；每个状态机是独立会话。
+`statechart-machine` 是 config node，不在左侧 palette 中。每个状态机放一个 **Hub**，左侧接 `statechart-event` / `statechart-set` / `statechart-reset` / `statechart-read`，右侧直接接 switch/debug/dashboard。Hub 只选一次 Machine，且运行时强制一台状态机只能有一个 Hub。
+
+### Hub 低代码示例
+
+导入 [`examples/hub-demo.json`](examples/hub-demo.json) 后可直接体验：
+
+```text
+inject → statechart-event (start/stop/bump) ─┐
+inject → statechart-set (label=hello) ──────┼─▶ statechart-hub ─▶ state/events/errors
+inject → statechart-reset ─────────────────┘
+inject → statechart-read (写 flow/global context) ─▶ 独立输出
+```
+
+Hub 的状态、图内事件、错误分别走三个输出；不再需要手写 `msg.topic` 或 `msg.command`。`statechart-read` 可读取 `snapshot` / `state` / 单个变量，并写入 `flow` 或 `global` context。
 
 ## 编辑状态机
 
@@ -89,7 +105,7 @@ npm install /path/to/changzhen976-node-red-contrib-statechart-<version>.tgz
 
 配置窗口还提供 **打开完整编辑器**：在新标签页打开 `statechart-kit` 的全屏 Vue 编辑器；一次打开一台机器，编辑后通过 **保存到 Node-RED** 回写，再回到 Node-RED 点 Update/Deploy。
 
-## 输入命令
+## Hub 输入命令
 
 ```js
 { topic: "next" }                                      // 普通事件
@@ -100,9 +116,9 @@ npm install /path/to/changzhen976-node-red-contrib-statechart-<version>.tgz
 
 `set` 只接受对象 payload，会校验变量已在 `<data>` 中声明；完成后自动发送 `updateEvent`（默认 `update`）。`persistVars` 打开时，变量会写入 Node-RED context。
 
-## 输出
+## Hub 输出
 
-`statechart-out` 有两个输出：
+`statechart-hub` 有三个输出：
 
 ```js
 // 输出 1：状态
@@ -119,9 +135,14 @@ msg.payload
 msg.event
 msg.machine
 msg.topic
+
+// 输出 3：错误 / done
+msg.payload // 错误消息或 "done"
+msg.error   // 错误时
+msg.done    // 完成时
 ```
 
-可配置 `outputMode`（`state` / `event` / `both`）、`stateTopic`、`eventTopic`；内部 send 默认过滤，调试时可打开 `includeInternalSends`。
+可配置 `stateTopic`、`eventTopic`；内部 send 默认过滤，调试时可打开 `includeInternalSends`。
 
 ## 监控
 
@@ -139,6 +160,8 @@ msg.topic
 - Delay & Sends：延时转移和图内发送；
 - Multi-Machine：两台机器独立会话；
 - ProjectDoc & Persistence：ProjectDoc、final 状态、变量持久化。
+
+[`examples/cascade-test.json`](examples/cascade-test.json) 是一个三机级联测试床：Cell（并行/浅深历史）、Supervisor（层级/守卫/超时）、Job（嵌套/并行/深历史），通过 `cell.*` / `job.*` 事件闭环；可用 `npm run test:cascade` 自动跑 14 个工况。
 
 详见 [`examples/README.md`](examples/README.md)。
 
@@ -161,7 +184,7 @@ msg.topic
 | Node-RED | 5.x（实测 5.0.9） |
 | Node.js | ≥ 22.9（推荐 24） |
 | 引擎 | `@tinyactors/scxmljs@0.2.0-dev.0` |
-| 编辑器 | `statechart-kit/vue`（构建期内联，运行时无额外依赖） |
+| 编辑器 | `statechart-kit/vue` 0.9.0（构建期内联，运行时无额外依赖） |
 | XML | `@xmldom/xmldom` |
 | 模块格式 | CJS 入口，ESM 引擎动态加载 |
 

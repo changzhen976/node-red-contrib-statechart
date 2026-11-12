@@ -1,0 +1,410 @@
+[
+  {
+    "id": "tab-hub-demo",
+    "type": "tab",
+    "label": "Hub 低代码演示",
+    "disabled": false,
+    "info": "状态机中枢 + 事件/变量/复位模块"
+  },
+  {
+    "id": "hubdemo-help",
+    "type": "comment",
+    "z": "tab-hub-demo",
+    "name": "说明",
+    "info": "Hub 只选一次状态机；左侧接入事件/变量/复位模块，右侧输出状态、事件、错误。",
+    "x": 80,
+    "y": 40,
+    "wires": []
+  },
+  {
+    "id": "hubdemo-conf",
+    "type": "statechart-machine",
+    "z": "tab-hub-demo",
+    "name": "Hub Demo",
+    "doc": "",
+    "source": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<scxml xmlns=\"http://www.w3.org/2005/07/scxml\" version=\"1.0\" datamodel=\"ecmascript\" name=\"Hub Demo\" initial=\"idle\">\n  <datamodel>\n    <data id=\"label\" expr=\"'idle'\"/>\n    <data id=\"count\" expr=\"0\"/>\n  </datamodel>\n  <state id=\"idle\">\n    <transition event=\"start\" target=\"running\"><assign location=\"label\" expr=\"'running'\"/></transition>\n  </state>\n  <state id=\"running\">\n    <transition event=\"stop\" target=\"idle\"><assign location=\"label\" expr=\"'idle'\"/></transition>\n    <transition event=\"bump\">\n      <assign location=\"count\" expr=\"count + 1\"/>\n      <send event=\"bumped\"><content expr=\"{count: count}\"/></send>\n    </transition>\n  </state>\n</scxml>\n",
+    "engine": "sandboxed",
+    "scriptTimeoutMs": 500,
+    "maxMicrosteps": 10000,
+    "monitorShowVars": true,
+    "persistVars": false,
+    "updateEvent": "update",
+    "x": 80,
+    "y": 520
+  },
+  {
+    "id": "hubdemo-hub",
+    "type": "statechart-hub",
+    "z": "tab-hub-demo",
+    "name": "Hub Demo",
+    "machine": "hubdemo-conf",
+    "includeVars": true,
+    "emitInitial": true,
+    "includeInternalSends": false,
+    "stateTopic": "",
+    "eventTopic": "statechart/{machine}/evt/{event}",
+    "x": 440,
+    "y": 280,
+    "wires": [
+      [
+        "hubdemo-rec-state"
+      ],
+      [
+        "hubdemo-rec-events"
+      ],
+      [
+        "hubdemo-rec-errors"
+      ]
+    ]
+  },
+  {
+    "id": "hubdemo-rec-state",
+    "type": "function",
+    "z": "tab-hub-demo",
+    "name": "record state",
+    "func": "global.set('hub_demo_state', {states: msg.states, vars: msg.vars, event: msg.event, ts: Date.now()}); return msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 700,
+    "y": 180,
+    "wires": [
+      [
+        "hubdemo-dbg-state"
+      ]
+    ]
+  },
+  {
+    "id": "hubdemo-rec-events",
+    "type": "function",
+    "z": "tab-hub-demo",
+    "name": "record events",
+    "func": "const arr=global.get('hub_demo_events')||[]; arr.push({event:msg.event,payload:msg.payload,ts:Date.now()}); if(arr.length>100)arr.splice(0,arr.length-100); global.set('hub_demo_events',arr); return msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 700,
+    "y": 260,
+    "wires": [
+      [
+        "hubdemo-dbg-events"
+      ]
+    ]
+  },
+  {
+    "id": "hubdemo-rec-errors",
+    "type": "function",
+    "z": "tab-hub-demo",
+    "name": "record errors",
+    "func": "const arr=global.get('hub_demo_errors')||[]; arr.push({message:msg.payload,ts:Date.now()}); global.set('hub_demo_errors',arr); return msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 700,
+    "y": 340,
+    "wires": [
+      [
+        "hubdemo-dbg-errors"
+      ]
+    ]
+  },
+  {
+    "id": "hubdemo-dbg-state",
+    "type": "debug",
+    "z": "tab-hub-demo",
+    "name": "state",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 930,
+    "y": 180,
+    "wires": []
+  },
+  {
+    "id": "hubdemo-dbg-events",
+    "type": "debug",
+    "z": "tab-hub-demo",
+    "name": "events",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 930,
+    "y": 260,
+    "wires": []
+  },
+  {
+    "id": "hubdemo-dbg-errors",
+    "type": "debug",
+    "z": "tab-hub-demo",
+    "name": "errors",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 930,
+    "y": 340,
+    "wires": []
+  },
+  {
+    "id": "hubdemo-inj-start",
+    "type": "inject",
+    "z": "tab-hub-demo",
+    "name": "start",
+    "props": [],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 80,
+    "y": 80,
+    "wires": [
+      [
+        "hubdemo-ev-start"
+      ]
+    ]
+  },
+  {
+    "id": "hubdemo-inj-stop",
+    "type": "inject",
+    "z": "tab-hub-demo",
+    "name": "stop",
+    "props": [],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 80,
+    "y": 120,
+    "wires": [
+      [
+        "hubdemo-ev-stop"
+      ]
+    ]
+  },
+  {
+    "id": "hubdemo-inj-bump",
+    "type": "inject",
+    "z": "tab-hub-demo",
+    "name": "bump",
+    "props": [],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 80,
+    "y": 160,
+    "wires": [
+      [
+        "hubdemo-ev-bump"
+      ]
+    ]
+  },
+  {
+    "id": "hubdemo-inj-set",
+    "type": "inject",
+    "z": "tab-hub-demo",
+    "name": "set label",
+    "props": [],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 80,
+    "y": 200,
+    "wires": [
+      [
+        "hubdemo-set-label"
+      ]
+    ]
+  },
+  {
+    "id": "hubdemo-inj-reset",
+    "type": "inject",
+    "z": "tab-hub-demo",
+    "name": "reset",
+    "props": [],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 80,
+    "y": 240,
+    "wires": [
+      [
+        "hubdemo-reset"
+      ]
+    ]
+  },
+  {
+    "id": "hubdemo-inj-read",
+    "type": "inject",
+    "z": "tab-hub-demo",
+    "name": "read state",
+    "props": [],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "",
+    "payloadType": "str",
+    "x": 80,
+    "y": 280,
+    "wires": [
+      [
+        "hubdemo-read"
+      ]
+    ]
+  },
+  {
+    "id": "hubdemo-ev-start",
+    "type": "statechart-event",
+    "z": "tab-hub-demo",
+    "name": "start",
+    "event": "start",
+    "dataMode": "none",
+    "data": "",
+    "x": 280,
+    "y": 80,
+    "wires": [
+      [
+        "hubdemo-hub"
+      ]
+    ]
+  },
+  {
+    "id": "hubdemo-ev-stop",
+    "type": "statechart-event",
+    "z": "tab-hub-demo",
+    "name": "stop",
+    "event": "stop",
+    "dataMode": "none",
+    "data": "",
+    "x": 280,
+    "y": 120,
+    "wires": [
+      [
+        "hubdemo-hub"
+      ]
+    ]
+  },
+  {
+    "id": "hubdemo-ev-bump",
+    "type": "statechart-event",
+    "z": "tab-hub-demo",
+    "name": "bump",
+    "event": "bump",
+    "dataMode": "none",
+    "data": "",
+    "x": 280,
+    "y": 160,
+    "wires": [
+      [
+        "hubdemo-hub"
+      ]
+    ]
+  },
+  {
+    "id": "hubdemo-set-label",
+    "type": "statechart-set",
+    "z": "tab-hub-demo",
+    "name": "label = hello",
+    "mode": "single",
+    "variable": "label",
+    "valueType": "json",
+    "value": "\"hello\"",
+    "x": 280,
+    "y": 200,
+    "wires": [
+      [
+        "hubdemo-hub"
+      ]
+    ]
+  },
+  {
+    "id": "hubdemo-reset",
+    "type": "statechart-reset",
+    "z": "tab-hub-demo",
+    "name": "reset",
+    "x": 280,
+    "y": 240,
+    "wires": [
+      [
+        "hubdemo-hub"
+      ]
+    ]
+  },
+  {
+    "id": "hubdemo-read",
+    "type": "statechart-read",
+    "z": "tab-hub-demo",
+    "name": "read state + context",
+    "machine": "hubdemo-conf",
+    "mode": "snapshot",
+    "variable": "",
+    "scope": "global",
+    "key": "hub_demo_context",
+    "x": 280,
+    "y": 280,
+    "wires": [
+      [
+        "hubdemo-dbg-read"
+      ]
+    ]
+  },
+  {
+    "id": "hubdemo-dbg-read",
+    "type": "debug",
+    "z": "tab-hub-demo",
+    "name": "read",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 700,
+    "y": 420,
+    "wires": []
+  }
+]

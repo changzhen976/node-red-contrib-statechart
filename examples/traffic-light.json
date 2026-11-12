@@ -40,31 +40,21 @@
     "y": 220,
     "wires": [
       [
-        "scxml-in-next"
+        "scxml-out-state"
       ]
     ]
   },
   {
-    "id": "scxml-in-next",
-    "type": "statechart-in",
-    "z": "tab-scxml-p0",
-    "name": "next",
-    "machine": "scxml-conf-traffic",
-    "eventSource": "topic",
-    "fixedEvent": "",
-    "x": 330,
-    "y": 220,
-    "wires": []
-  },
-  {
     "id": "scxml-out-state",
-    "type": "statechart-out",
+    "type": "statechart-hub",
     "z": "tab-scxml-p0",
     "name": "state",
     "machine": "scxml-conf-traffic",
     "includeVars": true,
     "emitInitial": true,
     "includeInternalSends": false,
+    "stateTopic": "",
+    "eventTopic": "statechart/{machine}/evt/{event}",
     "x": 330,
     "y": 320,
     "wires": [
@@ -73,7 +63,8 @@
       ],
       [
         "debug-events"
-      ]
+      ],
+      []
     ]
   },
   {

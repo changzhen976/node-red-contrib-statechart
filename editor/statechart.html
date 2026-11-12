@@ -181,44 +181,150 @@
     }
   });
 
-  RED.nodes.registerType('statechart-in', {
+  RED.nodes.registerType('statechart-hub', {
     category: scxmlI18n('category'),
-    color: '#0ea5e9',
+    color: '#7c3aed',
     icon: 'statechart.svg',
-    paletteLabel: scxmlI18n('label.scxmlIn'),
-    defaults: {
-      name: { value: '' },
-      machine: { value: '', type: 'statechart-machine' },
-      eventSource: { value: 'topic' },
-      fixedEvent: { value: '' }
-    },
-    label: function () {
-      return this.name || scxmlI18n('label.scxmlIn');
-    },
-    inputs: 1,
-    outputs: 0
-  });
-
-  RED.nodes.registerType('statechart-out', {
-    category: scxmlI18n('category'),
-    color: '#16a34a',
-    icon: 'statechart.svg',
-    paletteLabel: scxmlI18n('label.scxmlOut'),
+    paletteLabel: scxmlI18n('label.scxmlHub'),
     defaults: {
       name: { value: '' },
       machine: { value: '', type: 'statechart-machine' },
       includeVars: { value: true },
       emitInitial: { value: true },
       includeInternalSends: { value: false },
-      outputMode: { value: 'both' },
       stateTopic: { value: '' },
       eventTopic: { value: 'statechart/{machine}/evt/{event}' }
     },
     label: function () {
-      return this.name || scxmlI18n('label.scxmlOut');
+      return this.name || scxmlI18n('label.scxmlHub');
     },
-    inputs: 0,
-    outputs: 2
+    outputLabels: function (index) {
+      return [scxmlI18n('label.hubState'), scxmlI18n('label.hubEvents'), scxmlI18n('label.hubErrors')][index] || '';
+    },
+    inputs: 1,
+    outputs: 3,
+    oneditprepare: function () {
+      var self = this;
+      var others = [];
+      if (RED.nodes && RED.nodes.eachNode) {
+        RED.nodes.eachNode(function (n) {
+          if (n.type === 'statechart-hub' && n.machine === self.machine && n.id !== self.id) {
+            others.push(n.name || n.id);
+          }
+        });
+      }
+      var $warning = $('#node-input-hub-warning');
+      if (others.length) {
+        $warning.text(scxmlI18n('form.hubConflictWarning', { name: others[0] })).show();
+      } else {
+        $warning.hide();
+      }
+    }
+  });
+
+  RED.nodes.registerType('statechart-event', {
+    category: scxmlI18n('category'),
+    color: '#0ea5e9',
+    icon: 'statechart.svg',
+    paletteLabel: scxmlI18n('label.scxmlEvent'),
+    defaults: {
+      name: { value: '' },
+      event: { value: '' },
+      eventSource: { value: 'fixed' },
+      dataMode: { value: 'none' },
+      data: { value: '' },
+      dataKey: { value: '' }
+    },
+    label: function () {
+      return this.name || this.event || scxmlI18n('label.scxmlEvent');
+    },
+    inputs: 1,
+    outputs: 1,
+    oneditprepare: function () {
+      var toggle = function () {
+        var mode = $('#node-input-dataMode').val();
+        $('#node-input-data').closest('.form-row').toggle(mode === 'json');
+        $('#node-input-dataKey').closest('.form-row').toggle(mode === 'flow' || mode === 'global');
+        $('#node-input-event').closest('.form-row').toggle($('#node-input-eventSource').val() !== 'msg.event');
+      };
+      $('#node-input-dataMode, #node-input-eventSource').on('change', toggle);
+      toggle();
+    }
+  });
+
+  RED.nodes.registerType('statechart-set', {
+    category: scxmlI18n('category'),
+    color: '#16a34a',
+    icon: 'statechart.svg',
+    paletteLabel: scxmlI18n('label.scxmlSet'),
+    defaults: {
+      name: { value: '' },
+      mode: { value: 'single' },
+      variable: { value: '' },
+      valueType: { value: 'payload' },
+      value: { value: '' },
+      valueKey: { value: '' }
+    },
+    label: function () {
+      return this.name || (this.variable ? this.variable + ' = …' : scxmlI18n('label.scxmlSet'));
+    },
+    inputs: 1,
+    outputs: 1,
+    oneditprepare: function () {
+      var toggle = function () {
+        var single = $('#node-input-mode').val() !== 'object';
+        $('#node-input-variable').closest('.form-row').toggle(single);
+        $('#node-input-valueType').closest('.form-row').toggle(single);
+        var vt = $('#node-input-valueType').val();
+        $('#node-input-value').closest('.form-row').toggle(single && vt === 'json' || single && ['str', 'num', 'bool'].indexOf(vt) >= 0);
+        $('#node-input-valueKey').closest('.form-row').toggle(single && (vt === 'flow' || vt === 'global'));
+      };
+      $('#node-input-mode, #node-input-valueType').on('change', toggle);
+      toggle();
+    }
+  });
+
+  RED.nodes.registerType('statechart-read', {
+    category: scxmlI18n('category'),
+    color: '#0891b2',
+    icon: 'statechart.svg',
+    paletteLabel: scxmlI18n('label.scxmlRead'),
+    defaults: {
+      name: { value: '' },
+      machine: { value: '', type: 'statechart-machine' },
+      mode: { value: 'snapshot' },
+      variable: { value: '' },
+      scope: { value: 'none' },
+      key: { value: '' }
+    },
+    label: function () {
+      return this.name || scxmlI18n('label.scxmlRead');
+    },
+    inputs: 1,
+    outputs: 1,
+    oneditprepare: function () {
+      var toggle = function () {
+        $('#node-input-variable').closest('.form-row').toggle($('#node-input-mode').val() === 'var');
+        $('#node-input-key').closest('.form-row').toggle($('#node-input-scope').val() !== 'none');
+      };
+      $('#node-input-mode, #node-input-scope').on('change', toggle);
+      toggle();
+    }
+  });
+
+  RED.nodes.registerType('statechart-reset', {
+    category: scxmlI18n('category'),
+    color: '#dc2626',
+    icon: 'statechart.svg',
+    paletteLabel: scxmlI18n('label.scxmlReset'),
+    defaults: {
+      name: { value: '' }
+    },
+    label: function () {
+      return this.name || scxmlI18n('label.scxmlReset');
+    },
+    inputs: 1,
+    outputs: 1
   });
 
   var scxmlRoot = (RED.settings.httpAdminRoot || '/').replace(/\/?$/, '/');
@@ -353,8 +459,11 @@
     return html;
   }
 
-  function stateSelectOptions(doc, selected) {
+  function stateSelectOptions(doc, selected, allowInternal) {
     var html = '<option value="">' + esc(t('form.pickState')) + '</option>';
+    if (allowInternal) {
+      html += '<option value="__internal__"' + (selected == null ? ' selected' : '') + '>' + esc(t('form.internalTransition')) + '</option>';
+    }
     doc.states.forEach(function (s) {
       html += '<option value="' + esc(s.uid) + '"' + (s.uid === selected ? ' selected' : '') + '>' + esc(s.id) + '</option>';
     });
@@ -387,7 +496,7 @@
     var rows = doc.transitions.map(function (edge) {
       return '<tr data-id="' + esc(edge.id) + '">' +
         '<td><select data-field="source">' + stateSelectOptions(doc, edge.source) + '</select></td>' +
-        '<td><select data-field="target">' + stateSelectOptions(doc, edge.target) + '</select></td>' +
+        '<td><select data-field="target">' + stateSelectOptions(doc, edge.target, true) + '</select></td>' +
         '<td><input data-field="event" value="' + esc(edge.event) + '"></td>' +
         '<td><input data-field="cond" value="' + esc(edge.cond || '') + '"></td>' +
         actionCell('transition', edge.id, 'actions', edge.actions || []) +
@@ -828,7 +937,7 @@
       var field = $(this).attr('data-field');
       var value = $(this).val();
       if (field === 'source') t.source = value;
-      else if (field === 'target') t.target = value;
+      else if (field === 'target') t.target = value === '__internal__' || value === '' ? null : value;
       else if (field === 'event') t.event = value;
       else if (field === 'cond') t.cond = value;
       else if (field === 'actions') t.actions = lines(value);
@@ -1132,39 +1241,17 @@
 </script>
 
 
-<script type="text/html" data-template-name="statechart-in">
+<script type="text/html" data-template-name="statechart-hub">
   <div class="form-row">
     <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="form.name"></span></label>
-    <input type="text" id="node-input-name" data-i18n="[placeholder]form.placeholderEventIn">
+    <input type="text" id="node-input-name" data-i18n="[placeholder]form.placeholderName">
   </div>
   <div class="form-row">
     <label for="node-input-machine"><i class="fa fa-cog"></i> <span data-i18n="form.machine"></span></label>
-    <input type="text" id="node-input-machine">
+    <input type="text" id="node-input-machine" data-i18n="[placeholder]form.placeholderMachine">
   </div>
   <div class="form-row">
-    <label for="node-input-eventSource"><i class="fa fa-bolt"></i> <span data-i18n="form.eventSource"></span></label>
-    <select id="node-input-eventSource">
-      <option value="topic" data-i18n="option.topic"></option>
-      <option value="msg.event" data-i18n="option.msgEvent"></option>
-      <option value="payload" data-i18n="option.payload"></option>
-      <option value="fixed" data-i18n="option.fixed"></option>
-    </select>
-  </div>
-  <div class="form-row">
-    <label for="node-input-fixedEvent"><i class="fa fa-pencil"></i> <span data-i18n="form.fixedEvent"></span></label>
-    <input type="text" id="node-input-fixedEvent" data-i18n="[placeholder]form.placeholderFixedEvent">
-  </div>
-</script>
-
-
-<script type="text/html" data-template-name="statechart-out">
-  <div class="form-row">
-    <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="form.name"></span></label>
-    <input type="text" id="node-input-name" data-i18n="[placeholder]form.placeholderEventOut">
-  </div>
-  <div class="form-row">
-    <label for="node-input-machine"><i class="fa fa-cog"></i> <span data-i18n="form.machine"></span></label>
-    <input type="text" id="node-input-machine">
+    <div class="form-tips form-warning" id="node-input-hub-warning" style="display:none; margin-left:130px;"></div>
   </div>
   <div class="form-row">
     <label for="node-input-includeVars"><i class="fa fa-table"></i> <span data-i18n="form.includeVars"></span></label>
@@ -1179,14 +1266,6 @@
     <input type="checkbox" id="node-input-includeInternalSends">
   </div>
   <div class="form-row">
-    <label for="node-input-outputMode"><i class="fa fa-random"></i> <span data-i18n="form.outputMode"></span></label>
-    <select id="node-input-outputMode">
-      <option value="both" data-i18n="option.both"></option>
-      <option value="state" data-i18n="option.state"></option>
-      <option value="event" data-i18n="option.event"></option>
-    </select>
-  </div>
-  <div class="form-row">
     <label for="node-input-stateTopic"><i class="fa fa-tag"></i> <span data-i18n="form.stateTopic"></span></label>
     <input type="text" id="node-input-stateTopic" data-i18n="[placeholder]form.placeholderStateTopic">
   </div>
@@ -1194,6 +1273,124 @@
     <label for="node-input-eventTopic"><i class="fa fa-tag"></i> <span data-i18n="form.eventTopic"></span></label>
     <input type="text" id="node-input-eventTopic" data-i18n="[placeholder]form.placeholderEventTopic">
   </div>
-  <p style="margin-left: 130px; color: #888;" data-i18n="form.outputHint"></p>
+  <p style="margin-left: 130px; color: #888;" data-i18n="form.hubOutputHint"></p>
+</script>
+
+<script type="text/html" data-template-name="statechart-event">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="form.name"></span></label>
+    <input type="text" id="node-input-name" data-i18n="[placeholder]form.placeholderEventIn">
+  </div>
+  <div class="form-row">
+    <label for="node-input-eventSource"><i class="fa fa-bolt"></i> <span data-i18n="form.eventSource"></span></label>
+    <select id="node-input-eventSource">
+      <option value="fixed" data-i18n="option.fixed"></option>
+      <option value="msg.event" data-i18n="option.msgEvent"></option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label for="node-input-event"><i class="fa fa-bolt"></i> <span data-i18n="form.event"></span></label>
+    <input type="text" id="node-input-event" placeholder="cmd.start">
+  </div>
+  <div class="form-row">
+    <label for="node-input-dataMode"><i class="fa fa-database"></i> <span data-i18n="form.eventDataMode"></span></label>
+    <select id="node-input-dataMode">
+      <option value="none" data-i18n="form.dataNone"></option>
+      <option value="payload" data-i18n="form.dataPayload"></option>
+      <option value="json" data-i18n="form.dataJson"></option>
+      <option value="flow" data-i18n="form.dataFlow"></option>
+      <option value="global" data-i18n="form.dataGlobal"></option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label for="node-input-data"><i class="fa fa-code"></i> <span data-i18n="form.dataValue"></span></label>
+    <input type="text" id="node-input-data" placeholder='{"value": 85}'>
+  </div>
+  <div class="form-row">
+    <label for="node-input-dataKey"><i class="fa fa-key"></i> <span data-i18n="form.dataKey"></span></label>
+    <input type="text" id="node-input-dataKey">
+  </div>
+</script>
+
+<script type="text/html" data-template-name="statechart-set">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="form.name"></span></label>
+    <input type="text" id="node-input-name" data-i18n="[placeholder]form.placeholderName">
+  </div>
+  <div class="form-row">
+    <label for="node-input-mode"><i class="fa fa-cogs"></i> <span data-i18n="form.setMode"></span></label>
+    <select id="node-input-mode">
+      <option value="single" data-i18n="form.setSingle"></option>
+      <option value="object" data-i18n="form.setObject"></option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label for="node-input-variable"><i class="fa fa-i-cursor"></i> <span data-i18n="form.variable"></span></label>
+    <input type="text" id="node-input-variable" placeholder="temp">
+  </div>
+  <div class="form-row">
+    <label for="node-input-valueType"><i class="fa fa-list"></i> <span data-i18n="form.valueType"></span></label>
+    <select id="node-input-valueType">
+      <option value="payload" data-i18n="form.valuePayload"></option>
+      <option value="json" data-i18n="form.valueJson"></option>
+      <option value="str" data-i18n="form.valueString"></option>
+      <option value="num" data-i18n="form.valueNumber"></option>
+      <option value="bool" data-i18n="form.valueBoolean"></option>
+      <option value="flow" data-i18n="form.valueFlow"></option>
+      <option value="global" data-i18n="form.valueGlobal"></option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label for="node-input-value"><i class="fa fa-code"></i> <span data-i18n="form.value"></span></label>
+    <input type="text" id="node-input-value" placeholder='{"value": 85}'>
+  </div>
+  <div class="form-row">
+    <label for="node-input-valueKey"><i class="fa fa-key"></i> <span data-i18n="form.valueKey"></span></label>
+    <input type="text" id="node-input-valueKey">
+  </div>
+</script>
+
+<script type="text/html" data-template-name="statechart-read">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="form.name"></span></label>
+    <input type="text" id="node-input-name" data-i18n="[placeholder]form.placeholderName">
+  </div>
+  <div class="form-row">
+    <label for="node-input-machine"><i class="fa fa-cog"></i> <span data-i18n="form.machine"></span></label>
+    <input type="text" id="node-input-machine" data-i18n="[placeholder]form.placeholderMachine">
+  </div>
+  <div class="form-row">
+    <label for="node-input-mode"><i class="fa fa-search"></i> <span data-i18n="form.readMode"></span></label>
+    <select id="node-input-mode">
+      <option value="snapshot" data-i18n="form.readSnapshot"></option>
+      <option value="state" data-i18n="form.readState"></option>
+      <option value="var" data-i18n="form.readVariable"></option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label for="node-input-variable"><i class="fa fa-i-cursor"></i> <span data-i18n="form.variable"></span></label>
+    <input type="text" id="node-input-variable" placeholder="temp">
+  </div>
+  <div class="form-row">
+    <label for="node-input-scope"><i class="fa fa-database"></i> <span data-i18n="form.contextScope"></span></label>
+    <select id="node-input-scope">
+      <option value="none" data-i18n="form.contextNone"></option>
+      <option value="flow" data-i18n="form.contextFlow"></option>
+      <option value="global" data-i18n="form.contextGlobal"></option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label for="node-input-key"><i class="fa fa-key"></i> <span data-i18n="form.contextKey"></span></label>
+    <input type="text" id="node-input-key" placeholder="cellState">
+  </div>
+  <p style="margin-left: 130px; color: #888;" data-i18n="form.readHint"></p>
+</script>
+
+<script type="text/html" data-template-name="statechart-reset">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> <span data-i18n="form.name"></span></label>
+    <input type="text" id="node-input-name" data-i18n="[placeholder]form.placeholderName">
+  </div>
+  <p style="margin-left: 130px; color: #888;" data-i18n="form.resetHint"></p>
 </script>
 

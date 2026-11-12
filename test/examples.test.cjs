@@ -26,6 +26,6 @@ test('demo suite ProjectDoc example has a valid shape', () => {
   assert.ok(doc.states.some((state) => state.uid === doc.initial))
   for (const transition of doc.transitions) {
     assert.ok(doc.states.some((state) => state.uid === transition.source))
-    assert.ok(doc.states.some((state) => state.uid === transition.target))
+    assert.ok(transition.target == null || doc.states.some((state) => state.uid === transition.target))
   }
 })

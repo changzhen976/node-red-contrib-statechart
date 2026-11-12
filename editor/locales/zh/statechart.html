@@ -1,31 +1,35 @@
 <script type="text/html" data-help-name="statechart-machine">
-  <p>定义一个状态机（SCXML 1.0）。一个 config node 拥有一个会话；引用它的所有
-  <code>statechart-in</code> 和 <code>statechart-out</code> 节点共享该会话。</p>
-  <p>SCXML 在 Node.js 中解析并编译。默认 <b>sandboxed</b> 引擎使用 QuickJS，
-  带脚本超时和内存限制；<b>trusted</b> 在 Node.js realm 中运行表达式，仅用于你信任的图。</p>
-  <p>状态变化发布到 <code>statechart-out</code> 节点。活动状态始终以数组报告；
-  并行状态机可能有多个活动状态。</p>
-  <p><b>在侧栏查看实时状态图</b> 会打开只读状态机侧栏并选中此机器，只高亮活动状态，
-  不编辑图。也可以通过 <code>/statechart/monitor</code> 访问同一页面。</p>
+  <p>定义状态机（SCXML 1.0）。一个配置节点拥有一个独立会话，由
+  <code>statechart-hub</code> 引用并接入 flow。</p>
+  <p>默认 <b>sandboxed</b> 引擎使用 QuickJS，带脚本超时；<b>trusted</b>
+  仅用于可信状态图。</p>
+  <p>活动状态始终以数组报告；并行状态机可能同时有多个活动状态。</p>
 </script>
 
-<script type="text/html" data-help-name="statechart-in">
-  <p>把输入消息转换为 SCXML 事件。<code>msg.payload</code> 成为事件数据
-  （必须可 JSON 序列化）。</p>
-  <p>事件名来自 <code>msg.topic</code>、<code>msg.event</code>、字符串 payload
-  或固定值。空事件名会报错，不会静默丢弃。</p>
-  <p>命令：<code>msg.command = "set"</code> 且 payload 为对象时，先给已声明变量赋值，
-  再发送 <code>updateEvent</code>（默认 <code>update</code>）；
-  <code>"reset"</code> 从初始状态重建会话；<code>"event"</code> 使用 <code>msg.event</code>。</p>
-  <p>该节点没有输出。连接同一状态机的 <code>statechart-out</code> 来观察状态变化。</p>
+<script type="text/html" data-help-name="statechart-hub">
+  <p>把一台状态机接入 flow：一个输入、三个输出。</p>
+  <p>输入接受 <code>msg.event</code> / <code>msg.topic</code> 事件，以及
+  <code>msg.command = "set" | "reset" | "read"</code>。输出 1 是状态与变量，
+  输出 2 是图内 <code>&lt;send&gt;</code> 事件，输出 3 是错误与最终
+  <code>done</code> 消息。</p>
+  <p>一台状态机只能由一个 Hub 占用；第二个 Hub 会在运行时红灯报错。</p>
 </script>
 
-<script type="text/html" data-help-name="statechart-out">
-  <p>订阅一个状态机。输出 1 带活动状态，可选带变量快照；输出 2 带图内
-  <code>&lt;send&gt;</code> 事件。</p>
-  <p>状态输出：单个活动状态时 <code>msg.payload</code> 是字符串，并行状态机时是数组；
-  <code>msg.states</code> 始终是数组。勾选<b>包含变量</b>后，<code>msg.vars</code>
-  包含已声明变量。</p>
-  <p>内部 send（延时转移和 <code>target="#_internal"</code>）默认过滤；
-  仅在调试时勾选<b>包含内部 send</b>。</p>
+<script type="text/html" data-help-name="statechart-event">
+  <p>为 Hub 产生事件消息：事件名可固定或来自 <code>msg.event</code>；
+  数据可为空、<code>msg.payload</code>、固定 JSON 或 flow/global context。</p>
+</script>
+
+<script type="text/html" data-help-name="statechart-set">
+  <p>为 Hub 产生 <code>set</code> 命令。可设置单个变量（payload/JSON/flow/global），
+  也可用 <code>msg.payload</code> 对象一次设置多个变量。</p>
+</script>
+
+<script type="text/html" data-help-name="statechart-read">
+  <p>读取状态机快照、状态或变量，并可写入 flow/global context。Machine 留空时
+  使用输入消息中的 <code>msg.states</code>/<code>msg.vars</code>。</p>
+</script>
+
+<script type="text/html" data-help-name="statechart-reset">
+  <p>为 Hub 产生 <code>reset</code> 命令，把会话恢复到初始状态。</p>
 </script>

@@ -82,6 +82,21 @@ export function registerMachine(RED: any): void {
       }
     }
     machines.set(node.id, node)
+    node.hubOwner = null
+
+    /** A state machine may be hosted by at most one hub node at a time. */
+    node.claimHub = function claimHub(hubNode: any): { ok: boolean; owner?: any } {
+      const owner = node.hubOwner
+      if (!owner || owner === hubNode || !RED.nodes.getNode(owner.id)) {
+        node.hubOwner = hubNode
+        return { ok: true, owner: hubNode }
+      }
+      return { ok: false, owner }
+    }
+
+    node.releaseHub = function releaseHub(hubNode: any): void {
+      if (node.hubOwner === hubNode) node.hubOwner = null
+    }
 
     const bus = new EventBus()
     let runner: SessionRunner | null = null
@@ -93,6 +108,7 @@ export function registerMachine(RED: any): void {
     let lastVars: Record<string, unknown> = {}
     let lastStateKey: string | null = null
     let lastChanged = false
+    let lastFiredTargets: string[] = []
     const MAX_QUEUE = 1000
     const PERSIST_KEY = 'statechartVars'
     let opChain: Promise<void> = Promise.resolve()
@@ -147,8 +163,8 @@ export function registerMachine(RED: any): void {
       }, 250)
     }
 
-    function publishState(active: SessionRunner): void {
-      const states = active.activeStateIds()
+    function publishState(active: SessionRunner, statesOverride?: string[]): void {
+      const states = statesOverride ? [...statesOverride] : active.activeStateIds()
       const vars = active.snapshot()
       const key = JSON.stringify([states, vars])
       const changed = lastStateKey === null || key !== lastStateKey
@@ -214,6 +230,9 @@ export function registerMachine(RED: any): void {
               if (created.status === 'done') return
               publishState(created)
               break
+            case 'fired':
+              lastFiredTargets = event.pairs.map((pair) => pair.targetId)
+              break
             case 'send':
               bus.emit({
                 type: 'send',
@@ -232,6 +251,12 @@ export function registerMachine(RED: any): void {
               break
             }
             case 'done':
+              // The engine clears its configuration before `done`; publish the
+              // final transition target so the terminal state remains visible.
+              if (lastFiredTargets.length) {
+                publishState(created, lastFiredTargets)
+                lastFiredTargets = []
+              }
               node.status({ fill: 'grey', shape: 'dot', text: runtimeStatus('done') })
               bus.emit({ type: 'done', ts: Date.now() })
               break
@@ -328,6 +353,7 @@ export function registerMachine(RED: any): void {
         lastVars = {}
         lastStateKey = null
         lastChanged = false
+        lastFiredTargets = []
         currentEvent = undefined
         if (old) {
           try {
@@ -368,6 +394,7 @@ export function registerMachine(RED: any): void {
         clearTimeout(saveTimer)
         saveTimer = null
       }
+      node.hubOwner = null
       const active = runner
       if (active) writePersistedVars(active)
       runner = null

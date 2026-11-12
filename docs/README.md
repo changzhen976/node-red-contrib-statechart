@@ -1,7 +1,7 @@
 # 文档索引
 
-> 更新：2026-11-11 · 当前 npm 版本：`0.2.0` · 测试服务器：`0.2.0` + 名称同步修复
-> 0.2.0 之后的修复尚未发布，见 [`CHANGELOG.md`](../CHANGELOG.md) 的 `Unreleased` 段。
+> 更新：2026-11-12 · 当前 npm 版本：`0.5.0` · 测试服务器：`0.5.0`（已部署）
+> 0.5.0 为 Hub-only 架构；历史变更见 [`CHANGELOG.md`](../CHANGELOG.md)。
 
 ## 用户文档
 
@@ -22,6 +22,7 @@
 | [重构路线](refactor-roadmap.md) | 以 `statechart-kit` 为核心的迁移记录、验收与发布状态 | 当前（含 0.2.1 计划） |
 | [资源消耗评估](resource-profile.md) | tarball、浏览器资源、服务端内存/CPU | 当前（2026-11-11 复测） |
 | [完整编辑器宿主](../editor-page/README.md) | `mountEditor` + postMessage adapter、关闭/保存约定 | 当前 |
+| [Kit 需求记录](kit-requirements.md) | 左栏滚动、parallel/history 布局、重复布线、SCXML 导入能力等待修项 | 当前（KIT-001/003/004 已修复；KIT-002/005 待 scxmljs） |
 | [P4 设计（历史）](p4-standalone-editor.md) | 0.2.0 之前的 donor SPA 方案 | **历史，不要按本文操作** |
 
 ## 历史与宣传材料

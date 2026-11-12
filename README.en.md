@@ -72,10 +72,13 @@ Minimal example: [`examples/traffic-light.json`](examples/traffic-light.json).
 | Node | Type | Purpose |
 |---|---|---|
 | `statechart-machine` | config node | Stores the state chart document and owns one session/event bus |
-| `statechart-in` | input node | Converts messages into events, or executes `set/reset` |
-| `statechart-out` | output node | Emits state/variables, chart `<send>` events and errors |
+| `statechart-hub` | hub node | One input, three outputs (state/events/errors); a chart can be hosted by one hub only |
+| `statechart-event` | action node | Low-code fixed/dynamic event send |
+| `statechart-set` | action node | Low-code variable assignment |
+| `statechart-reset` | action node | Low-code reset command |
+| `statechart-read` | read node | Reads state/variable/snapshot and can copy to flow/global context |
 
-`statechart-machine` is a config node and does not appear in the palette. Add `statechart-in` or `statechart-out`, then click **＋** next to **Machine** to create one. Each state chart owns an independent session.
+`statechart-machine` is a config node and does not appear in the palette. Add one **Hub** per state chart, then connect event/set/read/reset nodes on its input and consumers on its outputs. Each state chart owns an independent session, and only one Hub may host it.
 
 ## Editing State Charts
 
@@ -89,7 +92,7 @@ Add/remove rows, select parents and initial states, edit structured actions and 
 
 **Open full editor** launches the `statechart-kit` full-screen Vue editor in a new tab. One machine opens per window; use **Save to Node-RED** to write the document back, then click Update/Deploy in Node-RED.
 
-## Commands
+## Hub Input Commands
 
 ```js
 { topic: "next" }                                      // regular event
@@ -100,9 +103,9 @@ Add/remove rows, select parents and initial states, edit structured actions and 
 
 `set` accepts an object payload and validates that variables are declared in `<data>`; it then sends `updateEvent` (default `update`). With `persistVars` enabled, variables are stored in Node-RED context.
 
-## Outputs
+## Hub Outputs
 
-`statechart-out` has two outputs:
+`statechart-hub` has three outputs:
 
 ```js
 // Output 1: state
@@ -119,9 +122,14 @@ msg.payload
 msg.event
 msg.machine
 msg.topic
+
+// Output 3: error / done
+msg.payload // error message or "done"
+msg.error   // on error
+msg.done    // on completion
 ```
 
-Configure `outputMode` (`state` / `event` / `both`), `stateTopic` and `eventTopic`. Internal sends are filtered by default; enable `includeInternalSends` for debugging.
+Configure `stateTopic` and `eventTopic`. Internal sends are filtered by default; enable `includeInternalSends` for debugging.
 
 ## Monitoring
 
@@ -161,7 +169,7 @@ The default workflow is fully visual; you never need to touch XML. At runtime th
 | Node-RED | 5.x (tested 5.0.9) |
 | Node.js | ≥ 22.9 (24 recommended) |
 | Engine | `@tinyactors/scxmljs@0.2.0-dev.0` |
-| Editor | `statechart-kit/vue` (bundled at build time; no extra runtime dependency) |
+| Editor | `statechart-kit/vue` 0.9.0 (bundled at build time; no extra runtime dependency) |
 | XML | `@xmldom/xmldom` |
 | Module format | CJS entry; ESM engine loaded dynamically |
 
