@@ -6,48 +6,25 @@
 ![Node.js >=22.9](https://img.shields.io/badge/Node.js-%3E%3D22.9-green)
 ![License MIT](https://img.shields.io/badge/license-MIT-blue)
 
-Build event-driven flows with visual state charts in Node-RED: drive state with messages, and drive downstream flows with state and variables.
+Build event-driven flows with visual state charts in Node-RED.
 
-The default workflow is entirely GUI-based — no XML required. Charts are executed by a SCXML 1.0 engine, and you can import/export SCXML when you need it.
+Each state chart is exposed by one **Hub**: events, variables and read requests enter on the left; state, chart `<send>` events and errors/done leave on the right. Peripheral nodes no longer need to select the same machine repeatedly.
 
-## Screenshots
+```text
+inject / event / set / read ──▶ ┌──────────────┐ ──▶ state
+                               │ statechart-hub│ ──▶ chart events
+                               └──────────────┘ ──▶ errors / done
+```
 
-**Live monitor in the Node-RED sidebar** — active states are highlighted; switch machine, zoom, and optionally show variables.
+Editing is GUI-first; SCXML 1.0 import/export is available when needed.
 
-![State chart monitor in the Node-RED sidebar](docs/images/monitor-sidebar.png)
-
-**Standalone full-screen editor** — open it from the machine dialog, edit, then write back and deploy.
-
-![Standalone state chart editor](docs/images/standalone-editor.png)
-
-## Features
-
-- Edit states, transitions, variables and actions inside Node-RED;
-- Hierarchical, parallel, history, guarded and delayed transitions;
-- `assign`, `send`, `cancel`, `log` and custom JS actions;
-- Control a state chart with `msg.command = set/reset/event`;
-- Emit states, variables and in-chart `<send>` events as Node-RED messages;
-- Optional variable persistence through Node-RED context;
-- Read-only live state chart;
-- Multiple independent state charts;
-- English and Simplified Chinese UI/help;
-- Full-screen editor built on the `statechart-kit` Vue UI.
-
-## Requirements
-
-| Item | Requirement |
-|---|---|
-| Node-RED | 5.x |
-| Node.js | ≥ 22.9 |
-| Browser | Web Components and ES2022 |
-
-## Installation
+## Install
 
 ```sh
 npm install @changzhen976/node-red-contrib-statechart
 ```
 
-> To install uncommitted local changes, build a tarball instead:
+To install uncommitted local changes:
 
 ```sh
 npm pack
@@ -57,30 +34,130 @@ npm install /path/to/changzhen976-node-red-contrib-statechart-<version>.tgz
 
 Restart Node-RED. A **State chart** category appears in the palette.
 
-## Quick Start
+Requirements: Node-RED 5.x, Node.js ≥ 22.9, and a browser with Web Components.
 
-1. Import [`examples/demo-suite.json`](examples/demo-suite.json) as a copy;
+## Five-minute start
+
+1. Import [`examples/hub-demo.json`](examples/hub-demo.json) as a copy;
 2. Click **Deploy**;
-3. Open the **State chart** sidebar on the right;
-4. Open the `01 Traffic Light` tab and click **next**;
-5. Watch red → green → yellow → red.
+3. Open the **Hub 低代码演示** tab;
+4. Click `start` → `bump` ×2 → `set label` → `read state`;
+5. Watch the Hub outputs and the global context key `hub_demo_context`;
+6. Click `reset` to return to the initial state.
+
+The example contains:
+
+```text
+inject → statechart-event (start/stop/bump) ─┐
+inject → statechart-set (label=hello) ──────┼─▶ statechart-hub
+inject → statechart-read (global context) ──┘
+```
 
 Minimal example: [`examples/traffic-light.json`](examples/traffic-light.json).
 
 ## Nodes
 
-| Node | Type | Purpose |
-|---|---|---|
-| `statechart-machine` | config node | Stores the state chart document and owns one session/event bus |
-| `statechart-hub` | hub node | One input, three outputs (state/events/errors); a chart can be hosted by one hub only |
-| `statechart-event` | action node | Low-code fixed/dynamic event send |
-| `statechart-set` | action node | Low-code variable assignment |
-| `statechart-reset` | action node | Low-code reset command |
-| `statechart-read` | read node | Reads state/variable/snapshot and can copy to flow/global context |
+| Node | Purpose |
+|---|---|
+| `statechart-machine` | config node: state chart document and session |
+| `statechart-hub` | exposes one state chart to the flow: 1 input, 3 outputs |
+| `statechart-event` | sends a fixed or `msg.event` event |
+| `statechart-set` | assigns one or more state chart variables |
+| `statechart-read` | reads state/variable/snapshot and can write flow/global context |
+| `statechart-reset` | sends a reset command |
 
-`statechart-machine` is a config node and does not appear in the palette. Add one **Hub** per state chart, then connect event/set/read/reset nodes on its input and consumers on its outputs. Each state chart owns an independent session, and only one Hub may host it.
+`statechart-machine` is not in the palette; a Hub references it. **A state chart can be hosted by only one Hub**; a second Hub fails at runtime with a red status.
 
-## Editing State Charts
+### `statechart-hub`
+
+```text
+Machine:  choose a statechart-machine
+Input:    msg.event / msg.topic / msg.command
+Output 1: state + variables
+Output 2: chart <send> events
+Output 3: errors / done
+```
+
+Use one Hub per machine. After removing the owning Hub, redeploy before another Hub can take over.
+
+### `statechart-event`
+
+Event only:
+
+```text
+Event: cmd.start
+Data:  none
+```
+
+Event with data:
+
+```text
+Event: sensor.temp
+Data:  fixed JSON {"value": 85}
+```
+
+Data can also come from `msg.payload`, or flow/global context.
+
+### `statechart-set`
+
+Single variable:
+
+```text
+Mode:     single
+Variable: temp
+Value:    msg.payload
+```
+
+Batch:
+
+```text
+Mode: object
+payload = { "temp": 85, "mode": "cooling" }
+```
+
+Value sources: `msg.payload`, fixed JSON, string, number, boolean, flow/global context.
+
+### `statechart-read`
+
+```text
+Machine: Cell
+Read:    snapshot   # snapshot / state / variable
+Store:   global
+Key:     cellState
+```
+
+With no Machine selected, the incoming `msg.states` / `msg.vars` are used. The result is written to flow/global context and also emitted from the node.
+
+### `statechart-reset`
+
+```text
+input → send reset to the Hub
+```
+
+## Common patterns
+
+| Goal | Flow |
+|---|---|
+| Event only | `inject → statechart-event (cmd.start, data=none) → Hub` |
+| Event with data | `sensor → statechart-event (sensor.temp, fixed JSON) → Hub` |
+| Set a variable | `inject → statechart-set (temp = msg.payload) → Hub` |
+| Read into context | `inject → statechart-read (snapshot → global:cellState)` |
+| Route by state | `Hub output 1 → switch (msg.payload = "running")` |
+
+For parallel machines, inspect `msg.states`. Snapshots are not cleared automatically; trigger read again for a fresh value.
+
+## Hub input and outputs
+
+| Direction | Common fields |
+|---|---|
+| Input | `event` / `topic` + optional `payload`; `command: set/reset/read` |
+| Output 1 state | `payload`, `states`, `vars`, `changed`, `event`, `machine`, `topic` |
+| Output 2 chart events | `payload`, `event`, `machine`, `topic` |
+| Output 3 error/done | `payload`, `error` or `done` |
+
+See [docs/hub-contract.md](docs/hub-contract.md) for full fields, config and migration from in/out.
+
+## Editing state charts
 
 The `statechart-machine` dialog has three tables:
 
@@ -88,90 +165,47 @@ The `statechart-machine` dialog has three tables:
 - **Transitions**: source, target, event, condition, actions, delay;
 - **Variables**: id, expression.
 
-Add/remove rows, select parents and initial states, edit structured actions and see structural validation. The advanced section accepts raw SCXML or ProjectDoc JSON.
+It supports hierarchy, parallel states, history, guards, delayed transitions and structured actions. The advanced section accepts raw SCXML or ProjectDoc JSON.
 
-**Open full editor** launches the `statechart-kit` full-screen Vue editor in a new tab. One machine opens per window; use **Save to Node-RED** to write the document back, then click Update/Deploy in Node-RED.
-
-## Hub Input Commands
-
-```js
-{ topic: "next" }                                      // regular event
-{ command: "event", event: "next", payload: { ... } }  // explicit event
-{ command: "set", payload: { temp: 85 } }              // assign and auto-send update
-{ command: "reset" }                                   // rebuild from initial state
-```
-
-`set` accepts an object payload and validates that variables are declared in `<data>`; it then sends `updateEvent` (default `update`). With `persistVars` enabled, variables are stored in Node-RED context.
-
-## Hub Outputs
-
-`statechart-hub` has three outputs:
-
-```js
-// Output 1: state
-msg.payload // string for one state, array for parallel states
-msg.states  // always an array
-msg.vars    // when includeVars is enabled
-msg.changed
-msg.event
-msg.machine
-msg.topic
-
-// Output 2: chart <send>
-msg.payload
-msg.event
-msg.machine
-msg.topic
-
-// Output 3: error / done
-msg.payload // error message or "done"
-msg.error   // on error
-msg.done    // on completion
-```
-
-Configure `stateTopic` and `eventTopic`. Internal sends are filtered by default; enable `includeInternalSends` for debugging.
+**Open full editor** launches the `statechart-kit` full-screen Vue editor. Save back to Node-RED, then click Update/Deploy.
 
 ## Monitoring
 
-Open the **State chart** sidebar in the Node-RED editor for a read-only live state chart. It refreshes every 400 ms, highlights parallel states and supports 100%–220% zoom.
+The **State chart** sidebar shows a read-only live chart with parallel-state highlighting and zoom.
 
-The monitor, full editor and API use a per-process capability token that the editor fetches automatically and places in the URL. With `adminAuth` enabled, the token endpoint requires `flows.read`. Without adminAuth, bind Node-RED to a private network or Tailscale; do not expose it directly to the public internet.
+The monitor, full editor and API use a capability token; with `adminAuth` enabled the token endpoint requires `flows.read`. Without it, bind Node-RED to a private network or Tailscale.
 
 ## Examples
 
-[`examples/demo-suite.json`](examples/demo-suite.json) contains 6 tabs and 8 machines:
+- [`examples/hub-demo.json`](examples/hub-demo.json): Hub + event/set/read/reset, recommended first;
+- [`examples/traffic-light.json`](examples/traffic-light.json): smallest state cycle;
+- [`examples/cascade-test.json`](examples/cascade-test.json): three-machine cascade test bed;
+- [`examples/demo-suite.json`](examples/demo-suite.json): 6 tabs, 8 machines, covering hierarchy, parallel, history, delays and ProjectDoc.
 
-- Traffic Light: basic cycle;
-- Commands & Guards: `set/reset/event`, guards and `send`;
-- Parallel & History: parallel regions and history restore;
-- Delay & Sends: delayed transitions and chart sends;
-- Multi-Machine: two independent sessions;
-- ProjectDoc & Persistence: ProjectDoc, final state and variable persistence.
+Automated cascade test:
+
+```sh
+CASCADE_BASE=http://localhost:1880 npm run test:cascade
+```
 
 See [`examples/README.md`](examples/README.md).
 
-## Languages & Security
-
-The editor, forms and help follow the Node-RED editor language. Catalogs: `en-US`, `zh-CN` and `zh` fallback.
-
-Runtime status text is translated by the editor; `node.error` text follows the Node-RED server language (`settings.lang`).
-
-Monitor and full-editor routes use a capability token. Static assets are public; monitor page, editor index and API require the token. Use this package on trusted networks.
-
-## Relationship to SCXML
-
-The default workflow is fully visual; you never need to touch XML. At runtime the chart is serialized to SCXML 1.0 and executed by `@tinyactors/scxmljs`. The advanced section and import/export keep SCXML available for interoperability and debugging.
-
-## Compatibility
+## Compatibility and limits
 
 | Item | Target |
 |---|---|
-| Node-RED | 5.x (tested 5.0.9) |
+| Node-RED | 5.x (test server 5.0.0, dev 5.0.9) |
 | Node.js | ≥ 22.9 (24 recommended) |
 | Engine | `@tinyactors/scxmljs@0.2.0-dev.0` |
-| Editor | `statechart-kit/vue` 0.10.0 (bundled at build time; no extra runtime dependency) |
+| Editor | `statechart-kit/vue` 0.10.0 (bundled at build time) |
 | XML | `@xmldom/xmldom` |
-| Module format | CJS entry; ESM engine loaded dynamically |
+
+Known limits:
+
+- One Hub per state chart;
+- Cross-tab machines need `link` nodes or must stay in one tab;
+- `<scxml-view>` has upstream layout limits for history directly under parallel;
+- Guarded transitions between the same states may still overlap in complex charts.
 
 ## Development
 
@@ -191,10 +225,9 @@ STATECHART_BROWSER=1 GECKODRIVER=/path/to/geckodriver \
 More documentation:
 
 - [Documentation index](docs/README.md)
-- [Refactor roadmap](docs/refactor-roadmap.md)
+- [Hub input/output contract](docs/hub-contract.md)
 - [Examples](examples/README.md)
-- [Resource profile](docs/resource-profile.md)
-- [Full editor design (historical)](docs/p4-standalone-editor.md) — replaced by the kit editor in 0.2.0
+- [Refactor roadmap](docs/refactor-roadmap.md)
 - [Contributing](CONTRIBUTING.md)
 
 ## License

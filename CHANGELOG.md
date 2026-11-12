@@ -10,6 +10,8 @@
 - Map the new `structure.state.final-transition` validation code and add
   localized messages for it.
 - Keep `features.explorer` disabled by default; no host behavior change.
+- Restructure README/README.en around Hub quick start and per-node minimal
+  usage; move the detailed message/config contract to `docs/hub-contract.md`.
 
 ## 0.5.0 — 2026-11-12
 

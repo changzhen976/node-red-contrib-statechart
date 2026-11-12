@@ -7,8 +7,9 @@
 
 | 文档 | 内容 | 状态 |
 | --- | --- | --- |
-| [README](../README.md) | 安装、节点、消息契约、监控、兼容性 | 当前 |
+| [README](../README.md) | 安装、Hub 快速上手、节点速查、示例、兼容性 | 当前 |
 | [README.en](../README.en.md) | English version | 当前 |
+| [Hub 契约](hub-contract.md) | Hub / event / set / read / reset 的完整字段与消息契约 | 当前 |
 | [CHANGELOG](../CHANGELOG.md) | 版本变更；`Unreleased` 记录待发修复 | 当前 |
 | [SECURITY](../SECURITY.md) | 支持版本与能力 token 的威胁模型 | 当前 |
 | [examples/README](../examples/README.md) | 示例 flow 与操作顺序 | 当前 |
