@@ -31,7 +31,8 @@
     "THIRD_PARTY_LICENSES.md",
     "CHANGELOG.md",
     "README.en.md",
-    "docs/images"
+    "docs/images",
+    "docs/hub-contract.md"
   ],
   "scripts": {
     "build": "node esbuild.config.mjs",
