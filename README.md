@@ -184,7 +184,7 @@ msg.done    // 完成时
 | Node-RED | 5.x（实测 5.0.9） |
 | Node.js | ≥ 22.9（推荐 24） |
 | 引擎 | `@tinyactors/scxmljs@0.2.0-dev.0` |
-| 编辑器 | `statechart-kit/vue` 0.9.0（构建期内联，运行时无额外依赖） |
+| 编辑器 | `statechart-kit/vue` 0.10.0（构建期内联，运行时无额外依赖） |
 | XML | `@xmldom/xmldom` |
 | 模块格式 | CJS 入口，ESM 引擎动态加载 |
 

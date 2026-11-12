@@ -1,7 +1,7 @@
 # statechart-kit / scxmljs 需求记录
 
 > 记录时间：2026-11-11  
-> 本仓库依赖：`statechart-kit@0.9.0`、`@tinyactors/scxmljs@0.2.0-dev.0`；测试服务器插件 `0.5.0` 已生效  
+> 本仓库依赖：`statechart-kit@0.10.0`、`@tinyactors/scxmljs@0.2.0-dev.0`；测试服务器插件 `0.6.0` 已生效  
 > 目的：把本轮测试中遇到、但**不应该在 flow 层反复绕过**的问题固定下来，供 kit / scxmljs 后续版本修复。
 
 ## 需求总表

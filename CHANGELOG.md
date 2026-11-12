@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.6.0 — 2026-11-12
+
+### Changed
+
+- Upgrade the bundled `statechart-kit` from 0.9.0 to 0.10.0. ProjectDoc and
+  SCXML output are unchanged; this brings the editor's target/transitionType
+  editing, DoneData editor, optional Explorer and structure auto-scroll.
+- Map the new `structure.state.final-transition` validation code and add
+  localized messages for it.
+- Keep `features.explorer` disabled by default; no host behavior change.
+
 ## 0.5.0 — 2026-11-12
 
 ### Changed

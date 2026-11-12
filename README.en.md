@@ -169,7 +169,7 @@ The default workflow is fully visual; you never need to touch XML. At runtime th
 | Node-RED | 5.x (tested 5.0.9) |
 | Node.js | ≥ 22.9 (24 recommended) |
 | Engine | `@tinyactors/scxmljs@0.2.0-dev.0` |
-| Editor | `statechart-kit/vue` 0.9.0 (bundled at build time; no extra runtime dependency) |
+| Editor | `statechart-kit/vue` 0.10.0 (bundled at build time; no extra runtime dependency) |
 | XML | `@xmldom/xmldom` |
 | Module format | CJS entry; ESM engine loaded dynamically |
 

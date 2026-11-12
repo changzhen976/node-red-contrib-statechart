@@ -29,6 +29,7 @@ const CODE_MAP: Record<string, string> = {
   'structure.state.duplicate-id': 'duplicateStateId',
   'structure.state.duplicate-uid': 'duplicateStateId',
   'structure.state.final-children': 'finalHasChildren',
+  'structure.state.final-transition': 'finalTransition',
   'structure.state.history-actions': 'historyHasActions',
   'structure.state.history-children': 'historyHasChildren',
   'structure.state.history-root': 'historyWithoutParent',

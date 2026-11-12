@@ -197,7 +197,8 @@
     "donedataAmbiguous": "final state “__id__” cannot combine content/expr/param in donedata.",
     "donedataParamInvalid": "final state “__id__” has an invalid donedata param.",
     "historyTargetless": "history default transition “__id__” needs a target.",
-    "internalEventless": "targetless internal transition “__id__” needs an event."
+    "internalEventless": "targetless internal transition “__id__” needs an event.",
+    "finalTransition": "final state “__id__” cannot have __count__ outgoing transition(s)."
   },
   "status": {
     "notStarted": "not started",
