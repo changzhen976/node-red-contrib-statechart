@@ -301,7 +301,9 @@ STATECHART_BROWSER=1 GECKODRIVER=... NODERED_URL=http://localhost:1880/ npm run 
 4. 在 README/CONTRIBUTING 标注“重构进行中”，避免贡献者继续改 vendor/editor-app；
 5. 更新 `references/project-state.md`（技能文档）里的阶段与下一步，指向本路线。
 
-## 11. 仍待确认的决策
+## 11. 仍待确认的决策（0.2.x 历史记录）
+
+> 这些决策在 0.7.0 已不再阻塞；当前状态见 §16。
 
 | 决策 | 选项 | 建议 |
 | --- | --- | --- |
@@ -342,7 +344,7 @@ STATECHART_BROWSER=1 GECKODRIVER=... NODERED_URL=http://localhost:1880/ npm run 
 - [x] 文档、CHANGELOG、NOTICE、README、CONTRIBUTING 更新
 - [x] kit 0.8.0 与插件 0.2.0 的版本对应关系可追溯
 
-## 14. 执行记录（2026-11-11）
+## 14. 执行记录（2026-11-11，0.2.0 历史）
 
 - 分支 `refactor/kit-core`；基线 tag `v0.1.3-pre-kit`。
 - M0–M4 完成；M5 发布准备完成：版本 `0.2.0`、CHANGELOG、NOTICE/THIRD_PARTY、干净安装。
@@ -350,18 +352,17 @@ STATECHART_BROWSER=1 GECKODRIVER=... NODERED_URL=http://localhost:1880/ npm run 
 - `npm pack` 0.2.0 干净安装：`node_modules` 无 `statechart-kit`，`require(plugin)` 正常。
 - 2026-11-11：`statechart-kit@0.8.0` 已发布到 npm `latest`（gitHead `f880589`）；宿主 devDependency 改为精确 `0.8.0`，CI 不再 clone/build kit。
 - 2026-11-11：插件 `@changzhen976/node-red-contrib-statechart@0.2.0` 已发布到 npm `latest`（gitHead `4d75d7b`），tag `v0.2.0` 已推 GitHub/Gitea；从 npm 干净安装的 dist 与测试服务器哈希一致。
-- 待执行：完整浏览器 smoke（独立编辑器的关闭/二次确认 smoke 已通过）。
+- 完整浏览器 smoke 已在 0.7.0 补齐并通过，见 §16。
 
-## 15. 0.2.0 之后（未发布）
+## 15. 0.2.0 之后（0.2.1 历史记录）
 
 - `fd90693 fix(editor): sync machine name between Node-RED and ProjectDoc`：
   编辑器打开/保存时统一 Node-RED 配置节点名、`ProjectDoc.name` 与导出 SCXML 的
   `<scxml name>`；测试服务器已部署该构建。
 - npm 上的 `0.2.0` **不包含**该修复。计划在本轮批量 bug 修复完成后发布 `0.2.1`
   （先补 `CHANGELOG` 的 `Unreleased`，再 bump/tag/publish）。
-- `main` 有未推送提交（`fd90693` 名称同步 + 本次文档整理）；按用户要求等批量修复完成后再统一推送。
-- 完整浏览器套件（`test:browser` / `test:p4`）仍待补；独立编辑器的关闭/名称同步
-  已用针对性 Selenium 脚本验证。
+- 当时 `main` 有未推送提交（`fd90693`）；后续已随 0.2.x 发布推送。
+- 完整浏览器套件已在 0.7.0 补齐（`test:browser` / `test:p4` / `test:live`），见 §16。
 
 ## 16. 0.7.0 稳定性轮（2026-11-12）
 
@@ -380,7 +381,9 @@ STATECHART_BROWSER=1 GECKODRIVER=... NODERED_URL=http://localhost:1880/ npm run 
 - `test/browser-lib.mjs` + 重写的 `browser-smoke` / `browser-p4`：每个 WebDriver
   命令独立超时，覆盖托盘编辑器、监控侧栏、action 对话框、独立编辑器保存/关闭；
 - `test/e2e-server.mjs`：Admin API 临时部署 Hub flow，走真实 HTTP 验证
-  next/reset/read/done，结束后清理；
+  next/reset/read/done 与未选 Machine 的本地化错误，结束后清理；
+- `npm run test:live`：临时 Node-RED + 全部 live 套件；GitHub Actions 每周/手动
+  运行 `live-e2e`；
 - `verify:all` 增加 typecheck，`STATECHART_BROWSER=1` / `STATECHART_E2E=1` 可选纳入。
 
 ### 遗留

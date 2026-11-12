@@ -86,11 +86,18 @@
 3. 点 **job.step** 两次、**quality.ok**：Job 完成并通知 Supervisor 停机；
 4. 继续测试 history / conveyor.fault / sensor.temp 85/55 / safety.estop / timeout / final 等按钮。
 
-自动化检查（需要已部署该 tab 的 Node-RED）：
+自动化检查需要已部署该 tab 的 Node-RED：
 
 ```sh
+# 已导入 cascade-test.json
 CASCADE_BASE=http://homeassistant:1880 npm run test:cascade
+
+# 干净实例：自动导入本示例并跑浏览器、服务端 E2E 和级联套件
+GECKODRIVER=/path/to/geckodriver npm run test:live
 ```
+
+脚本会先检查 `SCXML 级联测试床` tab 和 `cascade-inj-sup-reset` 是否存在，缺失时给出
+导入提示而不是一串 fetch 错误。
 
 > 三台机器都直接使用 raw SCXML。带值 `<send>` 必须写标准 `<content expr="..."/>`；
 > `data-expr` 是 ProjectDoc 动作 DSL 的写法，直接放进 raw `source` 不会把数据传给引擎。

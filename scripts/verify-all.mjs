@@ -1,6 +1,8 @@
 /**
  * Local verification gate.
  * Browser suites need a live Node-RED + geckodriver; set STATECHART_BROWSER=1.
+ * Server E2E needs a live Node-RED; set STATECHART_E2E=1.
+ * For a self-contained run with a throwaway Node-RED use `npm run test:live`.
  * Node 22.9 is run through `npx node@22.9.0` unless NODE22_BIN is provided.
  */
 import { execFileSync } from 'node:child_process'

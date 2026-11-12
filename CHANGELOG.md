@@ -30,7 +30,14 @@
   `test/browser-p4.mjs`，覆盖托盘编辑器、监控侧栏、action 对话框、独立编辑器
   保存回写、名称同步、dirty 标记与关闭。
 - 新增 `test/e2e-server.mjs`：通过 Admin API 临时部署一个 Hub flow，走真实
-  HTTP 验证初始状态、next/reset、read 快照和终态 done，结束后删除临时流程。
+  HTTP 验证初始状态、next/reset/read、终态 done，以及未选 Machine 时输出 3 的
+  本地化错误文案；结束后删除临时流程与 context key。
+- 新增 `npm run test:live`：自动启动临时 Node-RED（临时 userDir + 本包软链），
+  导入编辑器 fixture 与级联示例，依次跑托盘编辑器、独立编辑器、服务端 E2E 和
+  级联套件；GitHub Actions 增加每周/手动的 `live-e2e` workflow。
+- `browser-p4` 增加保存 ACK 超时回归：阻断 `postMessage` 后保存必须失败、父节点
+  `doc` 不变且编辑器保持 dirty；恢复后再保存成功。
+- `test:cascade` 增加预检与导入提示，缺失级联 tab 时给出可执行指引。
 - `npm run verify:all` 增加 typecheck，并可用 `STATECHART_BROWSER=1` /
   `STATECHART_E2E=1` 纳入浏览器与服务端 E2E。
 

@@ -5,6 +5,10 @@
  * Requires a running Node-RED with the cascade tab deployed:
  *   CASCADE_BASE=http://homeassistant:1880 npm run test:cascade
  *
+ * For a clean, throwaway Node-RED use `npm run test:live`; it imports
+ * examples/cascade-test.json automatically and also runs the browser and
+ * server E2E suites.
+ *
  * The check drives the inject nodes over the admin API and reads the
  * state that the flow records in global context.
  */
@@ -14,6 +18,20 @@ const BASE = (process.env.CASCADE_BASE || 'http://localhost:1880').replace(/\/$/
 const PREFIX = 'cascade-inj-'
 
 const results = []
+
+async function preflight() {
+  const res = await fetch(`${BASE}/flows`)
+  if (!res.ok) throw new Error(`GET /flows -> ${res.status}; set CASCADE_BASE to a Node-RED admin URL`)
+  const flows = await res.json()
+  const hasTab = flows.some((node) => node.type === 'tab' && node.label === 'SCXML 级联测试床')
+  const hasInject = flows.some((node) => node.id === `${PREFIX}sup-reset`)
+  if (!hasTab || !hasInject) {
+    throw new Error(
+      'cascade tab is not deployed. Import examples/cascade-test.json, or run ' +
+      '`GECKODRIVER=/path/to/geckodriver npm run test:live` for a self-contained run.',
+    )
+  }
+}
 
 async function inject(name) {
   const res = await fetch(`${BASE}/inject/${PREFIX}${name}`, { method: 'POST' })
@@ -105,6 +123,8 @@ async function startAll() {
   await waitStates('scxml_Job', ['active', 'processing', 'p', 'work', 'step1', 'quality', 'checking'])
   return mark
 }
+
+await preflight()
 
 await run('reset states', async () => {
   await resetAll()

@@ -1,0 +1,22 @@
+[
+  {
+    "id": "tab-scxml-p0",
+    "type": "tab",
+    "label": "SCXML P0",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "scxml-conf-traffic",
+    "type": "statechart-machine",
+    "z": "tab-scxml-p0",
+    "name": "Traffic Light",
+    "source": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<scxml xmlns=\"http://www.w3.org/2005/07/scxml\" version=\"1.0\" datamodel=\"ecmascript\" initial=\"red\">\n  <datamodel>\n    <data id=\"cycles\" expr=\"0\"/>\n  </datamodel>\n  <state id=\"red\">\n    <onentry><assign location=\"cycles\" expr=\"cycles + 1\"/></onentry>\n    <transition event=\"next\" target=\"green\"/>\n  </state>\n  <state id=\"green\">\n    <transition event=\"next\" target=\"yellow\"/>\n  </state>\n  <state id=\"yellow\">\n    <transition event=\"next\" target=\"red\"/>\n  </state>\n</scxml>\n",
+    "engine": "sandboxed",
+    "scriptTimeoutMs": 500,
+    "maxMicrosteps": 10000,
+    "x": 160,
+    "y": 120,
+    "wires": []
+  }
+]

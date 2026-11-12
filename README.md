@@ -224,7 +224,10 @@ npm run verify:all       # typecheck、Node 22.9、kit 与打包检查
 真实环境回归：
 
 ```sh
-# 服务端 E2E：临时部署一个 Hub flow，跑完自动删除
+# 干净实例：自动起临时 Node-RED，跑浏览器、服务端 E2E 和级联示例
+GECKODRIVER=/path/to/geckodriver npm run test:live
+
+# 已有 Node-RED 时，可单独跑
 NODERED_URL=http://localhost:1880/ npm run test:e2e
 
 # 浏览器：托盘编辑器 + 监控，以及独立编辑器

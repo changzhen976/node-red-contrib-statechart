@@ -43,9 +43,10 @@
     "test:browser": "node test/browser-smoke.mjs",
     "test:p4": "node test/browser-p4.mjs",
     "test:e2e": "node test/e2e-server.mjs",
+    "test:live": "node scripts/test-live.mjs",
+    "test:cascade": "node scripts/test-cascade.mjs",
     "release:check": "node scripts/release-check.mjs",
-    "verify:all": "node scripts/verify-all.mjs",
-    "test:cascade": "node scripts/test-cascade.mjs"
+    "verify:all": "node scripts/verify-all.mjs"
   },
   "node-red": {
     "version": ">=5.0.0",

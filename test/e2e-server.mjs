@@ -106,7 +106,12 @@ function flowNodes() {
     { id: `${PREFIX}-in-done`, type: 'http in', url: '/statechart-e2e/done', method: 'get', upload: false, wires: [[`${PREFIX}-final-go`, `${PREFIX}-resp-done`]] },
     { id: `${PREFIX}-final-go`, type: 'statechart-event', event: 'go', eventSource: 'fixed', dataMode: 'none', data: '', dataKey: '', wires: [[`${PREFIX}-final-hub`]] },
     { id: `${PREFIX}-resp-done`, type: 'http response', statusCode: '', headers: {}, wires: [] },
-    { id: `${PREFIX}-done-store`, type: 'function', z: undefined, func: "global.set('e2eScDone', { payload: msg.payload, done: msg.done === true, states: msg.states || [], ts: Date.now() }); return null;", outputs: 0, noerr: 0, wires: [] },
+    { id: `${PREFIX}-done-store`, type: 'function', func: "global.set('e2eScDone', { payload: msg.payload, done: msg.done === true, states: msg.states || [], ts: Date.now() }); return null;", outputs: 0, noerr: 0, wires: [] },
+
+    // Deliberately unconfigured hub: its startup error must reach output 3 and
+    // be localized by the runtime (not the raw errors.* key).
+    { id: `${PREFIX}-no-machine`, type: 'statechart-hub', machine: `${PREFIX}-missing`, includeVars: true, emitInitial: true, includeInternalSends: false, stateTopic: '', eventTopic: 'statechart/{machine}/evt/{event}', wires: [[], [], [`${PREFIX}-error-store`]] },
+    { id: `${PREFIX}-error-store`, type: 'function', func: "global.set('e2eScError', { payload: msg.payload, topic: msg.topic, machine: msg.machine, ts: Date.now() }); return null;", outputs: 0, noerr: 0, wires: [] },
   ]
 }
 
@@ -126,10 +131,24 @@ try {
   assert.match(nodeSets, /@changzhen976\/node-red-contrib-statechart/, 'the statechart node set must be loaded')
 
   await removeStaleFlows()
+  const errorMark = Date.now()
   const created = await request('POST', '/flow', { label: LABEL, nodes: flowNodes() })
   flowId = created.body?.id
   assert.ok(flowId, 'POST /flow must return the new tab id')
   await sleep(400)
+
+  const hubError = await waitFor(async () => {
+    const { body } = await request('GET', '/context/global/e2eScError')
+    const value = typeof body?.msg === 'string' ? JSON.parse(body.msg) : body?.msg
+    return value && value.ts >= errorMark ? value : null
+  }, 'hub configuration error on output 3', 8000)
+  assert.equal(hubError.topic, 'statechart/error')
+  assert.equal(hubError.machine, `${PREFIX}-missing`)
+  assert.ok(
+    typeof hubError.payload === 'string' && hubError.payload.length > 0 && !hubError.payload.startsWith('errors.'),
+    `hub error must be localized, got ${JSON.stringify(hubError.payload)}`,
+  )
+  console.log('PASS  unconfigured hub reports a localized error on output 3')
 
   await waitState('red', 1)
   console.log('PASS  deployed hub starts in red (cycles=1)')
@@ -164,4 +183,6 @@ try {
   console.log(JSON.stringify({ ok: true, flows: 2, nodes: flowNodes().length }, null, 2))
 } finally {
   if (flowId) await request('DELETE', `/flow/${flowId}`).catch((err) => console.error('cleanup failed:', err.message))
+  await request('DELETE', '/context/global/e2eScDone').catch(() => {})
+  await request('DELETE', '/context/global/e2eScError').catch(() => {})
 }

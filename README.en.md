@@ -224,7 +224,10 @@ npm run verify:all       # typecheck, Node 22.9, kit and package checks
 Live-environment regressions:
 
 ```sh
-# Server E2E: deploys a temporary Hub flow and removes it afterwards
+# Clean instance: starts a temporary Node-RED and runs browser, server E2E and cascade
+GECKODRIVER=/path/to/geckodriver npm run test:live
+
+# Against an existing Node-RED
 NODERED_URL=http://localhost:1880/ npm run test:e2e
 
 # Browser: tray editor + monitor, and the standalone editor

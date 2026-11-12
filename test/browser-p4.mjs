@@ -38,6 +38,59 @@ try {
   assert.match(child.text, /red/)
   assert.match(child.text, /green/)
 
+  await browser.waitFor(`return Array.from(document.querySelectorAll('input')).some((el) => el.type === 'text')`, 'editor inputs', 10000)
+
+  // Make the document dirty so a save is actually attempted.
+  const renamed = await browser.exec(`
+    const input = Array.from(document.querySelectorAll('input')).find((el) => el.type === 'text');
+    if (!input) return 'NO_INPUT';
+    input.value = 'Traffic Light E2E';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    return 'CHANGED';
+  `)
+  assert.equal(renamed, 'CHANGED')
+  await browser.waitFor(`return document.title.indexOf('●') === 0`, 'dirty marker after rename', 5000)
+
+  const beforeLen = await browser.exec(`
+    const node = window.opener.RED.nodes.node(arguments[0]);
+    return node && node.doc ? node.doc.length : 0;
+  `, [MACHINE_ID])
+
+  // Drop child -> parent messages: save must time out instead of closing with
+  // an unconfirmed write.
+  const blocked = await browser.exec(`
+    window.__scPostMessage = window.opener.postMessage;
+    window.opener.postMessage = function () {};
+    return window.opener.postMessage === window.__scPostMessage ? 'NOT_BLOCKED' : 'BLOCKED';
+  `)
+  assert.equal(blocked, 'BLOCKED', 'save ACK test must block postMessage')
+
+  const blockedSave = await browser.exec(`
+    const button = [...document.querySelectorAll('button')].find((b) => (b.textContent || '').trim() === '保存到 Node-RED');
+    if (!button) return 'NO_BUTTON';
+    button.click();
+    return 'CLICKED';
+  `)
+  assert.equal(blockedSave, 'CLICKED')
+  await sleep(2200)
+  const afterBlocked = await browser.exec(`
+    const node = window.opener.RED.nodes.node(arguments[0]);
+    return {
+      parentLen: node && node.doc ? node.doc.length : 0,
+      dirty: document.title.indexOf('●') === 0,
+      title: document.title,
+    };
+  `, [MACHINE_ID])
+  assert.equal(afterBlocked.parentLen, beforeLen, 'a timed-out save must not update the parent document')
+  assert.equal(afterBlocked.dirty, true, 'a failed save must keep the editor dirty')
+
+  const restored = await browser.exec(`
+    window.opener.postMessage = window.__scPostMessage;
+    return window.opener.postMessage === window.__scPostMessage ? 'RESTORED' : 'NOT_RESTORED';
+  `)
+  assert.equal(restored, 'RESTORED')
+
   const save = await browser.exec(`
     const button = [...document.querySelectorAll('button')].find((b) => (b.textContent || '').trim() === '保存到 Node-RED');
     if (!button) return 'NO_BUTTON';
@@ -58,6 +111,7 @@ try {
   })()`, 'parent node.doc update', 10000, [MACHINE_ID])
   assert.ok(parent.docLen > 0, 'parent node.doc was not updated by the standalone editor')
   assert.ok(parent.states >= 3, 'parent node.doc does not contain the loaded states')
+  assert.equal(parent.docName, 'Traffic Light E2E')
   assert.equal(parent.docName, parent.nodeName, 'document name and config-node name must stay in sync')
 
   await browser.switchWindow(childHandle)
