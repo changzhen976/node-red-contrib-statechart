@@ -12,6 +12,7 @@
 - Keep `features.explorer` disabled by default; no host behavior change.
 - Restructure README/README.en around Hub quick start and per-node minimal
   usage; move the detailed message/config contract to `docs/hub-contract.md`.
+- Add `docs/images/hub-demo.png`, a typical Hub flow screenshot, to both READMEs.
 
 ## 0.5.0 — 2026-11-12
 

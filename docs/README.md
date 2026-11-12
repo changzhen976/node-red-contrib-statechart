@@ -32,8 +32,7 @@
 | --- | --- |
 | [community-post/](../community-post/) | 0.1.x 社区宣传稿与旧截图；0.2.0 已更换编辑器，截图/描述可能过时 |
 
-截图：`docs/images/standalone-editor.png` 已于 2026-11-11 更新为 0.2.0 的
-`statechart-kit` 编辑器；`monitor-sidebar.png` 仍是当前侧栏监控。
+截图：`docs/images/hub-demo.png` 是当前 Hub 低代码用法的典型截图；`standalone-editor.png` 仍为 0.2.0 编辑器截图，`monitor-sidebar.png` 为侧栏监控。
 
 ## 开发内部（不随 npm 包发布）
 

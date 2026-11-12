@@ -55,6 +55,11 @@ inject → statechart-read (global context) ──┘
 
 Minimal example: [`examples/traffic-light.json`](examples/traffic-light.json).
 
+![Hub demo: event/set/read on the left, Hub in the center, state/events/errors on the right](docs/images/hub-demo.png)
+
+*Typical usage: choose the machine once on the Hub; action nodes no longer repeat the Machine selector, and the three outputs feed debug/downstream nodes directly.*
+
+
 ## Nodes
 
 | Node | Purpose |

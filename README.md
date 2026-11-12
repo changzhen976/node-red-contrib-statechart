@@ -55,6 +55,11 @@ inject → statechart-read (写 global context) ┘
 
 更小的示例：[`examples/traffic-light.json`](examples/traffic-light.json)。
 
+![Hub 低代码演示：左侧 event/set/read，中央 Hub，右侧 state/events/errors](docs/images/hub-demo.png)
+
+*典型用法：Hub 只选一次状态机，左侧动作节点不再重复选择 Machine，右侧直接把状态/事件/错误接到调试或下游节点。*
+
+
 ## 节点速查
 
 | 节点 | 作用 |
