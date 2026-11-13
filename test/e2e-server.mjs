@@ -169,12 +169,15 @@ try {
   await waitState('red', 1)
   console.log('PASS  reset restarts at red (cycles=1)')
 
-  const mark = Date.now()
+  // Clear the previous value, then wait for the fresh done event. Do not
+  // compare the server timestamp with the test runner clock: the container and
+  // the host can be a few hundred milliseconds apart.
+  await request('DELETE', '/context/global/e2eScDone').catch(() => {})
   await request('GET', '/statechart-e2e/done')
   const done = await waitFor(async () => {
     const { body } = await request('GET', '/context/global/e2eScDone')
     const value = typeof body?.msg === 'string' ? JSON.parse(body.msg) : body?.msg
-    return value && value.done === true && value.ts >= mark ? value : null
+    return value && value.done === true ? value : null
   }, 'done output on hub output 3', 8000)
   assert.equal(done.payload, 'done')
   assert.deepEqual(done.states, ['done'])

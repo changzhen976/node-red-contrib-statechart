@@ -75,14 +75,15 @@ async function waitStates(key, expected, timeout = 8000) {
 }
 
 async function markEvents() {
-  // The flow keeps the last 300 events; use a timestamp, not the array length,
-  // so the mark stays valid after the ring buffer is full.
-  return Date.now()
+  // Use the newest event timestamp from the flow, not the test runner clock:
+  // the Node-RED container and the host can differ by a few hundred ms.
+  const list = await events()
+  return list.reduce((max, event) => Math.max(max, Number(event.ts) || 0), 0)
 }
 
 async function waitEvent(name, mark, timeout = 8000) {
   return waitFor(async () => {
-    const list = (await events()).filter((e) => Number(e.ts) >= mark)
+    const list = (await events()).filter((e) => Number(e.ts) > mark)
     return list.some((e) => e.event === name) ? list : null
   }, `event ${name}`, timeout)
 }
