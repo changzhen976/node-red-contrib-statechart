@@ -158,6 +158,75 @@ try {
     machineName: parent.nodeName,
   }, null, 2))
 
+  // Sidebar Edit: the iframe button must open the editor, load the config
+  // node and save back through the top-window bridge.
+  await browser.switchWindow(parentHandle)
+  await browser.exec(`document.querySelector('#node-config-input-open-sidebar').click(); return true`)
+  await sleep(800)
+  await browser.waitFor(`return (() => {
+    const frame = Array.from(document.querySelectorAll('iframe')).find((f) => f.src.includes('/statechart/monitor') && f.src.includes('id=${MACHINE_ID}'));
+    const doc = frame && frame.contentDocument;
+    const edit = doc && doc.getElementById('edit');
+    return !!(edit && !edit.hidden && !edit.disabled);
+  })()`, 'sidebar edit button', 20000)
+  await sleep(500)
+  await browser.exec(`return (() => {
+    const frame = Array.from(document.querySelectorAll('iframe')).find((f) => f.src.includes('/statechart/monitor') && f.src.includes('id=${MACHINE_ID}'));
+    frame.contentDocument.getElementById('edit').click();
+    return true;
+  })()`)
+
+  const sidebarDeadline = Date.now() + 15000
+  let sidebarHandle = ''
+  while (!sidebarHandle && Date.now() < sidebarDeadline) {
+    const open = await browser.handles()
+    sidebarHandle = open.find((handle) => handle !== parentHandle) || ''
+    if (!sidebarHandle) await sleep(200)
+  }
+  assert.ok(sidebarHandle, 'sidebar edit window did not open')
+  await browser.switchWindow(sidebarHandle)
+  await browser.waitForSelector('.sce-root', 25000)
+  await browser.waitFor(`return (document.body.innerText || '').includes('green')`, 'sidebar editor machine content', 20000)
+
+  const sidebarRenamed = await browser.exec(`
+    const input = Array.from(document.querySelectorAll('input')).find((el) => el.type === 'text');
+    if (!input) return 'NO_INPUT';
+    input.value = 'Sidebar E2E';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    return 'CHANGED';
+  `)
+  assert.equal(sidebarRenamed, 'CHANGED')
+  await browser.waitFor(`return document.title.indexOf('●') === 0`, 'sidebar editor dirty marker', 5000)
+  const sidebarSave = await browser.exec(`
+    const button = [...document.querySelectorAll('button')].find((b) => (b.textContent || '').trim() === '保存到 Node-RED');
+    if (!button) return 'NO_BUTTON';
+    button.click();
+    return 'CLICKED';
+  `)
+  assert.equal(sidebarSave, 'CLICKED')
+  await browser.waitFor(`return document.title.indexOf('●') !== 0`, 'sidebar editor save ACK', 8000)
+
+  await browser.switchWindow(parentHandle)
+  const sidebarSaved = await browser.exec(`return (() => {
+    const node = RED.nodes.node(arguments[0]);
+    let doc = null;
+    try { doc = JSON.parse(node.doc) } catch {}
+    return { name: doc && doc.name, nodeName: node && node.name, docLen: node && node.doc ? node.doc.length : 0 };
+  })()`, [MACHINE_ID])
+  assert.equal(sidebarSaved.name, 'Sidebar E2E', 'sidebar editor save must update node.doc')
+  assert.equal(sidebarSaved.nodeName, 'Sidebar E2E', 'sidebar editor save must update node.name')
+
+  await browser.switchWindow(sidebarHandle)
+  await browser.exec('window.close(); return true')
+  const sidebarCloseDeadline = Date.now() + 8000
+  let sidebarRemaining = await browser.handles()
+  while (sidebarRemaining.includes(sidebarHandle) && Date.now() < sidebarCloseDeadline) {
+    await sleep(200)
+    sidebarRemaining = await browser.handles()
+  }
+  assert.ok(!sidebarRemaining.includes(sidebarHandle), 'sidebar editor window did not close')
+
   // Discard the unsaved parent config dialog; never deploys.
   await browser.switchWindow(parentHandle)
   await browser.navigate(browser.base)

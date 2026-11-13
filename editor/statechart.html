@@ -110,6 +110,7 @@
   }
   .scxml-errors ul { margin: 4px 0 0 18px; padding: 0; }
   .scxml-errors li.warning { color: #92400e; }
+  .scxml-visibility-notice { color: #1e40af; margin-bottom: 4px; }
   .scxml-table tr.scxml-row-error input,
   .scxml-table tr.scxml-row-error select,
   .scxml-table tr.scxml-row-error textarea { border-color: #dc2626 !important; }
@@ -336,8 +337,10 @@
   }
 
   function scxmlMonitorUrl(embed, id) {
+    var lang = (RED.i18n && RED.i18n.lang && RED.i18n.lang()) || 'zh-CN';
     return scxmlRoot + 'statechart/monitor?embed=' + (embed ? '1' : '0') +
-      (id ? '&id=' + encodeURIComponent(id) : '') + scxmlTokenQuery();
+      (id ? '&id=' + encodeURIComponent(id) : '') +
+      '&lang=' + encodeURIComponent(lang) + scxmlTokenQuery();
   }
 
   function scxmlFetchToken(done) {
@@ -425,6 +428,36 @@
   function stateById(doc, uid) {
     for (var i = 0; i < doc.states.length; i++) if (doc.states[i].uid === uid) return doc.states[i];
     return null;
+  }
+
+  /**
+   * Materialize the same initial invariant as statechart-kit 0.13's editor:
+   * a compound's initial must be one of its direct children, and the root
+   * initial must be a top-level state. History pseudo-states are never picked.
+   */
+  function ensureInitial(doc, parentUid) {
+    var c = core();
+    if (parentUid) {
+      var parent = stateById(doc, parentUid);
+      if (!parent || parent.kind !== 'compound') return;
+      var children = c.childrenOf(doc, parent.uid);
+      if (!children.length) {
+        parent.initial = null;
+        return;
+      }
+      if (!parent.initial || !children.some(function (s) { return s.uid === parent.initial; })) {
+        var first = null;
+        for (var i = 0; i < children.length; i++) {
+          if (children[i].kind !== 'history') { first = children[i]; break; }
+        }
+        parent.initial = first ? first.uid : null;
+      }
+      return;
+    }
+    var tops = doc.states.filter(function (s) { return !s.parent && s.kind !== 'history'; });
+    if (!doc.initial || !tops.some(function (s) { return s.uid === doc.initial; })) {
+      doc.initial = tops.length ? tops[0].uid : null;
+    }
   }
 
   function kindOptions(selected) {
@@ -530,8 +563,18 @@
     var $box = $('#scxml-editor-errors');
     $box.empty();
     $('#scxml-states-body tr, #scxml-transitions-body tr').removeClass('scxml-row-error scxml-row-warning');
-    if (!issues.length) {
+    var internalEvents = Object.keys(doc.eventVisibility || {});
+    if (!issues.length && !internalEvents.length) {
       $box.attr('hidden', true).hide();
+      return;
+    }
+    if (internalEvents.length) {
+      $box.append($('<div>').addClass('scxml-visibility-notice').text(t('message.internalEventsNotice', {
+        events: internalEvents.join(', '),
+      })));
+    }
+    if (!issues.length) {
+      $box.removeAttr('hidden').show();
       return;
     }
     var $ul = $('<ul>');
@@ -554,6 +597,7 @@
   function defaultAction(type) {
     switch (type) {
       case 'send': return { type: 'send', event: '' };
+      case 'raise': return { type: 'raise', event: '' };
       case 'cancel': return { type: 'cancel', sendid: '' };
       case 'assign': return { type: 'assign', target: '', expr: '' };
       case 'log': return { type: 'log', expr: '' };
@@ -562,7 +606,7 @@
   }
 
   function actionTypeOptions(selected) {
-    var types = ['send', 'cancel', 'assign', 'log', 'script'];
+    var types = ['send', 'raise', 'cancel', 'assign', 'log', 'script'];
     return types.map(function (type) {
       return '<option value="' + type + '"' + (type === selected ? ' selected' : '') + '>' +
         esc(t('form.type' + type.charAt(0).toUpperCase() + type.slice(1))) + '</option>';
@@ -587,6 +631,8 @@
       fields += actionField('form.actionId', 'id', action.id);
       fields += actionField('form.actionDataExpr', 'dataExpr', action.dataExpr);
       fields += actionField('form.actionData', 'data', action.data === undefined ? '' : JSON.stringify(action.data), true);
+    } else if (action.type === 'raise') {
+      fields += actionField('form.actionEvent', 'event', action.event);
     } else if (action.type === 'cancel') {
       fields += actionField('form.actionSendId', 'sendid', action.sendid);
     } else if (action.type === 'assign') {
@@ -594,7 +640,11 @@
       fields += actionField('form.actionExpr', 'expr', action.expr, true);
     } else if (action.type === 'log') {
       fields += actionField('form.actionExpr', 'expr', action.expr, true);
+    } else if (action.type === 'script') {
+      fields += actionTextarea('form.actionCode', 'code', action.code);
     } else {
+      // Never silently turn an unknown action into a script: that used to
+      // corrupt kit 0.13 `raise` rows into `raise undefined`.
       fields += actionTextarea('form.actionCode', 'code', action.code);
     }
     return '<div class="scxml-action-row" data-index="' + index + '">' +
@@ -651,6 +701,8 @@
       if (action.type === 'send') {
         if (!String(action.event || '').trim()) { actionError(t('message.actionRequired')); return; }
         if (action.data !== undefined && action._dataInvalid) { actionError(t('message.actionDataInvalid')); return; }
+      } else if (action.type === 'raise') {
+        if (!String(action.event || '').trim()) { actionError(t('message.actionRequired')); return; }
       } else if (action.type === 'cancel') {
         if (!String(action.sendid || '').trim()) { actionError(t('message.actionRequired')); return; }
       } else if (action.type === 'assign') {
@@ -659,6 +711,9 @@
         if (!String(action.expr || '').trim()) { actionError(t('message.actionRequired')); return; }
       } else if (action.type === 'script') {
         if (!String(action.code || '').trim()) { actionError(t('message.actionRequired')); return; }
+      } else {
+        actionError(t('message.unsupportedAction', { type: action.type || '?' }));
+        return;
       }
     }
     var lines = actionDraft.map(function (action) {
@@ -735,8 +790,206 @@
   }
 
 
-  var p4Window = null;
-  var p4Handler = null;
+  var editorSessions = new Map();
+
+  function editorLang() {
+    return (RED.i18n && RED.i18n.lang && RED.i18n.lang()) || 'zh-CN';
+  }
+
+  function docFromNode(node) {
+    var c = core();
+    var raw = node && typeof node.doc === 'string' ? node.doc.trim() : '';
+    if (raw) {
+      try { return c.normalizeDoc(JSON.parse(raw)); } catch (err) { /* fall through to source */ }
+    }
+    if (node && typeof node.source === 'string' && node.source.trim()) {
+      try {
+        return c.normalizeDoc(c.scxmlToDoc(node.source, window.DOMParser ? new DOMParser() : undefined).doc);
+      } catch (err) { /* fall through to empty doc */ }
+    }
+    return c.emptyDoc((node && node.name) || 'state machine');
+  }
+
+  function collectMachines(currentNode, currentDoc) {
+    var c = core();
+    var list = [];
+    RED.nodes.eachConfig(function (config) {
+      if (!config || config.type !== 'statechart-machine') return;
+      var machineDoc = null;
+      try { machineDoc = docFromNode(config); } catch (err) { machineDoc = null; }
+      if (!machineDoc) machineDoc = c.emptyDoc(config.name || 'state machine');
+      list.push({ id: config.id, name: config.name || config.id, doc: JSON.parse(JSON.stringify(machineDoc)) });
+    });
+    if (currentNode) {
+      var current = null;
+      for (var i = 0; i < list.length; i++) if (list[i].id === currentNode.id) current = list[i];
+      var doc = currentDoc || docFromNode(currentNode);
+      if (current) current.doc = JSON.parse(JSON.stringify(doc));
+      else list.push({ id: currentNode.id, name: currentNode.name || currentNode.id, doc: JSON.parse(JSON.stringify(doc)) });
+    }
+    return list;
+  }
+
+  function editorUrl(id) {
+    var root = (RED.settings.httpAdminRoot || '/').replace(/\/?$/, '/');
+    return root + 'statechart/editor/?nodered=1&id=' + encodeURIComponent(id) +
+      '&host=top&lang=' + encodeURIComponent(editorLang()) +
+      '&token=' + encodeURIComponent(window.scxmlToken || '');
+  }
+
+  function findSessionByMachine(id) {
+    var found = null;
+    editorSessions.forEach(function (session) {
+      if (found || session.id !== id) return;
+      if (session.win && !session.win.closed) found = session;
+      else editorSessions.delete(session.win);
+    });
+    return found;
+  }
+
+  function postToEditor(session, message) {
+    if (!session || !session.win || session.win.closed) return false;
+    try {
+      session.win.postMessage(message, location.origin);
+      return true;
+    } catch (err) {
+      // The editor window may have closed between the check and the post.
+      return false;
+    }
+  }
+
+  function postToSource(source, message) {
+    try {
+      if (source) source.postMessage(message, location.origin);
+    } catch (err) {
+      // The window is gone; nothing else to do.
+    }
+  }
+
+  function sendEditorLoad(session) {
+    if (!session || !session.node) return;
+    var doc = session.dialogDoc || docFromNode(session.node);
+    // The config node name is the user-facing machine name; keep the document
+    // name in sync when the editor is opened from the sidebar.
+    if (!session.dialogDoc && session.node && session.node.name) doc.name = session.node.name;
+    var machines = collectMachines(session.node, doc);
+    postToEditor(session, {
+      type: 'scxml:load',
+      id: session.id,
+      currentId: session.id,
+      doc: JSON.parse(JSON.stringify(doc)),
+      machines: machines,
+      lang: editorLang(),
+    });
+    session.loaded = true;
+  }
+
+  function saveEditorDoc(session, doc) {
+    var c = core();
+    if (!c || !doc || typeof doc !== 'object') return { ok: false, error: 'invalid document' };
+    var targetId = session.id;
+    var target = session.isEditingSelf
+      ? session.node
+      : ((RED.nodes.node && RED.nodes.node(targetId)) || null);
+    if (!target || target.id !== targetId || target.type !== 'statechart-machine') {
+      return { ok: false, error: 'machine not found' };
+    }
+    var incomingName = typeof doc.name === 'string' ? doc.name.trim() : '';
+    target.doc = JSON.stringify(doc);
+    try {
+      target.source = c.serializeToScxml(doc);
+    } catch (err) {
+      // Keep the previous source; doc remains authoritative.
+    }
+    if (incomingName) {
+      target.name = incomingName;
+      if (session.isEditingSelf && typeof $ === 'function') $('#node-config-input-name').val(incomingName);
+    }
+    if (session.isEditingSelf) {
+      target._scxmlEditor = target._scxmlEditor || {};
+      target._scxmlEditor.doc = c.normalizeDoc(JSON.parse(JSON.stringify(doc)));
+      if (typeof scxmlPrepareMachineEditor === 'function') scxmlPrepareMachineEditor(target);
+    }
+    if (RED.nodes && RED.nodes.dirty) RED.nodes.dirty(true);
+    notify(session.isEditingSelf ? t('message.savedFromFullEditor') : (target.name || targetId), 'success');
+    return { ok: true, machine: target };
+  }
+
+  function openEditorSession(node, dialogDoc) {
+    var existing = findSessionByMachine(node.id);
+    if (existing) {
+      if (existing.win && !existing.win.closed) existing.win.focus();
+      notify(t('message.editorAlreadyOpen'), 'warning');
+      return;
+    }
+    if (!window.scxmlToken) {
+      if (typeof scxmlFetchToken === 'function') {
+        scxmlFetchToken(function () { openEditorSession(node, dialogDoc); });
+      } else {
+        notify(t('message.tokenUnavailable'), 'error');
+      }
+      return;
+    }
+    var win = window.open(editorUrl(node.id), '_blank');
+    if (!win) {
+      notify(t('message.popupBlocked'), 'warning');
+      return;
+    }
+    var session = {
+      id: node.id,
+      node: node,
+      isEditingSelf: !!dialogDoc,
+      dialogDoc: dialogDoc || null,
+      win: win,
+      loaded: false,
+    };
+    editorSessions.set(win, session);
+    // The child normally sends scxml:ready; this is the fallback for a slow
+    // script load and mirrors the previous 800ms behaviour.
+    setTimeout(function () {
+      if (!session.loaded) sendEditorLoad(session);
+    }, 1000);
+  }
+
+  function onEditorMessage(event) {
+    if (event.origin !== location.origin) return;
+    var data = event.data || {};
+    if (!data || typeof data !== 'object') return;
+    if (data.type === 'scxml:ready') {
+      if (typeof data.id !== 'string' || !data.id) return;
+      var session = editorSessions.get(event.source);
+      if (!session) {
+        var node = (RED.nodes.node && RED.nodes.node(data.id)) || null;
+        if (!node || node.type !== 'statechart-machine') {
+          notify(t('message.machineNotFound'), 'error');
+          return;
+        }
+        session = { id: data.id, node: node, isEditingSelf: false, dialogDoc: null, win: event.source, loaded: false };
+        editorSessions.set(event.source, session);
+      }
+      if (session.win !== event.source) session.win = event.source;
+      sendEditorLoad(session);
+      return;
+    }
+    if (data.type === 'scxml:save' && data.doc) {
+      var current = editorSessions.get(event.source);
+      if (!current) {
+        var target = (data.id && RED.nodes.node && RED.nodes.node(data.id)) || null;
+        if (!target || target.type !== 'statechart-machine') {
+          postToSource(event.source, { type: 'scxml:save-ack', ok: false, error: 'machine not found' });
+          notify(t('message.machineNotFound'), 'error');
+          return;
+        }
+        current = { id: data.id, node: target, isEditingSelf: false, dialogDoc: null, win: event.source, loaded: true };
+        editorSessions.set(event.source, current);
+      }
+      var result = saveEditorDoc(current, data.doc);
+      var ack = { type: 'scxml:save-ack', ok: result.ok };
+      if (result.error) ack.error = result.error;
+      postToSource(event.source, ack);
+      if (!result.ok) notify(t('message.machineNotFound'), 'error');
+    }
+  }
 
   function openFullEditor(node) {
     var c = core();
@@ -754,90 +1007,10 @@
     var dialogName = $('#node-config-input-name').val();
     if (dialogName) doc.name = dialogName;
     else if (node.name) doc.name = node.name;
-    function collectMachines() {
-      var list = [];
-      RED.nodes.eachConfig(function (config) {
-        if (config.type !== 'statechart-machine') return;
-        var machineDoc = null;
-        if (config.doc && String(config.doc).trim()) {
-          try { machineDoc = c.normalizeDoc(JSON.parse(config.doc)); } catch (err) { machineDoc = null; }
-        }
-        if (!machineDoc && config.source && String(config.source).trim()) {
-          try { machineDoc = c.normalizeDoc(c.scxmlToDoc(config.source).doc); } catch (err) { machineDoc = null; }
-        }
-        if (!machineDoc) machineDoc = c.emptyDoc(config.name || 'state machine');
-        list.push({ id: config.id, name: config.name || config.id, doc: JSON.parse(JSON.stringify(machineDoc)) });
-      });
-      var current = null;
-      for (var i = 0; i < list.length; i++) if (list[i].id === node.id) current = list[i];
-      if (current) current.doc = JSON.parse(JSON.stringify(doc));
-      else list.push({ id: node.id, name: node.name || node.id, doc: JSON.parse(JSON.stringify(doc)) });
-      return list;
-    }
-    var root = (RED.settings.httpAdminRoot || '/').replace(/\/?$/, '/');
-    var lang = (RED.i18n && RED.i18n.lang && RED.i18n.lang()) || 'zh-CN';
-    if (!window.scxmlToken) {
-      if (typeof scxmlFetchToken === 'function') {
-        scxmlFetchToken(function () { openFullEditor(node); });
-      } else {
-        notify(t('message.tokenUnavailable'), 'error');
-      }
-      return;
-    }
-    var url = root + 'statechart/editor/?nodered=1&id=' + encodeURIComponent(node.id) +
-      '&lang=' + encodeURIComponent(lang) + '&token=' + encodeURIComponent(window.scxmlToken);
-    if (p4Handler) window.removeEventListener('message', p4Handler);
-    p4Handler = function (event) {
-      if (event.origin !== location.origin) return;
-      if (p4Window && event.source !== p4Window) return;
-      var data = event.data || {};
-      if (data.type === 'scxml:ready') {
-        sendLoad();
-      } else if (data.type === 'scxml:save' && data.doc) {
-        var targetId = data.id || node.id;
-        var target = RED.nodes.node ? RED.nodes.node(targetId) : null;
-        // A brand-new machine config node is not registered in RED.nodes until
-        // the dialog is confirmed, so fall back to the dialog's own object.
-        var isEditingSelf = targetId === node.id;
-        if (!target && !isEditingSelf) return;
-        if (target && target.type !== 'statechart-machine') return;
-        var machine = target || node;
-        var incomingName = typeof data.doc.name === 'string' ? data.doc.name.trim() : '';
-        machine.doc = JSON.stringify(data.doc);
-        try {
-          machine.source = c.serializeToScxml(data.doc);
-        } catch (err) {
-          // Keep the previous source; doc remains authoritative.
-        }
-        if (incomingName) {
-          machine.name = incomingName;
-          if (isEditingSelf) {
-            node.name = incomingName;
-            if (typeof $ === 'function') $('#node-config-input-name').val(incomingName);
-          }
-        }
-        if (isEditingSelf) {
-          node._scxmlEditor = node._scxmlEditor || {};
-          node._scxmlEditor.doc = c.normalizeDoc(JSON.parse(JSON.stringify(data.doc)));
-          if (typeof scxmlPrepareMachineEditor === 'function') scxmlPrepareMachineEditor(node);
-        }
-        if (RED.nodes && RED.nodes.dirty) RED.nodes.dirty(true);
-        notify(isEditingSelf ? t('message.savedFromFullEditor') : (machine.name || targetId), 'success');
-        if (p4Window && !p4Window.closed) p4Window.postMessage({ type: 'scxml:save-ack', ok: true }, location.origin);
-      }
-    };
-    window.addEventListener('message', p4Handler);
-    function sendLoad() {
-      if (!p4Window || p4Window.closed) return;
-      p4Window.postMessage({ type: 'scxml:load', id: node.id, currentId: node.id, doc: JSON.parse(JSON.stringify(doc)), machines: collectMachines(), lang: lang }, location.origin);
-    }
-    p4Window = window.open(url, '_blank');
-    if (!p4Window) {
-      notify(t('message.popupBlocked'), 'warning');
-      return;
-    }
-    setTimeout(sendLoad, 800);
+    openEditorSession(node, doc);
   }
+
+  window.addEventListener('message', onEditorMessage);
 
   function render(node) {
     var c = core();
@@ -874,7 +1047,7 @@
     };
     state.label = state.id;
     doc.states.push(state);
-    if (!doc.initial) doc.initial = state.uid;
+    ensureInitial(doc, state.parent);
     render(node);
   }
 
@@ -915,14 +1088,23 @@
       if (!state) return;
       var field = $(this).attr('data-field');
       var value = $(this).val();
+      var oldParent = state.parent;
       if (field === 'entry') state.entryActions = lines(value);
       else if (field === 'exit') state.exitActions = lines(value);
       else if (field === 'parent') state.parent = value || null;
       else if (field === 'initial') state.initial = value || null;
-      else if (field === 'kind') state.kind = value;
-      else if (field === 'id') {
+      else if (field === 'kind') {
+        state.kind = value;
+        if (value !== 'compound') state.initial = null;
+      } else if (field === 'id') {
         state.id = value;
         state.label = value;
+      }
+      if (field === 'parent') {
+        ensureInitial(doc, oldParent);
+        ensureInitial(doc, state.parent);
+      } else if (field === 'kind') {
+        ensureInitial(doc, state.parent);
       }
       if (field === 'parent' || field === 'kind') render(node);
       else renderIssues(node);
@@ -978,10 +1160,10 @@
       c.descendantsOf(doc, uid).forEach(function (x) { remove[x] = true; });
       doc.states = doc.states.filter(function (s) { return !remove[s.uid]; });
       doc.transitions = doc.transitions.filter(function (t) { return !remove[t.source] && !remove[t.target]; });
-      if (remove[doc.initial]) {
-        var top = doc.states.filter(function (s) { return !s.parent; });
-        doc.initial = top.length ? top[0].uid : null;
-      }
+      ensureInitial(doc, null);
+      var affectedParents = {};
+      doc.states.forEach(function (s) { if (s.parent) affectedParents[s.parent] = true; });
+      Object.keys(affectedParents).forEach(function (uid) { ensureInitial(doc, uid); });
       render(node);
     });
 
@@ -1076,10 +1258,10 @@
     if (node.name) doc.name = node.name;
     if (!node.updateEvent) node.updateEvent = 'update';
     $('#node-config-input-updateEvent').val(node.updateEvent);
-    if (!doc.initial) {
-      var top = doc.states.filter(function (s) { return !s.parent; });
-      if (top.length) doc.initial = top[0].uid;
-    }
+    // Legacy/imported documents may predate kit 0.13's initial invariant;
+    // materialize only the root initial here, leaving compound fallbacks to
+    // the serializer and the full editor (import must stay non-destructive).
+    ensureInitial(doc, null);
     node._scxmlEditor = { doc: doc };
     bind(node);
     render(node);

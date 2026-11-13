@@ -16,7 +16,7 @@ const required = [
   'dist/locales/en-US/statechart.json', 'dist/locales/zh-CN/statechart.json',
   'dist/locales/zh-CN/statechart.html',
   'dist/icons/statechart.svg',
-  'examples/traffic-light.json', 'examples/demo-suite.json', 'examples/README.md',
+  'examples/traffic-light.json', 'examples/demo-suite.json', 'examples/internal-events.json', 'examples/README.md',
 ]
 const missing = []
 for (const file of required) {
@@ -41,7 +41,7 @@ if (pkg.name.startsWith('@') && pkg.publishConfig?.access !== 'public') {
 
 const pack = JSON.parse(execFileSync('npm', ['pack', '--dry-run', '--json'], { cwd: root, encoding: 'utf8' }))[0]
 const files = pack.files.map((file) => file.path)
-for (const requiredFile of ['dist/editor/index.html', 'dist/editor/main.js', 'dist/locales/zh-CN/statechart.json', 'dist/icons/statechart.svg', 'examples/demo-suite.json', 'LICENSE', 'NOTICE']) {
+for (const requiredFile of ['dist/editor/index.html', 'dist/editor/main.js', 'dist/locales/zh-CN/statechart.json', 'dist/icons/statechart.svg', 'examples/demo-suite.json', 'examples/internal-events.json', 'LICENSE', 'NOTICE']) {
   if (!files.includes(requiredFile)) missing.push(`npm pack: ${requiredFile} missing`)
 }
 if (files.some((file) => file.startsWith('.tmp/') || file.startsWith('test/') || file.startsWith('.opencode/'))) {

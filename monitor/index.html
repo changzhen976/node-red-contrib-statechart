@@ -19,20 +19,20 @@
     <div class="controls">
       <label class="sr-only" for="machine">State machine</label>
       <select id="machine" title="State machine"></select>
-      <select id="zoom" title="Zoom">
-        <option value="100">100%</option>
-        <option value="125">125%</option>
-        <option value="150">150%</option>
-        <option value="180">180%</option>
-        <option value="220">220%</option>
-      </select>
+      <div class="zoom-group" role="group" aria-label="Zoom">
+        <button id="zoom-out" type="button" title="缩小" aria-label="缩小">−</button>
+        <button id="zoom-reset" type="button" title="重置为 100%"><span id="zoom-label">100%</span></button>
+        <button id="zoom-in" type="button" title="放大" aria-label="放大">+</button>
+        <button id="zoom-fit" type="button" title="适应窗口">适应</button>
+      </div>
+      <button id="edit" type="button" title="在完整编辑器中打开" disabled>编辑</button>
       <button id="refresh" type="button" title="Refresh machine list">Refresh</button>
       <span id="status" class="status">loading…</span>
     </div>
   </header>
   <main>
     <div id="empty" class="empty">正在加载状态机…</div>
-    <scxml-view id="view" trusted autostart="false" interactive="false" fit hidden></scxml-view>
+    <scxml-view id="view" trusted autostart="false" interactive="false" hidden></scxml-view>
     <pre id="vars" class="vars" hidden></pre>
   </main>
   <script type="module" src="view.js"></script>

@@ -1,8 +1,15 @@
 # 发布流程
 
-> 适用于 `@changzhen976/node-red-contrib-statechart`。当前版本 `0.7.0`，
-> 已打本地 tag `v0.7.0`；npm `latest` 仍为 `0.6.1`，发布由维护者手动完成（2FA）。
-> 本次按维护者要求先打 tag，发布失败时需要移动或删除该 tag。
+> 适用于 `@changzhen976/node-red-contrib-statechart`。当前版本 `0.8.0`，
+> npm `latest` 仍为 `0.6.1`。
+>
+> **自动发布已配置**：正常发布走 [GitHub Actions 自动发布](github-actions-release.md)，
+> 推送 `v*` tag 触发 npm publish。本文保留为手动兜底流程。
+>
+> 自动与手动流程的顺序不同：
+> - 自动：先 tag → Actions 发布；失败时删除/移动 tag 重来；
+> - 手动：先 publish → 再 tag，避免 tag 指向发布失败的提交。
+> 同一次发布不要混用两种方式。
 
 ## 版本策略
 

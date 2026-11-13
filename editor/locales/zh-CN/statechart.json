@@ -133,7 +133,8 @@
     "valueFlow": "flow 上下文",
     "valueGlobal": "global 上下文",
     "valueKey": "上下文 key",
-    "hubConflictWarning": "该状态机已被 Hub「__name__」占用；一台状态机只允许一个 Hub。"
+    "hubConflictWarning": "该状态机已被 Hub「__name__」占用；一台状态机只允许一个 Hub。",
+    "typeRaise": "内部 raise"
   },
   "option": {
     "topic": "msg.topic",
@@ -164,7 +165,10 @@
     "noActions": "还没有动作。",
     "popupBlocked": "弹窗被浏览器拦截；请允许 Node-RED 弹出窗口后重试。",
     "savedFromFullEditor": "已从完整编辑器保存；请回 Node-RED 点“更新/部署”。",
-    "tokenUnavailable": "无法获取状态机能力令牌；请检查编辑器权限并刷新。"
+    "editorAlreadyOpen": "该状态机的编辑器已打开；请切换到已有窗口。",
+    "tokenUnavailable": "无法获取状态机能力令牌；请检查编辑器权限并刷新。",
+    "internalEventsNotice": "该文档包含内部事件（__events__）。托盘只读展示；请用“打开完整编辑器”修改可见性或 raise 动作。",
+    "unsupportedAction": "不支持的动作类型 “__type__”；请用完整编辑器编辑。"
   },
   "validate": {
     "noStates": "至少需要一个状态。",
@@ -199,6 +203,7 @@
     "donedataParamDuplicate": "final 状态 “__id__” 的 donedata param 名称重复。",
     "historyTargetless": "历史默认转移 “__id__” 必须有 target。",
     "internalEventless": "无 target 的内部转移 “__id__” 必须有事件名。",
+    "mixedEventVisibility": "转移 “__id__” 同时监听内部事件和外部事件（__events__），不会生成 internal 守卫；建议拆成多条转移。",
     "finalTransition": "final 状态 “__id__” 不能有 __count__ 条出边。"
   },
   "status": {

@@ -133,7 +133,8 @@
     "valueFlow": "flow context",
     "valueGlobal": "global context",
     "valueKey": "Context key",
-    "hubConflictWarning": "This state chart is already hosted by hub \"__name__\"; only one hub per state chart is allowed."
+    "hubConflictWarning": "This state chart is already hosted by hub \"__name__\"; only one hub per state chart is allowed.",
+    "typeRaise": "Raise event"
   },
   "option": {
     "topic": "msg.topic",
@@ -164,7 +165,10 @@
     "noActions": "No actions yet.",
     "popupBlocked": "Popup blocked. Allow popups for Node-RED and try again.",
     "savedFromFullEditor": "Saved from the full editor; click Update/Deploy in Node-RED.",
-    "tokenUnavailable": "Cannot obtain the state chart capability token. Check editor permissions and reload."
+    "editorAlreadyOpen": "This state chart's editor is already open; switch to the existing window.",
+    "tokenUnavailable": "Cannot obtain the state chart capability token. Check editor permissions and reload.",
+    "internalEventsNotice": "This document contains internal events (__events__). The tray is read-only here; use “Open full editor” to change visibility or raise actions.",
+    "unsupportedAction": "Unsupported action type “__type__”; use the full editor."
   },
   "validate": {
     "noStates": "Add at least one state.",
@@ -199,6 +203,7 @@
     "donedataParamDuplicate": "final state “__id__” has duplicate donedata param names.",
     "historyTargetless": "history default transition “__id__” needs a target.",
     "internalEventless": "targetless internal transition “__id__” needs an event.",
+    "mixedEventVisibility": "Transition “__id__” listens to both internal-only and external events (__events__), so no internal guard is generated; split it into separate transitions.",
     "finalTransition": "final state “__id__” cannot have __count__ outgoing transition(s)."
   },
   "status": {

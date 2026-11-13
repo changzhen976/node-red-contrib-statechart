@@ -8,7 +8,7 @@
 4. 点 **部署**；
 5. 打开右侧 **状态机** 侧栏，或用 `http://<node-red>:1880/statechart/monitor`。
 
-`demo-suite.json` 会新增 6 个 tab；`traffic-light.json` 是最小示例，可单独导入；`cascade-test.json` 会新增 1 个三机级联测试 tab；`hub-demo.json` 新增 1 个 Hub 低代码演示 tab。
+`demo-suite.json` 会新增 6 个 tab；`traffic-light.json` 是最小示例，可单独导入；`cascade-test.json` 会新增 1 个三机级联测试 tab；`hub-demo.json` 新增 1 个 Hub 低代码演示 tab；`internal-events.json` 新增 1 个 kit 0.13 内部事件演示 tab。
 
 ## Demo Suite 内容
 
@@ -90,7 +90,7 @@
 
 ```sh
 # 已导入 cascade-test.json
-CASCADE_BASE=http://homeassistant:1880 npm run test:cascade
+CASCADE_BASE=http://localhost:1880 npm run test:cascade
 
 # 干净实例：自动导入本示例并跑浏览器、服务端 E2E 和级联套件
 GECKODRIVER=/path/to/geckodriver npm run test:live
@@ -119,3 +119,25 @@ GECKODRIVER=/path/to/geckodriver npm run test:live
 - `statechart-read` 会把快照写入 global context `hub_demo_context`。
 
 > 一台 `statechart-machine` 在运行时只能被一个 Hub 占用；第二个 Hub 会红灯报错，不会重复输出。
+
+## Kit 0.13 Internal Events（raise / internal-only）
+
+`internal-events.json` 新增一个 **07 Raise & Internal Events** tab，专门展示
+`statechart-kit@0.13.0` 的新能力：
+
+- `arm` 转移执行 `raise ping`，在同一个宏步内产生图内内部事件；
+- `ping` 通过 `eventVisibility` 标记为「仅内部」，序列化后生成
+  `cond="_event.type === 'internal'"`，外部同名事件不会触发；
+- `raise` 不是 `<send>`，所以 Hub 输出 2 不会出现 `ping`。
+
+推荐操作：
+
+1. 点 **外部 ping（应被忽略）**：状态保持 `idle`；
+2. 点 **arm → raise ping**：`idle` → `session/armed`，内部 `ping` 后进入
+   `session/handling`，`visits` 变成 1；
+3. 点 **ack**：回到 `idle`；
+4. 打开机器配置 → **打开完整编辑器**，在事件面板把 `ping` 改成「双向」，
+   再点外部 `ping` 即可触发，用于对比 `eventVisibility` 的效果。
+
+> 监控侧栏使用展示序列化，不会把 `_event.type === 'internal'` 当作作者条件显示；
+> 完整编辑器/导出 SCXML 仍保留运行时 guard。

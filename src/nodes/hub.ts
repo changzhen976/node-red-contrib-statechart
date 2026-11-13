@@ -11,7 +11,7 @@ function toJsonData(value: unknown): unknown {
   }
 }
 
-/** Forward statechart-kit 0.11 error location fields without emitting undefined keys. */
+/** Forward statechart-kit 0.11+ error location fields without emitting undefined keys. */
 function errorLocationFields(location?: MachineErrorLocation): Record<string, unknown> {
   if (!location) return {}
   const fields: Record<string, unknown> = {}

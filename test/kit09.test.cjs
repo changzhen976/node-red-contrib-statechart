@@ -46,7 +46,7 @@ test('kit 0.9 imports and serializes final donedata', async () => {
   assert.match(out, /<param name="code" expr="200"\/>/)
 })
 
-test('kit 0.11 preserves transition ids in serialized SCXML', async () => {
+test('statechart-kit preserves transition ids in serialized SCXML', async () => {
   const { scxmlToDoc, serializeToScxml } = await import('statechart-kit')
   const { DOMParser } = await import('@xmldom/xmldom')
   const doc = {

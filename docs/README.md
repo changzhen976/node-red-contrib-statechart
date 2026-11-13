@@ -1,7 +1,7 @@
 # 文档索引
 
-> 更新：2026-11-13 · npm 最新发布：`0.6.1` · 当前版本：`0.7.0`（已打 tag，待 npm 发布）
-> 0.7.0 集成 `statechart-kit@0.11.0`；0.6.x 集成 0.10.0；历史变更见 [`CHANGELOG.md`](../CHANGELOG.md)。
+> 更新：2026-11-13 · npm 最新发布：`0.6.1` · 当前版本：`0.8.0`
+> 0.8.0 集成 `statechart-kit@0.13.0`；0.7.0 集成 0.11.0；历史变更见 [`CHANGELOG.md`](../CHANGELOG.md)。
 
 ## 用户文档
 
@@ -20,11 +20,13 @@
 | 文档 | 内容 | 状态 |
 | --- | --- | --- |
 | [CONTRIBUTING](../CONTRIBUTING.md) | 本地开发、构建、运行时/浏览器/服务端 E2E、提交约定 | 当前 |
-| [发布流程](releasing.md) | 版本收尾、验证门禁、npm 发布、tag、测试服务器重部署与回滚 | 当前 |
-| [重构路线](refactor-roadmap.md) | 以 `statechart-kit` 为核心的迁移记录、验收与发布状态 | 当前（0.7.0 稳定性轮） |
+| [发布流程](releasing.md) | 版本收尾、验证门禁、npm 发布、tag、测试服务器重部署与回滚 | 当前（手动兜底） |
+| [GitHub Actions 自动发布](github-actions-release.md) | Trusted Publishing、tag 触发、dry run、失败重试与验证 | 当前（推荐） |
+| [重构路线](refactor-roadmap.md) | 以 `statechart-kit` 为核心的迁移记录、验收与发布状态 | 当前（0.8.0 / kit 0.13 适配） |
 | [资源消耗评估](resource-profile.md) | tarball、浏览器资源、服务端内存/CPU | 当前（2026-11-11 复测） |
 | [完整编辑器宿主](../editor-page/README.md) | `mountEditor` + postMessage adapter、关闭/保存约定 | 当前 |
 | [Kit 需求记录](kit-requirements.md) | 左栏滚动、parallel/history 布局、重复布线、SCXML 导入能力等待修项 | 当前（KIT-001/003/004 已修复；KIT-002/005 待 scxmljs） |
+| [Kit 0.13 适配计划](kit-0.13-adaptation-plan.md) | 0.11 → 0.13 的影响矩阵、工作分解、估时与风险 | **计划，待实施** |
 | [P4 设计（历史）](p4-standalone-editor.md) | 0.2.0 之前的 donor SPA 方案 | **历史，不要按本文操作** |
 
 ## 历史与宣传材料

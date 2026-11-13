@@ -85,6 +85,10 @@ Output 3: errors / done
 
 Use one Hub per machine. After removing the owning Hub, redeploy before another Hub can take over.
 
+Hub inputs and `statechart-event` emit **external** events. Events marked "internal only"
+can only be triggered by an in-chart `raise`, and `raise` never appears on output 2
+(it is not a `<send>`).
+
 ### `statechart-event`
 
 Event only:
@@ -176,7 +180,9 @@ It supports hierarchy, parallel states, history, guards, delayed transitions and
 
 ## Monitoring
 
-The **State chart** sidebar shows a read-only live chart with parallel-state highlighting and zoom.
+The **State chart** sidebar shows a read-only live chart with parallel-state highlighting. Use **Ctrl/⌘ + wheel** to zoom around the pointer, and wheel/drag to pan. The toolbar shows the zoom percentage and provides **Fit** and **100%** reset controls.
+
+With a machine selected, click **Edit** to open the full editor without going through the Hub or Machine config dialog first. Saving still writes to the config node in the current Node-RED editor and marks the flow dirty; click **Update/Deploy** to apply it to the runtime.
 
 The monitor, full editor and API use a capability token; with `adminAuth` enabled the token endpoint requires `flows.read`. Without it, bind Node-RED to a private network or Tailscale.
 
@@ -202,7 +208,7 @@ See [`examples/README.md`](examples/README.md).
 | Node-RED | 5.x (test server 5.0.0, dev 5.0.9) |
 | Node.js | ≥ 22.9 (24 recommended) |
 | Engine | `@tinyactors/scxmljs@0.2.0-dev.0` |
-| Editor | `statechart-kit/vue` 0.11.0 (bundled at build time) |
+| Editor | `statechart-kit/vue` 0.13.0 (bundled at build time) |
 | XML | `@xmldom/xmldom` |
 
 Known limits:
@@ -210,14 +216,14 @@ Known limits:
 - One Hub per state chart;
 - Cross-tab machines need `link` nodes or must stay in one tab;
 - `<scxml-view>` has upstream layout limits for history directly under parallel;
-- The English UI covers the toolbar, structure/property labels, buttons and validation diagnostics; a few deep controls are still hardcoded in Chinese by kit 0.11;
+- The English UI covers the toolbar, structure/property labels, buttons and validation diagnostics; a few deep controls are still hardcoded in Chinese by kit 0.13;
 - Guarded transitions between the same states may still overlap in complex charts.
 
 ## Development
 
 ```sh
 npm install --include=dev
-npm test                 # build + 44 runtime/lifecycle cases
+npm test                 # build + 65 runtime/lifecycle/contract cases
 npm run typecheck
 npm run verify:all       # typecheck, Node 22.9, kit and package checks
 ```

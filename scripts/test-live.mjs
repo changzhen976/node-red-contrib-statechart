@@ -92,7 +92,8 @@ try {
 
   const fixture = JSON.parse(await fs.readFile(path.join(root, 'test', 'fixtures', 'editor-traffic.json'), 'utf8'))
   const cascade = JSON.parse(await fs.readFile(path.join(root, 'examples', 'cascade-test.json'), 'utf8'))
-  await fs.writeFile(path.join(userDir, 'flows.json'), JSON.stringify([...fixture, ...cascade], null, 2))
+  const internalEvents = JSON.parse(await fs.readFile(path.join(root, 'examples', 'internal-events.json'), 'utf8'))
+  await fs.writeFile(path.join(userDir, 'flows.json'), JSON.stringify([...fixture, ...cascade, ...internalEvents], null, 2))
   await fs.writeFile(path.join(userDir, 'settings.js'), `module.exports = {
   uiPort: ${port},
   flowFile: 'flows.json',
@@ -121,6 +122,7 @@ try {
   const liveEnv = { NODERED_URL: base, CASCADE_BASE: base, GECKODRIVER: gecko }
 
   run('browser: tray editor + monitor', 'node', ['test/browser-smoke.mjs'], liveEnv)
+  run('browser: kit 0.13 internal events', 'node', ['test/browser-kit13.mjs'], liveEnv)
   run('browser: standalone editor', 'node', ['test/browser-p4.mjs'], liveEnv)
   run('server: deployed hub flow', 'node', ['test/e2e-server.mjs'], liveEnv)
   run('cascade example', 'node', ['scripts/test-cascade.mjs'], liveEnv)

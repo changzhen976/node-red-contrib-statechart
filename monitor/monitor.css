@@ -110,7 +110,31 @@ select { max-width: min(44vw, 360px); }
 button { cursor: pointer; }
 button:hover { border-color: var(--accent); }
 
-#zoom { width: 74px; }
+.zoom-group {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--border-2);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--surface-2);
+}
+.zoom-group button {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 4px 7px;
+}
+.zoom-group button + button { border-left: 1px solid var(--border-2); }
+#zoom-label {
+  display: inline-block;
+  min-width: 38px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+#zoom-fit { font-size: 12px; }
+
+#edit:disabled { opacity: .45; cursor: default; }
+#edit:disabled:hover { border-color: var(--border-2); }
 
 .status {
   max-width: 42vw;
@@ -137,7 +161,11 @@ main {
   height: 100%;
   --scxml-height: 100%;
   background: transparent;
+  cursor: grab;
+  touch-action: none;
 }
+#view.scxml-panning { cursor: grabbing; user-select: none; }
+#view.scxml-panning * { user-select: none; }
 #view[hidden] { display: none; }
 
 .empty {
@@ -179,29 +207,30 @@ main {
 body.embed .bar { padding: 5px 8px; }
 /* The Node-RED sidebar tab already shows this title; keep only the controls. */
 body.embed .brand { display: none; }
-body.embed #zoom { width: 74px; }
 
 /*
- * Narrow sidebars: keep the controls in a balanced two-row grid instead of
- * letting every control wrap onto its own line. DOM order is unchanged:
- *   row 1: machine + zoom
- *   row 2: refresh + status
+ * Narrow sidebars: keep the controls in a balanced grid instead of letting
+ * every control wrap onto its own line. DOM order is unchanged:
+ *   row 1: machine
+ *   row 2: zoom + edit + refresh
+ *   row 3: status
  */
 @media (max-width: 520px) {
   .bar { align-items: flex-start; }
   .brand { flex: 1 1 100%; }
   .controls {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 74px;
+    grid-template-columns: auto 1fr auto;
     grid-auto-rows: minmax(30px, auto);
     width: 100%;
     gap: 6px 8px;
   }
-  #machine { grid-column: 1; width: 100%; max-width: none; }
-  #zoom { grid-column: 2; width: 74px; }
-  #refresh { grid-column: 1; width: max-content; }
+  #machine { grid-column: 1 / -1; width: 100%; max-width: none; }
+  .zoom-group { grid-column: 1; justify-self: start; }
+  #edit { grid-column: 2; justify-self: start; width: max-content; }
+  #refresh { grid-column: 3; justify-self: end; width: max-content; }
   .status {
-    grid-column: 2;
+    grid-column: 1 / -1;
     max-width: none;
     min-width: 0;
     overflow: hidden;
@@ -210,7 +239,16 @@ body.embed #zoom { width: 74px; }
   }
 }
 
-.status { max-width: 34vw; }
+@media (min-width: 521px) {
+  .status { max-width: 34vw; }
+}
 body.embed .vars { max-width: 80vw; }
 
 scxml-view::part(controls) { display: none; }
+
+/*
+ * `<scxml-view>`'s shadow `.frame` only has max-height: var(--scxml-height),
+ * so on a short chart it shrinks to the diagram height. The camera's viewport
+ * must fill the sidebar, otherwise panning down clips at the content bottom.
+ */
+scxml-view::part(frame) { height: 100%; }

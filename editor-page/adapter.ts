@@ -1,9 +1,10 @@
 /**
  * Node-RED host adapter for the kit editor.
  *
- * The page is opened by the `statechart-machine` config dialog and talks to it
- * only via `postMessage` (same origin). It never reads RED.*, localStorage or
- * the admin API, so the kit editor keeps its host boundary.
+ * The page is opened by the `statechart-machine` config dialog or by the
+ * sidebar monitor's Edit button, and talks to the Node-RED editor only via
+ * `postMessage` (same origin). It never reads RED.*, localStorage or the admin
+ * API, so the kit editor keeps its host boundary.
  */
 import type { ProjectDoc } from 'statechart-kit'
 import type { EditorAdapter } from 'statechart-kit/vue'
@@ -13,8 +14,11 @@ const LOAD_TIMEOUT_MS = 4000
 
 let machineId = new URLSearchParams(location.search).get('id') ?? ''
 let resolveLoad: ((doc: ProjectDoc | null) => void) | null = null
-let resolveAck: (() => void) | null = null
+let resolveAck: ((ok: boolean) => void) | null = null
 let dirty = false
+let hostReady = false
+let loadTimedOut = false
+let loadTimer: ReturnType<typeof setTimeout> | null = null
 
 const loaded = new Promise<ProjectDoc | null>((resolve) => {
   resolveLoad = resolve
@@ -26,10 +30,29 @@ function cloneDoc (doc: ProjectDoc): ProjectDoc {
   return JSON.parse(JSON.stringify(doc)) as ProjectDoc
 }
 
-function post (type: string, payload: Record<string, unknown> = {}): boolean {
-  if (!window.opener || window.opener.closed) return false
+/**
+ * The editor can be opened from the machine config dialog (the opener is the
+ * Node-RED page) or from the sidebar monitor iframe (the opener is the iframe,
+ * and the real host is its parent). Resolve to the Node-RED page in both cases.
+ */
+function hostWindow (): Window | null {
+  const opener = window.opener
+  if (!opener || opener.closed) return null
+  const forceTop = new URLSearchParams(location.search).get('host') === 'top'
   try {
-    window.opener.postMessage({ type, id: machineId, ...payload }, location.origin)
+    if (forceTop) return opener.parent || opener
+    if (opener.parent && opener.parent !== opener) return opener.parent
+  } catch {
+    // Cross-origin opener: fall back to the opener itself.
+  }
+  return opener
+}
+
+function post (type: string, payload: Record<string, unknown> = {}): boolean {
+  const host = hostWindow()
+  if (!host) return false
+  try {
+    host.postMessage({ type, id: machineId, ...payload }, location.origin)
     return true
   } catch (err) {
     console.error('[statechart] postMessage failed', err)
@@ -49,15 +72,22 @@ window.addEventListener('message', (event) => {
   if (!data || typeof data !== 'object') return
   if (data.type === 'scxml:load') {
     if (typeof data.id === 'string' && data.id) machineId = data.id
-    settleLoad((data.doc as ProjectDoc | null | undefined) ?? null)
+    const doc = (data.doc as ProjectDoc | null | undefined) ?? null
+    if (doc) hostReady = true
+    if (loadTimer) {
+      clearTimeout(loadTimer)
+      loadTimer = null
+    }
+    settleLoad(doc)
   } else if (data.type === 'scxml:save-ack') {
     const resolve = resolveAck
     resolveAck = null
-    resolve?.()
+    resolve?.(data.ok !== false)
   }
 })
 
 async function saveToNodeRed (doc: ProjectDoc): Promise<boolean> {
+  if (!hostReady || loadTimedOut) return false
   let payload: ProjectDoc
   try {
     payload = cloneDoc(doc)
@@ -73,8 +103,8 @@ async function saveToNodeRed (doc: ProjectDoc): Promise<boolean> {
       console.warn('[statechart] Node-RED did not acknowledge the save in time')
       resolve()
     }, ACK_TIMEOUT_MS)
-    resolveAck = () => {
-      acknowledged = true
+    resolveAck = (ok) => {
+      acknowledged = ok
       clearTimeout(timer)
       resolve()
     }
@@ -104,12 +134,16 @@ function closeWindow (): void {
 export function createNodeRedAdapter (english = false): EditorAdapter {
   return {
     load: () => {
-      if (!window.opener || window.opener.closed) {
+      if (!hostWindow()) {
         settleLoad(null)
         return null
       }
       post('scxml:ready')
-      setTimeout(() => settleLoad(null), LOAD_TIMEOUT_MS)
+      loadTimer = setTimeout(() => {
+        loadTimer = null
+        loadTimedOut = true
+        settleLoad(null)
+      }, LOAD_TIMEOUT_MS)
       return loaded
     },
     // No autosave: the kit only marks dirty until the explicit save button posts

@@ -85,6 +85,9 @@ Output 3: 错误 / done
 
 一台状态机放一个 Hub。删除占用中的 Hub 后重新部署，另一个 Hub 才能接管。
 
+Hub 输入和 `statechart-event` 发出的是**外部事件**；标记为「仅内部」的事件只能由
+图内 `raise` 触发，且 `raise` 不会出现在输出 2（它不是 `<send>`）。
+
 ### `statechart-event`
 
 仅事件：
@@ -176,7 +179,9 @@ Key:     cellState
 
 ## 监控
 
-编辑器右侧 **状态机** 侧栏显示只读实时状态图，支持并行状态高亮和缩放。
+编辑器右侧 **状态机** 侧栏显示只读实时状态图，支持并行状态高亮。图中支持 **Ctrl/⌘ + 滚轮**以鼠标位置为中心缩放、**滚轮/拖拽**平移；工具栏提供缩放百分比、**适应窗口**和 **100%** 复位。
+
+选中机器后可直接点 **编辑** 打开完整编辑器，不需要先进入 Hub 或 Machine 配置窗。保存仍只写回当前 Node-RED 编辑器的 config node 并标脏，需要点击 **Update/Deploy** 后才对运行时生效。
 
 监控、完整编辑器和 API 使用 capability token；启用 `adminAuth` 时 token 接口要求 `flows.read`。未启用时请将 Node-RED 绑定在私网或 Tailscale。
 
@@ -202,7 +207,7 @@ CASCADE_BASE=http://localhost:1880 npm run test:cascade
 | Node-RED | 5.x（测试服务器 5.0.0，开发环境 5.0.9） |
 | Node.js | ≥ 22.9（推荐 24） |
 | 引擎 | `@tinyactors/scxmljs@0.2.0-dev.0` |
-| 编辑器 | `statechart-kit/vue` 0.11.0（构建期内联） |
+| 编辑器 | `statechart-kit/vue` 0.13.0（构建期内联） |
 | XML | `@xmldom/xmldom` |
 
 已知限制：
@@ -210,14 +215,14 @@ CASCADE_BASE=http://localhost:1880 npm run test:cascade
 - 一台状态机只能由一个 Hub 占用；
 - 跨 tab 的状态机需要 `link` 节点，或保持在同一 tab；
 - `<scxml-view>` 对 parallel 下直接挂 history 的布局仍有上游限制；
-- 英文界面覆盖工具栏、结构/属性标签、按钮和校验诊断；kit 0.11 仍把少量深层控件文案硬编码为中文；
+- 英文界面覆盖工具栏、结构/属性标签、按钮和校验诊断；kit 0.13 仍把少量深层控件文案硬编码为中文；
 - 复杂图中同源同目标的条件转移仍可能有近重合线条。
 
 ## 开发
 
 ```sh
 npm install --include=dev
-npm test                 # 构建 + 44 个运行时/生命周期用例
+npm test                 # 构建 + 65 个运行时/生命周期/契约用例
 npm run typecheck
 npm run verify:all       # typecheck、Node 22.9、kit 与打包检查
 ```

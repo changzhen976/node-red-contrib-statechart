@@ -80,6 +80,57 @@ try {
   )
   assert.match(monitorSrc, /[?&]token=/, 'sidebar monitor iframe must carry a capability token')
 
+  await browser.waitFor(`return (() => {
+    const frame = Array.from(document.querySelectorAll('iframe')).find((f) => f.src.includes('/statechart/monitor'));
+    const doc = frame && frame.contentDocument;
+    const view = doc && doc.getElementById('view');
+    const edit = doc && doc.getElementById('edit');
+    return !!(view && view.shadowRoot && view.shadowRoot.querySelector('.diagram') && edit && !edit.hidden && !edit.disabled);
+  })()`, 'monitor camera and edit button', 15000)
+
+  const monitor = await browser.exec(`return (() => {
+    const frame = Array.from(document.querySelectorAll('iframe')).find((f) => f.src.includes('/statechart/monitor'));
+    const doc = frame.contentDocument;
+    const view = doc.getElementById('view');
+    const diagram = view.shadowRoot.querySelector('.diagram');
+    const label = doc.getElementById('zoom-label');
+    const win = frame.contentWindow;
+    const before = diagram.style.transform || '';
+    view.dispatchEvent(new win.WheelEvent('wheel', {
+      deltaY: -120, ctrlKey: true, clientX: 120, clientY: 120, bubbles: true, cancelable: true,
+    }));
+    const afterZoom = diagram.style.transform || '';
+    const afterLabel = label.textContent;
+    view.dispatchEvent(new win.PointerEvent('pointerdown', {
+      button: 0, pointerId: 1, clientX: 120, clientY: 120, bubbles: true, cancelable: true,
+    }));
+    win.dispatchEvent(new win.PointerEvent('pointermove', {
+      pointerId: 1, clientX: 160, clientY: 150, bubbles: true, cancelable: true,
+    }));
+    win.dispatchEvent(new win.PointerEvent('pointerup', {
+      pointerId: 1, clientX: 160, clientY: 150, bubbles: true, cancelable: true,
+    }));
+    const afterPan = diagram.style.transform || '';
+    return { before, afterZoom, afterPan, afterLabel };
+  })()`)
+  assert.notEqual(monitor.afterZoom, monitor.before, 'Ctrl+wheel must change the diagram transform')
+  assert.match(monitor.afterZoom, /scale\(/, 'Ctrl+wheel must apply a scale transform')
+  assert.notEqual(monitor.afterPan, monitor.afterZoom, 'pointer drag must change the diagram transform')
+  assert.match(monitor.afterLabel, /%$/, 'zoom readout must show a percentage')
+
+  const editUrl = await browser.exec(`return (() => {
+    const frame = Array.from(document.querySelectorAll('iframe')).find((f) => f.src.includes('/statechart/monitor'));
+    const doc = frame.contentDocument;
+    const win = frame.contentWindow;
+    win.open = (url) => { win.__scxmlOpened = url; return { closed: false, focus() {} }; };
+    doc.getElementById('edit').click();
+    return win.__scxmlOpened || '';
+  })()`)
+  assert.match(editUrl, /\/statechart\/editor\//, 'edit button must open the full editor')
+  assert.match(editUrl, new RegExp(`[?&]id=${encodeURIComponent(MACHINE_ID)}(?:&|$)`), 'editor URL must carry the machine id')
+  assert.match(editUrl, /[?&]host=top(?:&|$)/, 'editor URL must target the top Node-RED window')
+  assert.match(editUrl, /[?&]token=/, 'editor URL must carry the capability token')
+
   // Duplicate ids must surface the client-side validation box.
   const duplicate = await browser.exec(`
     const inputs = Array.from(document.querySelectorAll('#scxml-states-body [data-field=id]'));

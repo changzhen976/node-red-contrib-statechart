@@ -1,6 +1,9 @@
+import { createCamera } from './camera.mjs';
+
 const pagePath = window.location.pathname.replace(/\/monitor\/?$/, '/')
 const apiBase = `${pagePath}api/machines`
 const capabilityToken = new URLSearchParams(window.location.search).get('token') || ''
+const pageLang = new URLSearchParams(window.location.search).get('lang') || ''
 function authUrl(url) {
   if (!capabilityToken) return url
   return url + (url.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(capabilityToken)
@@ -8,7 +11,12 @@ function authUrl(url) {
 const view = document.getElementById('view')
 const select = document.getElementById('machine')
 const refresh = document.getElementById('refresh')
-const zoomSelect = document.getElementById('zoom')
+const zoomIn = document.getElementById('zoom-in')
+const zoomOut = document.getElementById('zoom-out')
+const zoomFit = document.getElementById('zoom-fit')
+const zoomReset = document.getElementById('zoom-reset')
+const zoomLabel = document.getElementById('zoom-label')
+const editButton = document.getElementById('edit')
 const statusEl = document.getElementById('status')
 const emptyEl = document.getElementById('empty')
 const varsEl = document.getElementById('vars')
@@ -24,24 +32,88 @@ if (new URLSearchParams(window.location.search).get('embed') === '1') {
   document.body.classList.add('embed')
 }
 
-function applyZoom() {
-  if (!zoomSelect || !view) return
-  const value = Number.parseInt(zoomSelect.value, 10) || 150
-  view.style.zoom = String(value / 100)
-  try { localStorage.setItem('statechart-monitor-zoom', String(value)) } catch { /* ignore */ }
+function setZoomLabel(scale) {
+  if (!zoomLabel) return
+  const text = `${Math.round(scale * 100)}%`
+  if (zoomLabel.textContent !== text) zoomLabel.textContent = text
 }
 
-if (zoomSelect) {
-  const savedZoom = (() => {
-    try { return localStorage.getItem('statechart-monitor-zoom') } catch { return null }
-  })()
-  if (savedZoom && [...zoomSelect.options].some((o) => o.value === savedZoom)) {
-    zoomSelect.value = savedZoom
-  } else {
-    zoomSelect.value = '150'
+const camera = createCamera(view, { onChange: setZoomLabel })
+let cameraReady = false
+let fallbackZoom = 1
+
+// The old renderer structure is kept as a safety net: if `<scxml-view>` no
+// longer exposes `.canvas` / `.diagram`, the buttons fall back to CSS zoom
+// instead of doing nothing.
+function fallbackZoomBy(factor) {
+  fallbackZoom = Math.min(3, Math.max(0.3, fallbackZoom * factor))
+  view.style.zoom = String(fallbackZoom)
+  setZoomLabel(fallbackZoom)
+}
+
+function canOpenEditor() {
+  if (!capabilityToken || window.parent === window) return false
+  try {
+    return !!(window.parent.RED && window.parent.RED.nodes)
+  } catch {
+    return false
   }
-  zoomSelect.addEventListener('change', applyZoom)
-  applyZoom()
+}
+
+const canEdit = canOpenEditor()
+if (editButton && !canEdit) editButton.hidden = true
+
+function editorUrl(id) {
+  const params = new URLSearchParams({ nodered: '1', id, host: 'top' })
+  if (capabilityToken) params.set('token', capabilityToken)
+  if (pageLang) params.set('lang', pageLang)
+  return `${pagePath}editor/?${params.toString()}`
+}
+
+function openEditor() {
+  if (!selectedId || !canEdit) return
+  const opened = window.open(editorUrl(selectedId), '_blank')
+  if (!opened) setStatus('弹窗被拦截，请允许弹窗后重试', 'error')
+}
+
+if (editButton && canEdit) {
+  editButton.addEventListener('click', openEditor)
+}
+
+if (zoomIn) {
+  zoomIn.addEventListener('click', () => {
+    if (cameraReady) camera.zoomBy(1.25)
+    else fallbackZoomBy(1.25)
+  })
+}
+
+if (zoomOut) {
+  zoomOut.addEventListener('click', () => {
+    if (cameraReady) camera.zoomBy(1 / 1.25)
+    else fallbackZoomBy(1 / 1.25)
+  })
+}
+
+if (zoomFit) {
+  zoomFit.addEventListener('click', () => {
+    if (cameraReady) camera.fit()
+    else {
+      fallbackZoom = 1
+      view.style.zoom = '1'
+      setZoomLabel(1)
+    }
+  })
+}
+
+if (zoomReset) {
+  zoomReset.addEventListener('click', () => {
+    if (cameraReady) camera.reset()
+    else {
+      fallbackZoom = 1
+      view.style.zoom = '1'
+      setZoomLabel(1)
+    }
+  })
 }
 
 function setStatus(text, kind = '') {
@@ -141,6 +213,7 @@ async function selectMachine(id) {
   syncSelectedId(selectedId)
   lastState = null
   lastVersion = ''
+  if (editButton) editButton.disabled = !selectedId || !canEdit
   clearHighlight()
   if (!selectedId) {
     showEmpty('没有可用的状态机')
@@ -168,6 +241,7 @@ async function loadMachines() {
     if (!machines.length) {
       showEmpty('没有已部署的 statechart-machine')
       setStatus('no machines')
+      if (editButton) editButton.disabled = true
       return
     }
     for (const machine of machines) {
@@ -182,6 +256,7 @@ async function loadMachines() {
   } catch (err) {
     showEmpty('无法读取状态机列表')
     setStatus(err.message, 'error')
+    if (editButton) editButton.disabled = true
   }
 }
 
@@ -210,7 +285,10 @@ document.addEventListener('visibilitychange', () => {
 })
 
 customElements.whenDefined('scxml-view')
-  .then(loadMachines)
+  .then(() => {
+    cameraReady = camera.attach()
+    return loadMachines()
+  })
   .catch((err) => {
     showEmpty('scxml-view 未加载')
     setStatus(err.message, 'error')

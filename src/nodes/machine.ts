@@ -1,6 +1,6 @@
 import { EventBus, type MachineErrorLocation, type MachineStateEvent } from '../runtime/bus'
 import { getDomParser } from '../runtime/dom'
-import { normalizeDoc, serializeToScxml, type ProjectDoc } from 'statechart-kit'
+import { normalizeDoc, serializeToDisplayScxml, serializeToScxml, type ProjectDoc } from 'statechart-kit'
 import { SessionRunner, validateScxml, type EngineMode } from 'statechart-kit/engine'
 import { runtimeStatus, runtimeT } from '../runtime/i18n'
 
@@ -11,7 +11,7 @@ function sameStateSet(a: string[], b: string[]): boolean {
   return b.every((id) => set.has(id))
 }
 
-/** Kit 0.11 supplies optional error location fields. */
+/** Kit 0.11+ supplies optional error location fields. */
 function errorLocationFromEvent(event: unknown): MachineErrorLocation | undefined {
   const source = event as Record<string, any> | null
   if (!source || typeof source !== 'object') return undefined
@@ -43,7 +43,10 @@ function positiveNumber(value: unknown, fallback: number): number {
 }
 
 interface ResolvedMachineSource {
+  /** Runtime SCXML: keeps internal-only guards and data-kit-visibility. */
   xml: string
+  /** Display SCXML: same graph without kit-generated internal guards. */
+  displayXml: string
   doc: ProjectDoc | null
 }
 
@@ -59,11 +62,15 @@ function resolveMachineSource(node: any): ResolvedMachineSource {
     }
     const doc = normalizeDoc(parsed)
     if (!doc.states.length) throw new Error('doc has no states')
-    return { xml: serializeToScxml(doc), doc }
+    return {
+      xml: serializeToScxml(doc),
+      displayXml: serializeToDisplayScxml(doc),
+      doc,
+    }
   }
   const source = typeof node.source === 'string' ? node.source.trim() : ''
-  if (source) return { xml: source, doc: null }
-  return { xml: DEFAULT_SOURCE, doc: null }
+  if (source) return { xml: source, displayXml: source, doc: null }
+  return { xml: DEFAULT_SOURCE, displayXml: DEFAULT_SOURCE, doc: null }
 }
 
 function hashString(value: string): string {
@@ -103,7 +110,9 @@ export function registerMachine(RED: any): void {
     node.graphVersion = hashString(node.doc || node.source)
     node.getGraphSource = function getGraphSource(): string {
       try {
-        return resolveMachineSource(node).xml
+        // The monitor is read-only: hide the internal-only guard that kit adds
+        // for SCXML semantics, so it is not mistaken for an author condition.
+        return resolveMachineSource(node).displayXml
       } catch {
         return node.source || ''
       }
@@ -275,7 +284,7 @@ export function registerMachine(RED: any): void {
               break
             }
             case 'done': {
-              // Kit 0.11 emits the terminal active itself and supplies the final
+              // Kit 0.11+ emits the terminal active itself and supplies the final
               // configuration; avoid publishing it twice.
               const doneStates = event.states
               if (doneStates.length && !sameStateSet(lastStates, doneStates)) {

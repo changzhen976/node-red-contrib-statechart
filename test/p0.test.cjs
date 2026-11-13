@@ -77,6 +77,24 @@ const DOC_TRAFFIC = JSON.stringify({
   layout: {},
 })
 
+const DOC_INTERNAL = JSON.stringify({
+  formatVersion: 1,
+  name: 'internal events',
+  initial: 'u1',
+  datamodel: [],
+  states: [
+    { uid: 'u1', id: 'a', label: 'a', kind: 'atomic', parent: null, entryActions: [], exitActions: [] },
+    { uid: 'u2', id: 'b', label: 'b', kind: 'atomic', parent: null, entryActions: [], exitActions: [] },
+  ],
+  transitions: [
+    { id: 't-arm', source: 'u1', target: 'u1', event: 'arm', cond: '', actions: ['raise ping'] },
+    { id: 't-ping', source: 'u1', target: 'u2', event: 'ping', cond: '', actions: [] },
+    { id: 't-back', source: 'u2', target: 'u1', event: 'back', cond: '', actions: [] },
+  ],
+  eventVisibility: { ping: 'internal' },
+  layout: {},
+})
+
 const DOC_B = JSON.stringify({
   formatVersion: 1,
   name: 'doc machine B',
@@ -309,6 +327,44 @@ test('drives a ProjectDoc JSON machine and validates it before start', async () 
     const token = await monitorToken()
     const graph = await helper.request().get('/statechart/api/machines/conf1/graph?token=' + token).expect(200)
     assert.match(graph.text, /<scxml[\s>]/)
+  } finally {
+    await unloadFlow()
+  }
+})
+
+test('internal-only events ignore external input and stay out of the monitor graph', async () => {
+  await loadFlow(flowForDoc(DOC_INTERNAL))
+  try {
+    await waitFor(() => sinkMessages('s1').length > 0, 'internal initial state')
+    assert.equal(sinkMessages('s1')[0].payload, 'a')
+
+    const token = await monitorToken()
+    const graph = await helper.request()
+      .get('/statechart/api/machines/conf1/graph?token=' + token)
+      .expect(200)
+    assert.match(graph.text, /event="ping"/)
+    assert.doesNotMatch(graph.text, /data-kit-visibility/)
+    assert.doesNotMatch(graph.text, /_event\.type === 'internal'/)
+
+    // The runtime source keeps the SCXML guard; only the monitor display strips it.
+    assert.match(helper.getNode('conf1').source, /_event\.type === 'internal'/)
+
+    // External injection of an internal-only event is ignored by the SCXML guard.
+    helper.getNode('hub').receive({ topic: 'ping' })
+    await sleep(120)
+    assert.ok(
+      sinkMessages('s1').every((m) => m.payload === 'a'),
+      'external ping must not change state',
+    )
+    assert.equal(
+      sinkMessages('s2').filter((m) => m.event === 'ping').length,
+      0,
+      'raise/internal events are not chart sends',
+    )
+
+    // A public event whose action raises ping reaches b through the internal event.
+    helper.getNode('hub').receive({ topic: 'arm' })
+    await waitFor(() => sinkMessages('s1').some((m) => m.payload === 'b'), 'raised ping target')
   } finally {
     await unloadFlow()
   }

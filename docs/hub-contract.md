@@ -77,7 +77,10 @@ msg.topic   // eventTopic 展开后的 topic
 ```
 
 - 默认过滤 `sendid` 存在或 `target="#_internal"` 的内部 send；
-- 打开 `includeInternalSends` 可观察延时 timer 等内部事件。
+- 打开 `includeInternalSends` 可观察延时 timer 等内部事件；
+- `raise` 是 SCXML 内部事件，不是 `<send>`，**不会**出现在输出 2；
+- `eventVisibility` 为 `internal` 的转移会生成 `_event.type === 'internal'` guard；
+  Hub 输入和 `statechart-event` 都是外部事件，同名事件不会触发该转移。
 
 ### 输出 3：错误 / done
 
@@ -89,7 +92,7 @@ msg.topic   // eventTopic 展开后的 topic
   error: Error,
   machine: "…",
   topic: "statechart/error",
-  // statechart-kit 0.11 的错误定位字段；能定位出错位置时附带
+  // statechart-kit 0.13 的错误定位字段；能定位出错位置时附带
   stateId?: "idle",
   transitionId?: "t1",
   slot?: "entry" | "exit" | "transition",

@@ -76,6 +76,6 @@ await build({
   logLevel: 'info',
 })
 
-for (const file of ['index.html', 'monitor.js', 'monitor.css']) {
+for (const file of ['index.html', 'monitor.js', 'monitor.css', 'camera.mjs']) {
   await copyFile(resolve(root, 'monitor', file), resolve(dist, 'monitor', file))
 }

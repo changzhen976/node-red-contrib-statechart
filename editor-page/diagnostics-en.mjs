@@ -1,7 +1,7 @@
 /**
  * English diagnostic formatters for the standalone kit editor.
  *
- * statechart-kit 0.11 only ships `diagnostics/zh`; the host injects these
+ * statechart-kit 0.11–0.13 only ships `diagnostics/zh`; the host injects these
  * formatters through `CreateEditorOptions.diagnostics` when Node-RED runs in
  * an English locale. Codes and params stay owned by kit, so a missing code
  * falls back to the raw code instead of hiding the problem.
@@ -56,6 +56,7 @@ const STRUCTURE = {
   'structure.transition.missing-target': 'Target state of transition "{id}" does not exist',
   'structure.transition.history-targetless': 'The default transition of history pseudo-state "{id}" must have a target',
   'structure.transition.internal-eventless': 'Internal transition "{id}" has no event and may form a self-triggering loop',
+  'structure.transition.mixed-event-visibility': 'Transition "{id}" listens to both internal-only and external events ({events}); split it into separate transitions',
   'structure.transition.delay-invalid': 'delayMs of transition "{id}" is invalid (must be at least 10)',
   'structure.transition.delay-without-event': 'Transition "{id}" has a delay but no event name',
 }

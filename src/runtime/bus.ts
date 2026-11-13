@@ -18,7 +18,7 @@ export interface MachineSendEvent {
 
 export type MachineErrorSlot = 'entry' | 'exit' | 'transition'
 
-/** Optional runtime-error location supplied by statechart-kit 0.11. */
+/** Optional runtime-error location supplied by statechart-kit 0.11+. */
 export interface MachineErrorLocation {
   stateId?: string
   transitionId?: string

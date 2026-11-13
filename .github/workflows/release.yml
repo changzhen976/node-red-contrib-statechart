@@ -1,0 +1,146 @@
+name: release
+
+# Publish @changzhen976/node-red-contrib-statechart to npm.
+#
+# Recommended setup: npm Trusted Publishing (OIDC), no long-lived NPM_TOKEN.
+# See docs/github-actions-release.md for the one-time npm/GitHub configuration.
+#
+# Trigger: push a tag that exactly matches package.json's version, e.g.
+#   git tag v0.8.0 && git push origin v0.8.0
+# The workflow verifies the tag, runs the release gates, then publishes.
+#
+# Manual runs default to a dry run so the workflow can be tested before the
+# first real tag is pushed.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Run all checks and npm publish --dry-run only'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  id-token: write # required for npm provenance / trusted publishing
+
+concurrency:
+  group: npm-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Show toolchain
+        run: |
+          node --version
+          npm --version
+
+      - name: Require npm with trusted-publishing support
+        run: |
+          node - <<'NODE'
+          const { execFileSync } = require('node:child_process')
+          const raw = execFileSync('npm', ['--version'], { encoding: 'utf8' }).trim()
+          const [major, minor] = raw.split('.').map(Number)
+          if (major < 11 || (major === 11 && minor < 5)) {
+            console.error(`npm ${raw} is too old; trusted publishing needs npm >= 11.5.1`)
+            process.exit(1)
+          }
+          console.log(`npm ${raw} supports trusted publishing`)
+          NODE
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify tag matches package.json
+        if: github.ref_type == 'tag'
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if [ "v$VERSION" != "$GITHUB_REF_NAME" ]; then
+            echo "tag $GITHUB_REF_NAME does not match package.json version $VERSION" >&2
+            exit 1
+          fi
+          echo "tag $GITHUB_REF_NAME matches package version $VERSION"
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Kit dependency guard
+        run: npm run check:kit
+
+      - name: Release package check
+        run: npm run release:check
+
+      - name: Check Firefox
+        run: firefox --version
+
+      - name: Install geckodriver
+        run: |
+          VERSION=0.37.1
+          curl -fsSL "https://github.com/mozilla/geckodriver/releases/download/v${VERSION}/geckodriver-v${VERSION}-linux64.tar.gz" -o /tmp/geckodriver.tar.gz
+          tar -xzf /tmp/geckodriver.tar.gz -C /tmp
+          sudo install -m 0755 /tmp/geckodriver /usr/local/bin/geckodriver
+          geckodriver --version
+
+      - name: Live suites (browser, server E2E, cascade)
+        env:
+          GECKODRIVER: geckodriver
+        run: npm run test:live
+
+      - name: Resolve npm dist-tag
+        id: disttag
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          case "$VERSION" in
+            *-*) TAG=next ;;   # prerelease versions must not overwrite latest
+            *)   TAG=latest ;;
+          esac
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version $VERSION -> npm dist-tag $TAG"
+
+      - name: Check whether this version is already on npm
+        id: published
+        run: |
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          if NPM_CONFIG_USERCONFIG=/dev/null npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "$NAME@$VERSION is already published; publish step will be skipped."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "$NAME@$VERSION is not published yet."
+          fi
+
+      - name: Publish to npm (trusted publishing)
+        if: github.ref_type == 'tag' && inputs.dry_run != true && steps.published.outputs.exists != 'true'
+        run: npm publish --provenance --access public --tag "${{ steps.disttag.outputs.tag }}"
+
+      - name: Publish dry run
+        if: github.ref_type != 'tag' || inputs.dry_run == true
+        run: npm publish --dry-run --access public --tag "${{ steps.disttag.outputs.tag }}"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## npm release" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- version: \`$(node -p "require('./package.json').version")\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- tag: \`${GITHUB_REF_NAME}\` (\`${GITHUB_REF_TYPE}\`)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- already published: \`${{ steps.published.outputs.exists || 'unknown' }}\`" >> "$GITHUB_STEP_SUMMARY"
