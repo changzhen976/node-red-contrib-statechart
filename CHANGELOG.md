@@ -1,5 +1,64 @@
 # Changelog
 
+## 0.8.0 — 2026-11-14
+
+侧栏体验与 `statechart-kit@0.13.0` 适配版本：新增监控画布相机、侧栏直接编辑入口、
+`raise` / internal-only 事件与内部事件示例；修复监控 guard 显示、托盘 `raise`
+数据损坏和 `initial` 不一致。
+
+### Added
+
+- 新增 `examples/internal-events.json`：**07 Raise & Internal Events** 演示
+  `raise` 与 `eventVisibility: internal`，并展示外部同名事件被 SCXML guard 忽略、
+  `raise` 不出现在 Hub 输出 2。
+
+- 侧栏监控的画布相机：**Ctrl/⌘ + 滚轮**以鼠标位置为中心连续缩放（30%–300%），
+  **滚轮/拖拽**平移，工具栏提供缩放百分比、**适应窗口**和 **100%** 复位；不再使用
+  100/125/150/180/220 的固定档位。相机逻辑独立在 `monitor/camera.mjs`，并用
+  `test/camera.test.cjs` 覆盖缩放锚点与 Fit 计算。
+- 侧栏增加 **编辑** 按钮：选中机器后直接打开完整编辑器，不必先打开 Hub/Machine
+  配置窗。编辑器通过 `opener.parent` 定位 Node-RED 主窗口（URL 带 `host=top` 标记）；
+  从侧栏 iframe 打开时会找到真正的宿主窗口，保存仍走现有 `scxml:save` →
+  `RED.nodes.dirty(true)`，需要用户点 Update/Deploy。
+- `scxmlMonitorUrl` 携带 Node-RED 当前语言，侧栏打开编辑器时沿用该语言。
+
+### Changed
+
+- 内置 `statechart-kit` 从 0.11.0 升级到 0.13.0：新增 `raise` 动作、
+  `ProjectDoc.eventVisibility`、internal-only 转移 guard 与
+  `serializeToDisplayScxml()`；0.12.1 起结构编辑会维护 `initial` 不变量。
+- 监控侧栏改用 `serializeToDisplayScxml()` 渲染图形，不再把
+  `_event.type === 'internal'` 显示成作者条件；运行时 SCXML 仍保留 guard。
+- 托盘三表编辑器补上 `raise` 动作和 `initial` 不变量；含内部事件的文档显示
+  只读提示，引导用户到完整编辑器修改可见性。
+- 诊断映射新增 `structure.transition.mixed-event-visibility`，中/英/zh 三份
+  locale 与英文诊断同步。
+- 完整编辑器的保存 ACK 现在区分成功/失败；宿主回 `ok: false` 时编辑器保持
+  dirty 并提示，不再把失败当成功。编辑器未收到 `scxml:load` 或加载超时时
+  禁止保存，避免空文档覆盖 config node。
+- 编辑器的消息桥从“配置窗临时 handler”改为全局 session 注册：支持配置窗和
+  侧栏两个入口，同一机器已打开时聚焦已有窗口。
+
+### Fixed
+
+- 修复托盘动作编辑器把 `raise ping` 当成 `script` 保存、最终写成
+  `raise undefined` 的数据损坏；未知动作类型现在会拒绝保存而不是静默降级。
+- 修复托盘改父级/删除 initial 子状态后 `initial` 为空、校验出现
+  `initial-fallback` 的问题；history 不会被选作 compound initial。
+- 修复监控画布把 internal-only guard 当成作者条件显示的问题。
+- 侧栏监控的画布 `.frame` 只有 `max-height`，短图时 canvas 只按内容高度收缩，
+  没有铺满侧栏纵向空间；向下拖拽会被内容底部的画布边界裁切。现在给
+  `<scxml-view>` 的 `frame` part 设置 `height: 100%`，canvas 视口填满侧栏，
+  相机 Fit 也按完整可用高度计算。
+
+### Tests
+
+- 新增 `test/kit13.test.cjs`：runtime/display 序列化、可见性导入往返、
+  `mixed-event-visibility` warning、`raise` DSL 往返。
+- 新增 `test/tray-kit13.test.cjs`：托盘 `raise` 渲染与 `ensureInitial`。
+- `test/p0.test.cjs` 增加 internal-only 事件运行时与监控 graph 回归；
+  `test/examples.test.cjs` 校验新示例的 `raise`/visibility。
+
 ## 0.7.0 — 2026-11-13
 
 稳定性与测试补全版本：不新增节点，不改变 `ProjectDoc`；内置 `statechart-kit`
