@@ -11,17 +11,7 @@ function sameStateSet(a: string[], b: string[]): boolean {
   return b.every((id) => set.has(id))
 }
 
-/** Kit 0.11+ supplies `done.states`; 0.10 falls back to the last fired targets. */
-function doneStatesFromEvent(event: unknown, fallback: string[]): string[] {
-  const states = (event as { states?: unknown } | null)?.states
-  if (Array.isArray(states)) {
-    const clean = states.filter((id): id is string => typeof id === 'string' && id.length > 0)
-    if (clean.length) return clean
-  }
-  return fallback
-}
-
-/** Kit 0.11+ supplies optional error location fields; older versions do not. */
+/** Kit 0.11 supplies optional error location fields. */
 function errorLocationFromEvent(event: unknown): MachineErrorLocation | undefined {
   const source = event as Record<string, any> | null
   if (!source || typeof source !== 'object') return undefined
@@ -145,7 +135,6 @@ export function registerMachine(RED: any): void {
     let lastVars: Record<string, unknown> = {}
     let lastStateKey: string | null = null
     let lastChanged = false
-    let lastFiredTargets: string[] = []
     const MAX_QUEUE = 1000
     const PERSIST_KEY = 'statechartVars'
     let opChain: Promise<void> = Promise.resolve()
@@ -263,12 +252,9 @@ export function registerMachine(RED: any): void {
           if (closed) return
           switch (event.type) {
             case 'active':
-              // The engine emits one empty active after done; keep the done state.
-              if (created.status === 'done') return
-              publishState(created)
-              break
-            case 'fired':
-              lastFiredTargets = event.pairs.map((pair) => pair.targetId)
+              // Use the event's configuration: the engine may have cleared the
+              // live session by the time the terminal active is emitted.
+              publishState(created, event.ids)
               break
             case 'send':
               bus.emit({
@@ -289,15 +275,14 @@ export function registerMachine(RED: any): void {
               break
             }
             case 'done': {
-              // Kit 0.11+ provides the final configuration and emits the terminal
-              // active itself; 0.10 needs the last fired targets as a fallback.
-              const doneStates = doneStatesFromEvent(event, lastFiredTargets)
+              // Kit 0.11 emits the terminal active itself and supplies the final
+              // configuration; avoid publishing it twice.
+              const doneStates = event.states
               if (doneStates.length && !sameStateSet(lastStates, doneStates)) {
                 publishState(created, doneStates)
               }
-              lastFiredTargets = []
               node.status({ fill: 'grey', shape: 'dot', text: runtimeStatus('done') })
-              bus.emit({ type: 'done', ...(doneStates.length ? { states: doneStates } : {}), ts: Date.now() })
+              bus.emit({ type: 'done', states: doneStates, ts: Date.now() })
               break
             }
             default:
@@ -400,7 +385,6 @@ export function registerMachine(RED: any): void {
         lastVars = {}
         lastStateKey = null
         lastChanged = false
-        lastFiredTargets = []
         currentEvent = undefined
         if (old) {
           try {

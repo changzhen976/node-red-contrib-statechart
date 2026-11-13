@@ -5,16 +5,12 @@ const path = require('node:path')
 
 /**
  * Kit 0.11 exports public diagnostic-code catalogs. Keep the host CODE_MAP and
- * locale files aligned with them; on kit 0.10 this test skips because the
- * catalogs do not exist yet.
+ * locale files aligned with them.
  */
-test('host maps every published kit structure-issue code', async (t) => {
+test('host maps every published kit structure-issue code', async () => {
   const kit = await import('statechart-kit')
   const codes = kit.STRUCTURE_ISSUE_CODES
-  if (!Array.isArray(codes)) {
-    t.skip('statechart-kit does not export STRUCTURE_ISSUE_CODES yet')
-    return
-  }
+  assert.ok(Array.isArray(codes), 'statechart-kit 0.11 must export STRUCTURE_ISSUE_CODES')
 
   const source = fs.readFileSync(path.join(__dirname, '..', 'src', 'editor', 'validate-doc.ts'), 'utf8')
   const block = source.match(/const CODE_MAP[\s\S]*?=\s*\{([\s\S]*?)\n\}/)

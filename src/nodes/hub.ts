@@ -11,7 +11,7 @@ function toJsonData(value: unknown): unknown {
   }
 }
 
-/** Forward kit 0.11+ error location fields without emitting undefined keys. */
+/** Forward statechart-kit 0.11 error location fields without emitting undefined keys. */
 function errorLocationFields(location?: MachineErrorLocation): Record<string, unknown> {
   if (!location) return {}
   const fields: Record<string, unknown> = {}
@@ -113,12 +113,11 @@ export function registerHub(RED: any): void {
           sendError(error, undefined, event.location)
         } else if (event.type === 'done') {
           const current = machine.getCurrentState()
-          const states = event.states?.length ? event.states : current?.states ?? []
           node.send([null, null, {
             payload: 'done',
             done: true,
             machine: machine.name,
-            states,
+            states: [...event.states],
             vars: current?.vars ?? {},
             ts: Date.now(),
           }])

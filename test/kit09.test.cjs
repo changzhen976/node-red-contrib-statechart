@@ -45,3 +45,28 @@ test('kit 0.9 imports and serializes final donedata', async () => {
   assert.match(out, /<donedata>/)
   assert.match(out, /<param name="code" expr="200"\/>/)
 })
+
+test('kit 0.11 preserves transition ids in serialized SCXML', async () => {
+  const { scxmlToDoc, serializeToScxml } = await import('statechart-kit')
+  const { DOMParser } = await import('@xmldom/xmldom')
+  const doc = {
+    formatVersion: 1,
+    name: 'transition ids',
+    initial: 'u1',
+    datamodel: [],
+    states: [
+      { uid: 'u1', id: 'idle', label: 'idle', kind: 'atomic', parent: null, entryActions: [], exitActions: [] },
+      { uid: 'u2', id: 'done', label: 'done', kind: 'final', parent: null, entryActions: [], exitActions: [] },
+    ],
+    transitions: [
+      { id: 't-go', source: 'u1', target: 'u2', event: 'go', cond: '', actions: [] },
+    ],
+    layout: {},
+  }
+
+  const out = serializeToScxml(doc)
+  assert.match(out, /data-kit-transition-id="t-go"/)
+
+  const { doc: roundTrip } = scxmlToDoc(out, new DOMParser())
+  assert.equal(roundTrip.transitions[0].id, 't-go')
+})

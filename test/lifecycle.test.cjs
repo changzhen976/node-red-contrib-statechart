@@ -35,6 +35,28 @@ const DELAYED = `<?xml version="1.0" encoding="UTF-8"?>
 
 const BAD = '<scxml xmlns="http://www.w3.org/2005/07/scxml"><state id="a"></scxml>'
 
+const FINAL = `<?xml version="1.0" encoding="UTF-8"?>
+<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="a">
+  <state id="a"><transition event="go" target="done"/></state>
+  <final id="done"/>
+</scxml>`
+
+/** ProjectDoc so the host serializer writes data-kit-transition-id. */
+const SCRIPT_ERROR_DOC = JSON.stringify({
+  formatVersion: 1,
+  name: 'doc script error',
+  initial: 'u1',
+  datamodel: [],
+  states: [
+    { uid: 'u1', id: 'a', label: 'a', kind: 'atomic', parent: null, entryActions: [], exitActions: [] },
+    { uid: 'u2', id: 'b', label: 'b', kind: 'atomic', parent: null, entryActions: [], exitActions: [] },
+  ],
+  transitions: [
+    { id: 't-boom', source: 'u1', target: 'u2', event: 'go', cond: '', actions: ['throw new Error("boom")'] },
+  ],
+  layout: {},
+})
+
 function testModule(RED) {
   scxmlModule(RED)
   RED.nodes.registerType('lifecycle-sink', function (config) {
@@ -174,38 +196,40 @@ test('runtime script errors go to output 3 and later events still work', async (
   await waitFor(() => sink('s-state').some((msg) => msg.payload === 'a'), 'machine still responsive')
 })
 
-test('forwards kit error location fields on hub output 3', async () => {
-  await load(hubFlow(IDLE_RUNNING))
+test('forwards real kit error location fields on hub output 3', async () => {
+  await load(hubFlow('', { doc: SCRIPT_ERROR_DOC }))
   await waitFor(() => sink('s-state').length > 0, 'initial state')
-  const machine = helper.getNode('conf')
-  machine.bus.emit({
-    type: 'error',
-    error: new Error('located boom'),
-    location: {
-      stateId: 'idle',
-      transitionId: 't1',
-      slot: 'transition',
-      actionIndex: 2,
-      element: { localName: 'script', id: 'boom' },
-    },
-    ts: Date.now(),
-  })
-  await waitFor(() => sink('s-error').length > 0, 'located runtime error')
+  helper.getNode('hub').receive({ topic: 'go' })
+  await waitFor(() => sink('s-error').length > 0, 'runtime error')
+
   const message = sink('s-error').at(-1)
-  assert.equal(message.payload, 'located boom')
-  assert.equal(message.stateId, 'idle')
-  assert.equal(message.transitionId, 't1')
+  assert.ok(message.error instanceof Error)
+  assert.equal(message.stateId, 'a')
+  assert.equal(message.transitionId, 't-boom')
   assert.equal(message.slot, 'transition')
-  assert.equal(message.actionIndex, 2)
-  assert.deepEqual(message.element, { localName: 'script', id: 'boom' })
+  assert.equal(message.actionIndex, 0)
+  assert.deepEqual(message.element, { localName: 'script' })
+
+  await waitFor(() => sink('s-state').some((msg) => msg.payload === 'b'), 'transition target after error')
 })
 
-test('uses done.states from the machine event when available', async () => {
-  await load(hubFlow(IDLE_RUNNING))
+test('reports done.states from a real final state', async () => {
+  await load(hubFlow(FINAL))
   await waitFor(() => sink('s-state').length > 0, 'initial state')
-  helper.getNode('conf').bus.emit({ type: 'done', states: ['done'], ts: Date.now() })
+  helper.getNode('hub').receive({ topic: 'go' })
   await waitFor(() => sink('s-error').some((msg) => msg.done === true), 'done output')
-  assert.deepEqual(sink('s-error').at(-1).states, ['done'])
+
+  const done = sink('s-error').at(-1)
+  assert.equal(done.payload, 'done')
+  assert.deepEqual(done.states, ['done'])
+
+  const terminal = sink('s-state').filter((msg) => msg.payload === 'done')
+  assert.equal(terminal.length, 1, 'terminal state must be emitted exactly once')
+  assert.deepEqual(terminal[0].states, ['done'])
+  assert.ok(
+    sink('s-state').every((msg) => !(Array.isArray(msg.payload) && msg.payload.length === 0)),
+    'done must not be followed by an empty state payload',
+  )
 })
 
 test('rapid event and set commands keep arrival order', async () => {
