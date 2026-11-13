@@ -1,8 +1,8 @@
 # statechart-kit 0.13 适配计划
 
-> 状态：**P0 + P1 已执行（2026-11-13），测试服务器部署 `0.8.0-dev.2`；P2 仍为 backlog**
-> 宿主基线：`@changzhen976/node-red-contrib-statechart@0.8.0-dev.2`
-> 当前 kit：`0.11.0`
+> 状态：**P0 + P1 已执行并发布 `0.8.0`；P2 仍为 backlog**
+> 宿主基线：`@changzhen976/node-red-contrib-statechart@0.8.0`
+> 当前 kit：`0.13.0`
 > 目标 kit：`0.13.0`（npm `latest`，2026-11-13）
 > 编写日期：2026-11-13
 > 结论：**升级风险低，但不能只改版本号**。编译与现有运行时基本兼容；真正需要适配的是
