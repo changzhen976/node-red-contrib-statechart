@@ -24,6 +24,16 @@ Node-RED 全页编辑器的宿主页：用 `statechart-kit/vue` 的 `mountEditor
 - `postMessage` 前必须对 `ProjectDoc` 做 JSON 克隆：编辑器 store 的 `doc` 是 Vue
   reactive Proxy，直接发送会抛 `DataCloneError`，表现为保存/关闭无响应。
 
+## 语言
+
+- 页面读取 URL 的 `lang`（父窗打开时已带 `RED.i18n.lang()`）；`en*` 使用
+  `mountEditor({ locale: 'en' })` 和英文按钮文案，其他语言保持中文默认。
+- kit 0.11 只发布 `diagnostics/zh`；英文诊断由
+  [`diagnostics-en.mjs`](diagnostics-en.mjs) 注入，覆盖 kit 公开的 naming /
+  structure / validation / variable code 目录。
+- 关闭确认、保存失败提示和加载失败文案在 `main.ts` / `adapter.ts` 内按语言切换。
+- 左右栏启用 `features.resizablePanes`，可拖拽调宽、双击复位和折叠。
+
 ## 构建
 
 `npm run build` 中的 esbuild 步骤把 `editor-page/main.ts` 打成

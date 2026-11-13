@@ -10,6 +10,23 @@ import { sleep, startBrowser } from './browser-lib.mjs'
 
 const MACHINE_ID = process.env.STATECHART_MACHINE_ID || 'scxml-conf-traffic'
 
+/** Invalid on purpose: a final state with an outgoing transition. */
+const INVALID_DOC = {
+  formatVersion: 1,
+  name: 'Invalid EN test',
+  initial: 'u1',
+  datamodel: [],
+  states: [
+    { uid: 'u1', id: 'a', label: 'a', kind: 'atomic', parent: null, entryActions: [], exitActions: [] },
+    { uid: 'u2', id: 'done', label: 'done', kind: 'final', parent: null, entryActions: [], exitActions: [] },
+  ],
+  transitions: [
+    { id: 't1', source: 'u1', target: 'u2', event: 'go', cond: '', actions: [] },
+    { id: 't2', source: 'u2', target: 'u1', event: 'again', cond: '', actions: [] },
+  ],
+  layout: {},
+}
+
 const browser = await startBrowser()
 try {
   await browser.setEditorLanguage('zh-CN')
@@ -143,6 +160,61 @@ try {
 
   // Discard the unsaved parent config dialog; never deploys.
   await browser.switchWindow(parentHandle)
+  await browser.navigate(browser.base)
+
+  // English real-machine check: inject a structurally invalid doc into the
+  // config node, open the full editor in en-US and make sure the validation
+  // dialog uses the host's English diagnostics (not the kit zh formatter).
+  await browser.setEditorLanguage('en-US')
+  await browser.openConfig(MACHINE_ID)
+  const enParentHandle = (await browser.call('GET', '/window')).value
+  const injected = await browser.exec(`
+    const node = RED.nodes.node(arguments[0]);
+    if (!node) return 'NO_NODE';
+    node._scxmlEditor = node._scxmlEditor || {};
+    node._scxmlEditor.doc = arguments[1];
+    return node._scxmlEditor.doc.name;
+  `, [MACHINE_ID, INVALID_DOC])
+  assert.equal(injected, 'Invalid EN test')
+
+  await browser.exec(`document.querySelector('#node-config-input-open-full-editor').click(); return true`)
+  const enDeadline = Date.now() + 15000
+  let enChildHandle = ''
+  while (!enChildHandle && Date.now() < enDeadline) {
+    const open = await browser.handles()
+    enChildHandle = open.find((handle) => handle !== enParentHandle) || ''
+    if (!enChildHandle) await sleep(200)
+  }
+  assert.ok(enChildHandle, 'English editor window did not open')
+
+  await browser.switchWindow(enChildHandle)
+  await browser.waitForSelector('.sce-root', 25000)
+  const validate = await browser.exec(`
+    const button = [...document.querySelectorAll('button')].find((b) => (b.textContent || '').trim() === 'Validate');
+    if (!button) return 'NO_BUTTON';
+    button.click();
+    return 'CLICKED';
+  `)
+  assert.equal(validate, 'CLICKED', 'English Validate button missing')
+
+  const dialog = await browser.waitFor(
+    `const el = document.querySelector('.sce-dialog'); return el ? (el.innerText || '') : null`,
+    'English validation dialog',
+    8000,
+  )
+  // kit 0.11 still hardcodes Chinese in a few chrome bits (kind badges, the
+  // dialog's 定位 button); assert the diagnostic text itself is English.
+  assert.match(dialog, /Validation failed/)
+  assert.match(dialog, /Final state "done" cannot have 1 outgoing transition\(s\)/)
+  assert.doesNotMatch(dialog, /终态|不能有/)
+  console.log(JSON.stringify({
+    ok: true,
+    englishValidation: true,
+    dialog: dialog.slice(0, 300),
+  }, null, 2))
+
+  await browser.exec('window.close(); return true')
+  await browser.switchWindow(enParentHandle)
   await browser.navigate(browser.base)
 } finally {
   await browser.close()

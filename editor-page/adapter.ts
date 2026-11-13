@@ -101,7 +101,7 @@ function closeWindow (): void {
   }, 300)
 }
 
-export function createNodeRedAdapter (): EditorAdapter {
+export function createNodeRedAdapter (english = false): EditorAdapter {
   return {
     load: () => {
       if (!window.opener || window.opener.closed) {
@@ -119,11 +119,15 @@ export function createNodeRedAdapter (): EditorAdapter {
     },
     exportScxml: (xml, doc) => download(xml, doc),
     exit: (doc) => {
-      if (dirty && !window.confirm('状态机有未保存的修改，确定保存并关闭？')) return
+      if (dirty && !window.confirm(english
+        ? 'This state chart has unsaved changes. Save and close?'
+        : '状态机有未保存的修改，确定保存并关闭？')) return
       void (async () => {
         if (dirty) {
           if (!(await saveToNodeRed(doc))) {
-            window.alert('保存到 Node-RED 失败，未关闭页面。')
+            window.alert(english
+              ? 'Failed to save to Node-RED. The page will stay open.'
+              : '保存到 Node-RED 失败，未关闭页面。')
             return
           }
         }
