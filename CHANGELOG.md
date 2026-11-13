@@ -1,11 +1,23 @@
 # Changelog
 
-## 0.7.0 — 未发布（测试服务器验证通过）
+## 0.7.0 — 2026-11-13
 
-稳定性与测试补全版本：不新增节点，不改变 `ProjectDoc`、SCXML 输出或消息字段。
+稳定性与测试补全版本：不新增节点，不改变 `ProjectDoc`；内置 `statechart-kit`
+从 0.10.0 升级到 0.11.0，SCXML 序列化新增 `data-kit-transition-id` 属性。
 
-2026-11-12 已部署 `0.7.0-dev.0`（gitHead `73ff4fa`）到测试服务器；浏览器、服务端
-与级联回归全部通过，等待使用一段时间后再打 tag / 发布。
+2026-11-12 的 `0.7.0-dev.0` 与 2026-11-13 的 staging 构建均已在测试服务器验证；
+托盘编辑器、独立编辑器（中文 / en-US）、服务端 E2E 与级联 14/14 通过。
+
+### Changed
+
+- 内置 `statechart-kit` 从 0.10.0 升级到 0.11.0：`RunnerDoneEvent.states`、
+  运行时错误定位字段、公开诊断 code 目录，以及编辑器的 `locale: 'en'` /
+  `diagnostics` 注入能力。
+- 删除宿主的 kit 0.10 兼容回退：`done` 直接使用 `event.states`，不再保存最后
+  `fired` 目标；删除 `done` 后的空 `active` 过滤。宿主现在要求 kit 0.11.0。
+- 全页编辑器跟随 Node-RED 语言：`lang=en*` 时启用 kit `locale: 'en'`、英文
+  工具栏/按钮，并注入宿主英文诊断 formatter；中文默认行为不变。
+- 全页编辑器启用 `resizablePanes`：左右栏可拖拽调宽、双击复位、可折叠。
 
 ### Fixed
 
@@ -19,17 +31,17 @@
   transition action 之前执行，导致变量结果取决于时序。
 - 独立编辑器保存 ACK 超时现在返回失败，不再静默当作保存成功；`exit` 会保留
   页面并提示，避免丢失修改。
-- `statechart-hub` 输出 3 前向兼容 kit 0.11 的可选错误定位字段（`stateId` /
-  `transitionId` / `slot` / `actionIndex` / `element`）；kit 0.10 下不产生这些字段。
-- `done` 输出优先使用 kit 0.11 的 `done.states`，并避免终态被重复发布；
-  kit 0.10 继续使用最后一次 `fired` 目标作为回退。
+- `statechart-hub` 输出 3 转发 kit 0.11 的可选错误定位字段（`stateId` /
+  `transitionId` / `slot` / `actionIndex` / `element`），可定位出错状态、转移和动作。
+- `done` 输出使用 kit 0.11 的 `done.states`，并避免终态被重复发布；不再依赖
+  最后一次 `fired` 目标。
 - tray 表单补上 `structure.state.donedata-param-duplicate` 的中英文映射。
 
 ### Tests
 
 - 新增 `test/lifecycle.test.cjs`（11 个用例）：Hub 配置错误出口、冲突接管、
-  unknown variable、非法 ProjectDoc JSON、运行时脚本错误、错误定位字段转发、
-  done.states、事件/赋值顺序、reset 恢复与延时取消、read 初始状态。
+  unknown variable、非法 ProjectDoc JSON、运行时脚本错误、真实错误定位字段、
+  真实终态 done.states、事件/赋值顺序、reset 恢复与延时取消、read 初始状态。
 - 新增 `test/browser-lib.mjs`：所有 WebDriver 命令带独立超时；不再把 Node-RED
   的 Promise 返回给 WebDriver；重写 `test/browser-smoke.mjs` 与
   `test/browser-p4.mjs`，覆盖托盘编辑器、监控侧栏、action 对话框、独立编辑器
@@ -43,18 +55,28 @@
 - `browser-p4` 增加保存 ACK 超时回归：阻断 `postMessage` 后保存必须失败、父节点
   `doc` 不变且编辑器保持 dirty；恢复后再保存成功。
 - `test:cascade` 增加预检与导入提示，缺失级联 tab 时给出可执行指引。
-- 新增 `test/kit-compat.test.cjs`：kit 0.11 起校验 `STRUCTURE_ISSUE_CODES`
-  与宿主 `CODE_MAP` / 中英文文案的覆盖；在 0.10 下自动跳过。
-- `kit09` 测试允许 kit 0.11 序列化器新增的 `data-kit-transition-id` 属性。
+- 新增 `test/kit-compat.test.cjs`：校验 kit 0.11 `STRUCTURE_ISSUE_CODES`
+  与宿主 `CODE_MAP` / 中英文文案的覆盖。
+- `kit09` 测试断言 kit 0.11 序列化器写出的 `data-kit-transition-id`，并验证
+  SCXML round-trip 保留转移 id。
+- 新增 `test/diagnostics-en.test.cjs`：校验英文诊断覆盖 kit 0.11 公开的 naming /
+  structure / validation / variable code 目录，并检查参数插值。
+- `browser-p4` 增加 en-US 真实机器校验回归：加载含非法 final 出边的文档，
+  断言校验弹窗显示英文 `Final state ...` 诊断，而不是 kit 的中文文案。
 - `npm run verify:all` 增加 typecheck，并可用 `STATECHART_BROWSER=1` /
   `STATECHART_E2E=1` 纳入浏览器与服务端 E2E。
 
 ### Compatibility
 
-- 宿主消息层已前向兼容 kit 0.11 的 `RunnerDoneEvent.states` 和可选错误定位字段；
-  安装 kit 0.10 时行为不变。
-- kit 0.11 预发布预演发现：`errorElementInfo()` 依赖 `Element.closest`，在 Node 侧
-  `@xmldom/xmldom` 下会抛错并吞掉运行时 `error` 事件；升级依赖前需先在 kit 修复。
+- `ProjectDoc` 结构不变；SCXML 语义不变，仅序列化器为转移写出
+  `data-kit-transition-id`，导入器会保留该属性。
+- 宿主要求 `statechart-kit >= 0.11.0`；0.10 的 done/error 回退已删除。
+- kit 0.11 的错误定位只使用 DOM Level 1 API，`@xmldom/xmldom` 下可正常产生
+  `stateId` / `slot` / `actionIndex` 等字段；0.10 预演时的 `Element.closest`
+  阻塞已在上游修复。
+- 英文编辑器目前覆盖工具栏、结构/属性标签、按钮和校验诊断；kit 0.11.0 仍把
+  kind 徽标、画布缩放提示、action 编辑器、校验弹窗“定位”等少量深层文案硬编码为
+  中文，待 kit 后续版本修复。中文界面不受影响。
 
 ## 0.6.1 — 2026-11-12
 

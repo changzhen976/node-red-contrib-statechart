@@ -2,12 +2,16 @@
 
 > 状态：M0–M5 完成；0.6.1 文档发布；0.7.0 稳定性轮已在测试服务器验证（2026-11-12，未打 tag，等用户试用）
 > 目标版本：`0.7.0`
-> 核心依赖：`statechart-kit@0.9.0`（2026-11-11 升级；重构基线为 0.8.0）
+> 核心依赖：`statechart-kit@0.11.0`（2026-11-13 升级；0.10 → 0.11）
 > 关联文档：[完整编辑器设计](p4-standalone-editor.md)（历史方案）、[资源消耗评估](resource-profile.md)、[Kit 需求记录](kit-requirements.md)
 > 适用范围：运行时、编辑器、构建与发布
 
+> 0.11.0 适配：KIT-006（done.states）、KIT-007（错误定位）、KIT-008/009/010
+> （诊断注入、英文 preset、code 目录）已由 `statechart-kit@0.11.0` 提供；宿主升级依赖、
+> 删除 0.10 回退并补充真实运行时回归。KIT-002/KIT-005 仍属上游 `@tinyactors/scxmljs`。
+>
 > 0.9.0 适配：KIT-001（左栏滚动，0.8.1）与 KIT-003/KIT-004（doneData、targetless）
-> 已随 `statechart-kit@0.9.0` 解决；KIT-002/KIT-005 仍属上游 `@tinyactors/scxmljs`。
+> 已随 `statechart-kit@0.9.0` 解决。
 
 ## 1. 背景与目标
 
@@ -166,13 +170,16 @@ Build
 
 - 新建 `editor-page/`：`index.html`、`main.ts`、`adapter.ts`；
 - `mountEditor` + `features`（`examples:false`、`deploy:false`，保存走 `exportProject`）；
+- 跟随 URL `lang`：`en*` 使用 kit `locale: 'en'` + 宿主英文诊断
+  （`diagnostics-en.mjs`）；中文保持默认；左右栏启用 `resizablePanes`；
 - `EditorAdapter`：
   - `load` 等待 `scxml:load`；不提供自动 `save`；显式保存/退出走 `postMessage('scxml:save')`；
   - `exit` 保存后关闭；`readOnly` 可接草稿锁；
 - esbuild 构建到 `dist/editor/`（与 monitor 同一 splitting 策略）；kit/vue 与 `<scxml-view>` 内联；模拟固定 `engine: 'trusted'`，避免在管理页拉取 QuickJS WASM；
 - 路由 `/statechart/editor/` 指向新构建；token 与静态资产规则保持。
 
-**验收**：打开→编辑→保存回写→Update/Deploy；每台机器独立打开；无 donor 产物。
+**验收**：打开→编辑→保存回写→Update/Deploy；每台机器独立打开；中英文界面与诊断跟随
+Node-RED 语言；无 donor 产物。
 
 ### W6 tray 与 i18n（2–3 天，含决策）
 
@@ -370,6 +377,9 @@ STATECHART_BROWSER=1 GECKODRIVER=... NODERED_URL=http://localhost:1880/ npm run 
 
 ### 运行时修复
 
+- 内置 `statechart-kit` 升级到 0.11.0；`done` 使用 `RunnerDoneEvent.states`，
+  错误输出转发 `stateId` / `transitionId` / `slot` / `actionIndex` / `element`；
+- 删除 kit 0.10 的 `lastFiredTargets`、done 后空 `active` 过滤等兼容回退；
 - Hub 的配置错误（`noMachine` / `hubConflict`）统一走输出 3，与运行时错误同出口；
 - 冲突 Hub 在占用者释放后可在下一次输入时重新 claim；
 - `sendEvent` / `setVars` 等待 `SessionRunner.settled()`，保证「事件 → 赋值」顺序；
@@ -377,7 +387,8 @@ STATECHART_BROWSER=1 GECKODRIVER=... NODERED_URL=http://localhost:1880/ npm run 
 
 ### 测试补全
 
-- `test/lifecycle.test.cjs`：11 个生命周期/错误路径用例；
+- `test/lifecycle.test.cjs`：11 个生命周期/错误路径用例，含真实运行时错误定位与
+  真实终态 `done.states`；
 - `test/browser-lib.mjs` + 重写的 `browser-smoke` / `browser-p4`：每个 WebDriver
   命令独立超时，覆盖托盘编辑器、监控侧栏、action 对话框、独立编辑器保存/关闭；
 - `test/e2e-server.mjs`：Admin API 临时部署 Hub flow，走真实 HTTP 验证

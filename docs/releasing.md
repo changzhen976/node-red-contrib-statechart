@@ -1,7 +1,8 @@
 # 发布流程
 
-> 适用于 `@changzhen976/node-red-contrib-statechart`。当前开发版本 `0.7.0-dev.0`，
-> npm `latest` 为 `0.6.1`；未打 `v0.7.0` tag。
+> 适用于 `@changzhen976/node-red-contrib-statechart`。当前版本 `0.7.0`，
+> 已打本地 tag `v0.7.0`；npm `latest` 仍为 `0.6.1`，发布由维护者手动完成（2FA）。
+> 本次按维护者要求先打 tag，发布失败时需要移动或删除该 tag。
 
 ## 版本策略
 

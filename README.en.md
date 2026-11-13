@@ -172,7 +172,7 @@ The `statechart-machine` dialog has three tables:
 
 It supports hierarchy, parallel states, history, guards, delayed transitions and structured actions. The advanced section accepts raw SCXML or ProjectDoc JSON.
 
-**Open full editor** launches the `statechart-kit` full-screen Vue editor. Save back to Node-RED, then click Update/Deploy.
+**Open full editor** launches the `statechart-kit` full-screen Vue editor. Save back to Node-RED, then click Update/Deploy. The editor follows the Node-RED UI language (English or Chinese, including diagnostics), and its side panes can be resized or collapsed.
 
 ## Monitoring
 
@@ -202,7 +202,7 @@ See [`examples/README.md`](examples/README.md).
 | Node-RED | 5.x (test server 5.0.0, dev 5.0.9) |
 | Node.js | ≥ 22.9 (24 recommended) |
 | Engine | `@tinyactors/scxmljs@0.2.0-dev.0` |
-| Editor | `statechart-kit/vue` 0.10.0 (bundled at build time) |
+| Editor | `statechart-kit/vue` 0.11.0 (bundled at build time) |
 | XML | `@xmldom/xmldom` |
 
 Known limits:
@@ -210,6 +210,7 @@ Known limits:
 - One Hub per state chart;
 - Cross-tab machines need `link` nodes or must stay in one tab;
 - `<scxml-view>` has upstream layout limits for history directly under parallel;
+- The English UI covers the toolbar, structure/property labels, buttons and validation diagnostics; a few deep controls are still hardcoded in Chinese by kit 0.11;
 - Guarded transitions between the same states may still overlap in complex charts.
 
 ## Development

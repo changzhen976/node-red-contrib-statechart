@@ -33,6 +33,9 @@ Node-RED 全页编辑器的宿主页：用 `statechart-kit/vue` 的 `mountEditor
   structure / validation / variable code 目录。
 - 关闭确认、保存失败提示和加载失败文案在 `main.ts` / `adapter.ts` 内按语言切换。
 - 左右栏启用 `features.resizablePanes`，可拖拽调宽、双击复位和折叠。
+- 已知限制：kit 0.11.0 仍把 kind 徽标、画布缩放提示、action 编辑器和校验弹窗
+  “定位”等少量深层文案硬编码为中文；英文模式目前覆盖工具栏、结构/属性标签、
+  按钮和校验诊断。
 
 ## 构建
 

@@ -172,7 +172,7 @@ Key:     cellState
 
 支持层级状态、并行状态、历史、守卫、延时转移和结构化 action 编辑；高级区可编辑 raw SCXML 或 ProjectDoc JSON。
 
-**打开完整编辑器** 会打开 `statechart-kit` 的全屏 Vue 编辑器；保存回 Node-RED 后点击 Update/Deploy。
+**打开完整编辑器** 会打开 `statechart-kit` 的全屏 Vue 编辑器；保存回 Node-RED 后点击 Update/Deploy。编辑器跟随 Node-RED 界面语言切换中英文（含诊断文案），左右栏支持拖拽调宽和折叠。
 
 ## 监控
 
@@ -202,7 +202,7 @@ CASCADE_BASE=http://localhost:1880 npm run test:cascade
 | Node-RED | 5.x（测试服务器 5.0.0，开发环境 5.0.9） |
 | Node.js | ≥ 22.9（推荐 24） |
 | 引擎 | `@tinyactors/scxmljs@0.2.0-dev.0` |
-| 编辑器 | `statechart-kit/vue` 0.10.0（构建期内联） |
+| 编辑器 | `statechart-kit/vue` 0.11.0（构建期内联） |
 | XML | `@xmldom/xmldom` |
 
 已知限制：
@@ -210,6 +210,7 @@ CASCADE_BASE=http://localhost:1880 npm run test:cascade
 - 一台状态机只能由一个 Hub 占用；
 - 跨 tab 的状态机需要 `link` 节点，或保持在同一 tab；
 - `<scxml-view>` 对 parallel 下直接挂 history 的布局仍有上游限制；
+- 英文界面覆盖工具栏、结构/属性标签、按钮和校验诊断；kit 0.11 仍把少量深层控件文案硬编码为中文；
 - 复杂图中同源同目标的条件转移仍可能有近重合线条。
 
 ## 开发
