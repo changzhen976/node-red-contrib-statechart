@@ -94,6 +94,7 @@
   .scxml-action-fields label { font-size: 11px; color: #475569; }
   .scxml-action-fields input, .scxml-action-fields textarea { width: 100%; box-sizing: border-box; font-size: 11px; }
   .scxml-action-fields .wide { grid-column: 1 / -1; }
+  .scxml-action-hint { grid-column: 1 / -1; font-size: 11px; color: #92400e; background: #fffbeb; border: 1px solid #fde68a; border-radius: 3px; padding: 4px 6px; }
   .scxml-action-footer { display: flex; gap: 8px; padding: 8px 12px; border-top: 1px solid #e2e8f0; align-items: center; }
   .scxml-action-footer .scxml-action-spacer { flex: 1; }
   .scxml-advanced { margin-top: 8px; }
@@ -554,19 +555,23 @@
     return Object.keys(names).sort();
   }
 
-  function visibilityOptions(selected) {
+  function visibilityOptions(selected, canInternal) {
+    var internalAttrs = canInternal === false
+      ? ' disabled title="' + esc(t('message.internalOnlyConflict')) + '"'
+      : '';
     return '<option value="both"' + (selected === 'both' ? ' selected' : '') + '>' +
         esc(t('form.visibilityBoth')) + '</option>' +
-      '<option value="internal"' + (selected === 'internal' ? ' selected' : '') + '>' +
+      '<option value="internal"' + (selected === 'internal' ? ' selected' : '') + internalAttrs + '>' +
         esc(t('form.visibilityInternal')) + '</option>';
   }
 
   function renderEvents(doc) {
     var rows = collectEventNames(doc).map(function (name) {
       var visibility = core().isInternalOnlyEvent(doc, name) ? 'internal' : 'both';
+      var analysis = core().analyzeInternalOnly(doc, name);
       return '<tr data-event="' + esc(name) + '">' +
         '<td>' + esc(name) + '</td>' +
-        '<td><select data-field="visibility">' + visibilityOptions(visibility) + '</select></td>' +
+        '<td><select data-field="visibility">' + visibilityOptions(visibility, analysis.canConfirm) + '</select></td>' +
         '</tr>';
     }).join('');
     return rows || '<tr><td colspan="2" style="color:#888;">' + esc(t('message.noEvents')) + '</td></tr>';
@@ -688,6 +693,9 @@
       fields += actionField('form.actionId', 'id', action.id);
       fields += actionField('form.actionDataExpr', 'dataExpr', action.dataExpr);
       fields += actionField('form.actionData', 'data', action.data === undefined ? '' : JSON.stringify(action.data), true);
+      if (String(action.delay || '').trim()) {
+        fields += '<div class="scxml-action-hint">' + esc(t('message.legacySendDelay')) + '</div>';
+      }
     } else if (action.type === 'raise') {
       fields += actionField('form.actionEvent', 'event', action.event);
     } else if (action.type === 'cancel') {
@@ -927,6 +935,11 @@
     }
   }
 
+  function lockedInternalOnlyFor(node) {
+    var updateEvent = String($('#node-config-input-updateEvent').val() || (node && node.updateEvent) || 'update').trim();
+    return updateEvent ? [updateEvent] : [];
+  }
+
   function sendEditorLoad(session) {
     if (!session || !session.node) return;
     var doc = session.dialogDoc || docFromNode(session.node);
@@ -941,6 +954,7 @@
       doc: JSON.parse(JSON.stringify(doc)),
       machines: machines,
       lang: editorLang(),
+      lockedInternalOnly: lockedInternalOnlyFor(session.node),
     });
     session.loaded = true;
   }

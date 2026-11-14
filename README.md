@@ -222,7 +222,7 @@ CASCADE_BASE=http://localhost:1880 npm run test:cascade
 
 ```sh
 npm install --include=dev
-npm test                 # 构建 + 71 个运行时/生命周期/契约用例
+npm test                 # 构建 + 76 个运行时/生命周期/契约用例
 npm run typecheck
 npm run verify:all       # typecheck、Node 22.9、kit 与打包检查
 ```

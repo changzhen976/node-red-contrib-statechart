@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- 托盘「事件可见性」增加生产者预检：存在外部生产者或混合监听时禁用「仅内部」，
+  并在 option title 中提示先修复校验错误。
+- 完整编辑器通过 `scxml:load` 接收宿主锁定事件（自动更新事件），
+  `EditorAdapter.lockedInternalOnly()` 禁用「仅内部」复选框。
+- 托盘旧 `send delay` 动作显示兼容提示，引导改用 `delayMs` 转移 + raise 中继。
+- `statechart-hub` 的 `sendEvent` 改用 `SessionRunner.trySend()`，对
+  `session-not-running` / `session-done` / `send-failed` 给出明确错误。
+- `examples/demo-suite.json` 增加 **07 Raise & Internal Events** tab，并补充
+  [0.15 内部事件截图](docs/images/kit-0.15-internal-events.png)。
+
 ## 0.9.1 — 2026-11-14
 
 补丁版本：内置 `statechart-kit` 从 0.15.0 升级到 0.15.1，修复「仅内部」复选框在

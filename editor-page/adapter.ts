@@ -17,6 +17,7 @@ let resolveLoad: ((doc: ProjectDoc | null) => void) | null = null
 let resolveAck: ((ok: boolean) => void) | null = null
 let dirty = false
 let hostReady = false
+const lockedEvents = new Set<string>()
 let loadTimedOut = false
 let loadTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -72,6 +73,12 @@ window.addEventListener('message', (event) => {
   if (!data || typeof data !== 'object') return
   if (data.type === 'scxml:load') {
     if (typeof data.id === 'string' && data.id) machineId = data.id
+    lockedEvents.clear()
+    if (Array.isArray(data.lockedInternalOnly)) {
+      for (const name of data.lockedInternalOnly) {
+        if (typeof name === 'string' && name.trim()) lockedEvents.add(name.trim())
+      }
+    }
     const doc = (data.doc as ProjectDoc | null | undefined) ?? null
     if (doc) hostReady = true
     if (loadTimer) {
@@ -146,6 +153,9 @@ export function createNodeRedAdapter (english = false): EditorAdapter {
       }, LOAD_TIMEOUT_MS)
       return loaded
     },
+    // Node-RED sends the configured automatic update event; it cannot be
+    // internal-only because hub set commands always emit an external event.
+    lockedInternalOnly: (name: string) => lockedEvents.has(name),
     // No autosave: the kit only marks dirty until the explicit save button posts
     // scxml:save. This keeps Node-RED flows from becoming dirty on every edit.
     exportProject: async (doc) => {

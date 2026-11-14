@@ -177,7 +177,9 @@
     "internalEventsNotice": "该文档包含内部事件（__events__）。可在下方「事件可见性」切换；raise 动作请用完整编辑器编辑。",
     "unsupportedAction": "不支持的动作类型 “__type__”；请用完整编辑器编辑。",
     "noEvents": "还没有事件。",
-    "internalDelayUnsupported": "内部发送不能带 delay；请改用 delayMs 转移或 raise 中继。"
+    "internalDelayUnsupported": "内部发送不能带 delay；请改用 delayMs 转移或 raise 中继。",
+    "legacySendDelay": "旧写法：send delay 仍兼容，但 0.15 推荐改用「无目标 delayMs 转移 + raise 中继」。",
+    "internalOnlyConflict": "该事件存在外部生产者或混合监听，不能标记为仅内部；请先修复校验错误。"
   },
   "validate": {
     "noStates": "至少需要一个状态。",
@@ -247,6 +249,9 @@
     "runtime": "__kind__：__message__",
     "hubConflict": "状态机已被 Hub「__name__」占用",
     "noState": "没有可读取的状态或变量",
-    "emptyContextKey": "上下文 key 为空"
+    "emptyContextKey": "上下文 key 为空",
+    "sendNotRunning": "状态机未运行，无法发送事件 “__event__”",
+    "sendDone": "状态机已到终态，无法发送事件 “__event__”",
+    "sendFailed": "发送事件 “__event__” 失败：__detail__"
   }
 }

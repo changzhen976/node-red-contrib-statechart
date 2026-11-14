@@ -148,3 +148,14 @@ test('sidebar editor ready creates a session for the selected machine', () => {
   assert.equal(calls.loads.length, 1)
   assert.equal(calls.notify.length, 0)
 })
+
+test('host locks the configured update event in the full editor', () => {
+  const fn = extractFunction('lockedInternalOnlyFor')
+  const run = (input, node) => vm.runInNewContext(
+    `${fn}; lockedInternalOnlyFor(node)`,
+    { $: () => ({ val: () => input }), node },
+  )
+  assert.equal(run('', { updateEvent: 'update' }).join(','), 'update')
+  assert.equal(run('refreshed', { updateEvent: 'update' }).join(','), 'refreshed')
+  assert.equal(run('', {}).join(','), 'update')
+})

@@ -223,7 +223,7 @@ Known limits:
 
 ```sh
 npm install --include=dev
-npm test                 # build + 71 runtime/lifecycle/contract cases
+npm test                 # build + 76 runtime/lifecycle/contract cases
 npm run typecheck
 npm run verify:all       # typecheck, Node 22.9, kit and package checks
 ```

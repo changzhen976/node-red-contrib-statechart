@@ -8,7 +8,7 @@
 4. 点 **部署**；
 5. 打开右侧 **状态机** 侧栏，或用 `http://<node-red>:1880/statechart/monitor`。
 
-`demo-suite.json` 会新增 6 个 tab；`traffic-light.json` 是最小示例，可单独导入；`cascade-test.json` 会新增 1 个三机级联测试 tab；`hub-demo.json` 新增 1 个 Hub 低代码演示 tab；`internal-events.json` 新增 1 个 kit 0.13 内部事件演示 tab。
+`demo-suite.json` 会新增 7 个 tab；`traffic-light.json` 是最小示例，可单独导入；`cascade-test.json` 会新增 1 个三机级联测试 tab；`hub-demo.json` 新增 1 个 Hub 低代码演示 tab；`internal-events.json` 新增 1 个 kit 0.13 内部事件演示 tab。
 
 ## Demo Suite 内容
 
@@ -21,6 +21,7 @@
 | 04 Delay & Sends | Door with Delay | `closed` | 1.2s/0.8s delay、`send id`、内部 send、event topic |
 | 05 Multi-Machine | Lamp / Fan | `off` / `low` | 多 config node、独立 session、同名 `toggle` 互不影响 |
 | 06 ProjectDoc & Persistence | Checkout (ProjectDoc) | `cart` | ProjectDoc JSON、GUI 三张表、final 状态、`persistVars`、reset |
+| 07 Raise & Internal Events | Internal Events Demo | `idle` | `raise`、`internalOnlyEvents`、外部同名事件被 guard 忽略、内部发送 |
 
 > Parallel Plant 的 `states` 会同时包含 `p`、`power`、`off`、`network`、`disconnected`；这是层级/并行状态的活动路径，不是 bug。
 > 04 的 `includeInternalSends` 已打开，因此输出 2 能看到延时 timer send；生产建议关闭。
@@ -129,6 +130,8 @@ GECKODRIVER=/path/to/geckodriver npm run test:live
 - `ping` 通过 `internalOnlyEvents` 标记为「仅内部」，序列化后生成
   `cond="_event.type === 'internal'"`，外部同名事件不会触发；
 - `raise` 不是 `<send>`，所以 Hub 输出 2 不会出现 `ping`。
+
+![kit 0.15 internal events](../docs/images/kit-0.15-internal-events.png)
 
 推荐操作：
 

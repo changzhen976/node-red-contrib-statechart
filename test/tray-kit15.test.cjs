@@ -45,6 +45,7 @@ function run (body, extra = {}) {
       childrenOf: (d, uid) => d.states.filter((s) => s.parent === uid),
       isInternalOnlyEvent: (d, name) => (d.internalOnlyEvents || []).includes(name),
       internalOnlyNames: (d) => d.internalOnlyEvents || [],
+      analyzeInternalOnly: (d) => ({ canConfirm: d.__canConfirm !== false }),
     }),
     ...extra,
   }
@@ -147,4 +148,19 @@ test('tray send action preserves an internal target', () => {
   assert.match(row, /data-afield="target"/)
   assert.match(row, /value="#_internal" selected/)
   assert.match(row, /form\.actionSendTarget/)
+})
+
+test('tray marks legacy send delay as a hint', () => {
+  const row = run('return actionRow({ type: "send", event: "ping", delay: "1s" }, 0)')
+  assert.match(row, /scxml-action-hint/)
+  assert.match(row, /message\.legacySendDelay/)
+})
+
+test('tray disables internal-only when the producer preflight fails', () => {
+  const allowed = run('return visibilityOptions("both", true)')
+  assert.doesNotMatch(allowed, /disabled/)
+  const denied = run('return visibilityOptions("both", false)')
+  assert.match(denied, /value="internal" disabled/)
+  const rows = run('return renderEvents(doc)', { doc: { transitions: [{ event: 'ping' }], __canConfirm: false } })
+  assert.match(rows, /value="internal" disabled/)
 })

@@ -17,6 +17,13 @@ test('demo suite SCXML sources compile', async () => {
   }
 })
 
+test('demo suite includes the 0.15 internal-events tab', () => {
+  assert.ok(flows.some((node) => node.type === 'tab' && node.label === '07 Raise & Internal Events'))
+  const machine = flows.find((node) => node.type === 'statechart-machine' && node.name === 'Internal Events Demo')
+  assert.ok(machine)
+  assert.ok(JSON.parse(machine.doc).internalOnlyEvents.includes('ping'))
+})
+
 test('demo suite ProjectDoc example has a valid shape', () => {
   const machine = flows.find((node) => node.type === 'statechart-machine' && node.doc)
   assert.ok(machine, 'expected a ProjectDoc machine')

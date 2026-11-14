@@ -351,7 +351,18 @@ export function registerMachine(RED: any): void {
       return enqueue(async () => {
         const active = await node.ensureStarted()
         currentEvent = name
-        active.send(name, data, null)
+        const sent = active.trySend(name, data, null)
+        if (!sent.ok) {
+          const key = sent.code === 'session-not-running'
+            ? 'errors.sendNotRunning'
+            : sent.code === 'session-done'
+              ? 'errors.sendDone'
+              : 'errors.sendFailed'
+          throw new Error(runtimeT(RED, key, {
+            event: name,
+            detail: sent.params?.detail ?? '',
+          }))
+        }
         // The engine queues external events; wait for that macrostep so a
         // following set/read command observes the post-transition state.
         await active.settled()

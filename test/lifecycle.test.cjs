@@ -262,6 +262,18 @@ test('reports done.states from a real final state', async () => {
   )
 })
 
+test('sending after a top-level done reports a session-done error', async () => {
+  await load(hubFlow(FINAL))
+  await waitFor(() => sink('s-state').length > 0, 'initial state')
+  helper.getNode('hub').receive({ topic: 'go' })
+  await waitFor(() => sink('s-error').some((msg) => msg.done === true), 'done output')
+  helper.getNode('hub').receive({ topic: 'again' })
+  await waitFor(() => sink('s-error').some((msg) => msg.error instanceof Error), 'send-after-done error')
+  const error = sink('s-error').find((msg) => msg.error instanceof Error)?.error
+  assert.ok(error instanceof Error)
+  assert.match(String(error.message), /sendDone|终态|done/i)
+})
+
 test('rapid event and set commands keep arrival order', async () => {
   await load(hubFlow(COUNTING, { hub: { emitInitial: false } }))
   const hub = helper.getNode('hub')

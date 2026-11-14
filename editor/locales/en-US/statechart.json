@@ -177,7 +177,9 @@
     "internalEventsNotice": "This document contains internal events (__events__). Use the Event visibility table below to change them; edit raise actions in the full editor.",
     "unsupportedAction": "Unsupported action type “__type__”; use the full editor.",
     "noEvents": "No events yet.",
-    "internalDelayUnsupported": "Internal send cannot use delay; use a delayMs transition or a raise relay."
+    "internalDelayUnsupported": "Internal send cannot use delay; use a delayMs transition or a raise relay.",
+    "legacySendDelay": "Legacy syntax: send delay is still parsed, but 0.15 recommends a targetless delayMs transition plus a raise relay.",
+    "internalOnlyConflict": "This event has an external producer or a mixed listener and cannot be internal-only; fix the validation errors first."
   },
   "validate": {
     "noStates": "Add at least one state.",
@@ -247,6 +249,9 @@
     "runtime": "__kind__: __message__",
     "hubConflict": "state chart already hosted by hub \"__name__\"",
     "noState": "no state or variables available to read",
-    "emptyContextKey": "context key is empty"
+    "emptyContextKey": "context key is empty",
+    "sendNotRunning": "The state machine is not running; cannot send “__event__”.",
+    "sendDone": "The state machine is done; cannot send “__event__”.",
+    "sendFailed": "Failed to send “__event__”: __detail__"
   }
 }
