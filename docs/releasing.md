@@ -1,7 +1,7 @@
 # 发布流程
 
-> 适用于 `@changzhen976/node-red-contrib-statechart`。当前版本 `0.9.0`，
-> npm `latest` 为 `0.9.0`。
+> 适用于 `@changzhen976/node-red-contrib-statechart`。当前版本 `0.9.1`，
+> npm `latest` 为 `0.9.1`。
 >
 > **自动发布已配置**：正常发布走 [GitHub Actions 自动发布](github-actions-release.md)，
 > 推送 `v*` tag 触发 npm publish。本文保留为手动兜底流程。

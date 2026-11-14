@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.9.1 — 2026-11-14
+
+补丁版本：内置 `statechart-kit` 从 0.15.0 升级到 0.15.1，修复「仅内部」复选框在
+弹窗取消/只读时的回弹；宿主未使用新增的可选 `lockedInternalOnly` 钩子。
+
+### Changed
+
+- 内置 `statechart-kit` 从 0.15.0 升级到 0.15.1：事件面板「仅内部」复选框在取消、
+  只读或宿主锁定时会同步回真实值；新增可选 `EditorAdapter.lockedInternalOnly()`。
+- `ProjectDoc`、诊断码和序列化格式不变；0.9.0 的 `internalOnlyEvents` 迁移逻辑不变。
+
 ## 0.9.0 — 2026-11-14
 
 内部事件模型迁移版本：内置 `statechart-kit` 从 0.13.1 升级到 0.15.0，

@@ -10,7 +10,7 @@ import { createRequire } from 'node:module'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const EXPECTED_VERSION = '0.15.0'
+const EXPECTED_VERSION = '0.15.1'
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const require = createRequire(import.meta.url)
 const failures = []

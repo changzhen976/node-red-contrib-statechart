@@ -123,7 +123,7 @@ GECKODRIVER=/path/to/geckodriver npm run test:live
 ## Kit 0.13 Internal Events（raise / internal-only）
 
 `internal-events.json` 新增一个 **07 Raise & Internal Events** tab，专门展示
-`statechart-kit@0.15.0` 的新能力：
+`statechart-kit@0.15.1` 的新能力：
 
 - `arm` 转移执行 `raise ping`，在同一个宏步内产生图内内部事件；
 - `ping` 通过 `internalOnlyEvents` 标记为「仅内部」，序列化后生成

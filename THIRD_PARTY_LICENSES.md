@@ -66,7 +66,7 @@ SOFTWARE.
 
 Document model, SCXML serializer/importer, structure validation, `SessionRunner`
 and the Vue editor, bundled into `dist/statechart.js` and `dist/editor/` at
-version 0.15.0.
+version 0.15.1.
 
 ```
 MIT License

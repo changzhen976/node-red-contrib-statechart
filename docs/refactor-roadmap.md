@@ -1,8 +1,8 @@
 # 重构路线：以 statechart-kit 为核心
 
-> 状态：M0–M5 完成；0.7.0 已发布；0.9.0 已发布（2026-11-14，含 kit 0.15.0、internalOnlyEvents 与内部发送）
+> 状态：M0–M5 完成；0.7.0 已发布；0.9.1 已发布（2026-11-14，含 kit 0.15.1、internalOnlyEvents 与内部发送）
 > 目标版本：`0.9.0`
-> 核心依赖：`statechart-kit@0.15.0`（2026-11-14 升级；0.13.1 → 0.15）
+> 核心依赖：`statechart-kit@0.15.1`（2026-11-14 升级；0.13.1 → 0.15）
 > 关联文档：[完整编辑器设计](p4-standalone-editor.md)（历史方案）、[资源消耗评估](resource-profile.md)、[Kit 需求记录](kit-requirements.md)
 > 适用范围：运行时、编辑器、构建与发布
 
