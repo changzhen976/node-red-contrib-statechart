@@ -1,8 +1,12 @@
 # statechart-kit / scxmljs 需求记录
 
 > 记录时间：2026-11-11  
-> 本仓库依赖：`statechart-kit@0.13.1`、`@tinyactors/scxmljs@0.2.0-dev.0`；测试服务器插件 `0.8.1` 已生效
+> 本仓库依赖：`statechart-kit@0.15.0`、`@tinyactors/scxmljs@0.2.0-dev.0`；测试服务器插件 `0.9.0` 已生效
 > 目的：把本轮测试中遇到、但**不应该在 flow 层反复绕过**的问题固定下来，供 kit / scxmljs 后续版本修复。
+>
+> 0.15.0 同步：`ProjectDoc.eventVisibility` 已迁移为 `internalOnlyEvents`；新增
+> `send target="#_internal"`、混合可见性 error、生产者冲突诊断；宿主托盘与运行时
+> 已同步。
 >
 > 0.13.0 同步：KIT-016（结构编辑维护 `initial` 不变量）已在 0.12.1/0.13.0 修复；
 > kit 0.13.0 还带来 `raise`、`eventVisibility` 与 internal-only guard。宿主已升级到

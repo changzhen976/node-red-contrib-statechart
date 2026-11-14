@@ -79,8 +79,16 @@ msg.topic   // eventTopic 展开后的 topic
 - 默认过滤 `sendid` 存在或 `target="#_internal"` 的内部 send；
 - 打开 `includeInternalSends` 可观察延时 timer 等内部事件；
 - `raise` 是 SCXML 内部事件，不是 `<send>`，**不会**出现在输出 2；
-- `eventVisibility` 为 `internal` 的转移会生成 `_event.type === 'internal'` guard；
-  Hub 输入和 `statechart-event` 都是外部事件，同名事件不会触发该转移。
+- 0.15 起只用 `ProjectDoc.internalOnlyEvents: string[]` 标记「仅内部」；
+  旧 `eventVisibility.internal` 会在 `normalizeDoc()` 时自动迁移，`external/both`
+  降级为双向；
+- `internalOnlyEvents` 中的事件在转移上生成 `_event.type === 'internal'` guard；
+  Hub 输入和 `statechart-event` 都是外部事件，同名事件不会触发该转移；
+- 图内可用 `raise <event>` 或 `send <event> target="#_internal"` 产生仅内部事件；
+  `send ... target="#_internal" delay` 会被 kit 判为错误，请改用 `delayMs` 转移
+  或 raise 中继；
+- 带 `internalOnlyEvents` 的文档在运行时先经过 `serializeChecked()`，混合可见性
+  或外部生产者冲突会作为配置错误拒绝启动，而不是静默生成无守卫的转移。
 
 ### 输出 3：错误 / done
 

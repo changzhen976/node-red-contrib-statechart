@@ -1,6 +1,6 @@
 import { EventBus, type MachineErrorLocation, type MachineStateEvent } from '../runtime/bus'
 import { getDomParser } from '../runtime/dom'
-import { normalizeDoc, serializeToDisplayScxml, serializeToScxml, type ProjectDoc } from 'statechart-kit'
+import { normalizeDoc, serializeChecked, serializeToDisplayScxml, type ProjectDoc } from 'statechart-kit'
 import { SessionRunner, validateScxml, type EngineMode } from 'statechart-kit/engine'
 import { runtimeStatus, runtimeT } from '../runtime/i18n'
 
@@ -63,7 +63,7 @@ function resolveMachineSource(node: any): ResolvedMachineSource {
     const doc = normalizeDoc(parsed)
     if (!doc.states.length) throw new Error('doc has no states')
     return {
-      xml: serializeToScxml(doc),
+      xml: serializeChecked(doc),
       displayXml: serializeToDisplayScxml(doc),
       doc,
     }
@@ -231,7 +231,21 @@ export function registerMachine(RED: any): void {
 
       node.status({ fill: 'blue', shape: 'dot', text: runtimeStatus('starting') })
       const promise = (async () => {
-        const resolved = resolveMachineSource(node)
+        let resolved: ResolvedMachineSource
+        try {
+          resolved = resolveMachineSource(node)
+        } catch (err) {
+          const issues = (err as { issues?: Array<{ code?: string; params?: Record<string, unknown> }> } | null)?.issues
+          if (Array.isArray(issues) && issues.length) {
+            const detail = issues
+              .map((issue) => issue.code ? `${issue.code} ${JSON.stringify(issue.params ?? {})}` : String(issue))
+              .join('; ')
+            const wrapped = new Error(runtimeT(RED, 'errors.configInvalid', { message: detail }))
+            ;(wrapped as any).issues = issues
+            throw wrapped
+          }
+          throw err
+        }
         node.source = resolved.xml
         node.graphVersion = hashString(resolved.xml)
 

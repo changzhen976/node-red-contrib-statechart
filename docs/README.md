@@ -1,7 +1,7 @@
 # 文档索引
 
-> 更新：2026-11-14 · npm 最新发布：`0.8.1` · 当前版本：`0.8.1`
-> 0.8.1 集成 `statechart-kit@0.13.1`；0.8.0 集成 0.13.0；历史变更见 [`CHANGELOG.md`](../CHANGELOG.md)。
+> 更新：2026-11-14 · npm 最新发布：`0.9.0` · 当前版本：`0.9.0`
+> 0.9.0 集成 `statechart-kit@0.15.0`；0.8.1 集成 0.13.1；历史变更见 [`CHANGELOG.md`](../CHANGELOG.md)。
 
 ## 用户文档
 
@@ -27,6 +27,7 @@
 | [完整编辑器宿主](../editor-page/README.md) | `mountEditor` + postMessage adapter、关闭/保存约定 | 当前 |
 | [Kit 需求记录](kit-requirements.md) | 左栏滚动、parallel/history 布局、重复布线、SCXML 导入能力等待修项 | 当前（KIT-001/003/004 已修复；KIT-002/005 待 scxmljs） |
 | [Kit 0.13 适配计划](kit-0.13-adaptation-plan.md) | 0.11 → 0.13 的影响矩阵、工作分解、估时与风险 | **计划，待实施** |
+| [Kit 0.15 适配评估](kit-0.15-adaptation-plan.md) | 0.13.1 → 0.15 的破坏性变更、工作分解与 4–5 人日评估 | **评估，未实施** |
 | [P4 设计（历史）](p4-standalone-editor.md) | 0.2.0 之前的 donor SPA 方案 | **历史，不要按本文操作** |
 
 ## 历史与宣传材料

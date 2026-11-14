@@ -91,7 +91,7 @@ const DOC_INTERNAL = JSON.stringify({
     { id: 't-ping', source: 'u1', target: 'u2', event: 'ping', cond: '', actions: [] },
     { id: 't-back', source: 'u2', target: 'u1', event: 'back', cond: '', actions: [] },
   ],
-  eventVisibility: { ping: 'internal' },
+  internalOnlyEvents: ['ping'],
   layout: {},
 })
 

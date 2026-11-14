@@ -138,7 +138,10 @@
     "eventVisibility": "事件可见性",
     "visibility": "可见性",
     "visibilityBoth": "双向",
-    "visibilityInternal": "仅内部"
+    "visibilityInternal": "仅内部",
+    "actionSendTarget": "发送目标",
+    "targetExternal": "外部（默认）",
+    "targetInternal": "内部 #_internal"
   },
   "option": {
     "topic": "msg.topic",
@@ -173,7 +176,8 @@
     "tokenUnavailable": "无法获取状态机能力令牌；请检查编辑器权限并刷新。",
     "internalEventsNotice": "该文档包含内部事件（__events__）。可在下方「事件可见性」切换；raise 动作请用完整编辑器编辑。",
     "unsupportedAction": "不支持的动作类型 “__type__”；请用完整编辑器编辑。",
-    "noEvents": "还没有事件。"
+    "noEvents": "还没有事件。",
+    "internalDelayUnsupported": "内部发送不能带 delay；请改用 delayMs 转移或 raise 中继。"
   },
   "validate": {
     "noStates": "至少需要一个状态。",
@@ -208,9 +212,11 @@
     "donedataParamDuplicate": "final 状态 “__id__” 的 donedata param 名称重复。",
     "historyTargetless": "历史默认转移 “__id__” 必须有 target。",
     "internalEventless": "无 target 的内部转移 “__id__” 必须有事件名。",
-    "mixedEventVisibility": "转移 “__id__” 同时监听内部事件和外部事件（__events__），不会生成 internal 守卫；建议拆成多条转移。",
+    "mixedEventVisibility": "转移 “__id__” 同时监听仅内部事件和双向事件（__events__）；0.15 起这是错误，必须拆成多条转移，否则不会生成 internal 守卫。",
     "finalTransition": "final 状态 “__id__” 不能有 __count__ 条出边。",
-    "updateEventInternal": "自动更新事件 “__event__” 被标记为仅内部；set 后发送的外部 update 不会触发该转移。请改为双向，或关闭自动更新事件。"
+    "updateEventInternal": "自动更新事件 “__event__” 被标记为仅内部；set 后发送的外部 update 不会触发该转移。请改为双向，或关闭自动更新事件。",
+    "internalOnlyExternalProducer": "仅内部事件 “__event__” 存在非内部生产者（__channel__）；请改用 raise / 内部发送，或取消仅内部。",
+    "internalDelayUnsupported": "事件 “__event__” 使用 send target=\"#_internal\" delay；引擎不会派发该事件，请改用 delayMs 转移或 raise 中继。"
   },
   "status": {
     "notStarted": "未启动",

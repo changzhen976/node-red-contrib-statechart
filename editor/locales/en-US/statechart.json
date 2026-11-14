@@ -138,7 +138,10 @@
     "eventVisibility": "Event visibility",
     "visibility": "Visibility",
     "visibilityBoth": "Both",
-    "visibilityInternal": "Internal only"
+    "visibilityInternal": "Internal only",
+    "actionSendTarget": "Send target",
+    "targetExternal": "External (default)",
+    "targetInternal": "Internal #_internal"
   },
   "option": {
     "topic": "msg.topic",
@@ -173,7 +176,8 @@
     "tokenUnavailable": "Cannot obtain the state chart capability token. Check editor permissions and reload.",
     "internalEventsNotice": "This document contains internal events (__events__). Use the Event visibility table below to change them; edit raise actions in the full editor.",
     "unsupportedAction": "Unsupported action type “__type__”; use the full editor.",
-    "noEvents": "No events yet."
+    "noEvents": "No events yet.",
+    "internalDelayUnsupported": "Internal send cannot use delay; use a delayMs transition or a raise relay."
   },
   "validate": {
     "noStates": "Add at least one state.",
@@ -208,9 +212,11 @@
     "donedataParamDuplicate": "final state “__id__” has duplicate donedata param names.",
     "historyTargetless": "history default transition “__id__” needs a target.",
     "internalEventless": "targetless internal transition “__id__” needs an event.",
-    "mixedEventVisibility": "Transition “__id__” listens to both internal-only and external events (__events__), so no internal guard is generated; split it into separate transitions.",
+    "mixedEventVisibility": "Transition “__id__” mixes internal-only and bidirectional events (__events__); from 0.15 this is an error and must be split, otherwise no internal guard is generated.",
     "finalTransition": "final state “__id__” cannot have __count__ outgoing transition(s).",
-    "updateEventInternal": "The automatic update event “__event__” is marked internal-only; the external update sent after set will not trigger that transition. Change it to Both or disable the automatic update event."
+    "updateEventInternal": "The automatic update event “__event__” is marked internal-only; the external update sent after set will not trigger that transition. Change it to Both or disable the automatic update event.",
+    "internalOnlyExternalProducer": "Internal-only event “__event__” has a non-internal producer (__channel__); use raise / internal send, or clear internal-only.",
+    "internalDelayUnsupported": "Event “__event__” uses send target=\"#_internal\" delay; the engine drops it. Use a delayMs transition or a raise relay."
   },
   "status": {
     "notStarted": "not started",

@@ -1,12 +1,12 @@
 # 重构路线：以 statechart-kit 为核心
 
-> 状态：M0–M5 完成；0.7.0 已发布；0.8.1 已发布（2026-11-14，含 kit 0.13.1 与托盘事件可见性编辑）
-> 目标版本：`0.8.1`
-> 核心依赖：`statechart-kit@0.13.1`（2026-11-14 升级；0.11 → 0.13）
+> 状态：M0–M5 完成；0.7.0 已发布；0.9.0 已发布（2026-11-14，含 kit 0.15.0、internalOnlyEvents 与内部发送）
+> 目标版本：`0.9.0`
+> 核心依赖：`statechart-kit@0.15.0`（2026-11-14 升级；0.13.1 → 0.15）
 > 关联文档：[完整编辑器设计](p4-standalone-editor.md)（历史方案）、[资源消耗评估](resource-profile.md)、[Kit 需求记录](kit-requirements.md)
 > 适用范围：运行时、编辑器、构建与发布
 
-> 0.13.1 适配：kit 0.12.1 修复 KIT-016（结构编辑维护 `initial` 不变量）；0.13.0 新增
+> 0.15.0 适配：kit 0.12.1 修复 KIT-016（结构编辑维护 `initial` 不变量）；0.13.0 新增
 > `raise`、`eventVisibility`、internal-only guard 和展示序列化。宿主已补诊断映射、
 > 监控展示序列化、托盘 raise/initial，并新增 `examples/internal-events.json`。
 >

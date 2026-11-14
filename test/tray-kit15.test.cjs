@@ -43,6 +43,8 @@ function run (body, extra = {}) {
       .replace(/'/g, '&#39;'),
     core: () => ({
       childrenOf: (d, uid) => d.states.filter((s) => s.parent === uid),
+      isInternalOnlyEvent: (d, name) => (d.internalOnlyEvents || []).includes(name),
+      internalOnlyNames: (d) => d.internalOnlyEvents || [],
     }),
     ...extra,
   }
@@ -112,7 +114,7 @@ test('tray event table lists listened events and their visibility', () => {
       { event: 'go' },
       { event: 'timer', delayMs: 1000 },
     ],
-    eventVisibility: { ping: 'internal', stale: 'internal' },
+    internalOnlyEvents: ['ping', 'stale'],
   }
   const rows = run('return renderEvents(doc)', { doc })
   assert.match(rows, /data-event="ping"/)
@@ -124,18 +126,25 @@ test('tray event table lists listened events and their visibility', () => {
 
 test('tray warns when the automatic update event is internal-only', () => {
   const issue = run('return updateEventIssue(doc, updateEvent)', {
-    doc: { eventVisibility: { update: 'internal' } },
+    doc: { internalOnlyEvents: ['update'] },
     updateEvent: 'update',
   })
   assert.equal(issue.code, 'updateEventInternal')
   assert.equal(issue.level, 'warning')
   assert.equal(issue.params.event, 'update')
   assert.equal(run('return updateEventIssue(doc, updateEvent)', {
-    doc: { eventVisibility: { update: 'internal' } },
+    doc: { internalOnlyEvents: ['update'] },
     updateEvent: '',
   }), null)
   assert.equal(run('return updateEventIssue(doc, updateEvent)', {
-    doc: { eventVisibility: {} },
+    doc: { internalOnlyEvents: [] },
     updateEvent: 'update',
   }), null)
+})
+
+test('tray send action preserves an internal target', () => {
+  const row = run('return actionRow({ type: "send", event: "ping", target: "#_internal" }, 0)')
+  assert.match(row, /data-afield="target"/)
+  assert.match(row, /value="#_internal" selected/)
+  assert.match(row, /form\.actionSendTarget/)
 })

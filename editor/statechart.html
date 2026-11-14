@@ -550,7 +550,7 @@
         if (name) names[name] = true;
       });
     });
-    Object.keys(doc.eventVisibility || {}).forEach(function (name) { names[name] = true; });
+    (doc.internalOnlyEvents || []).forEach(function (name) { if (name) names[name] = true; });
     return Object.keys(names).sort();
   }
 
@@ -563,7 +563,7 @@
 
   function renderEvents(doc) {
     var rows = collectEventNames(doc).map(function (name) {
-      var visibility = doc.eventVisibility && doc.eventVisibility[name] === 'internal' ? 'internal' : 'both';
+      var visibility = core().isInternalOnlyEvent(doc, name) ? 'internal' : 'both';
       return '<tr data-event="' + esc(name) + '">' +
         '<td>' + esc(name) + '</td>' +
         '<td><select data-field="visibility">' + visibilityOptions(visibility) + '</select></td>' +
@@ -575,7 +575,7 @@
   /** Host-level warning: the automatic update event cannot be internal-only. */
   function updateEventIssue(doc, updateEvent) {
     var name = String(updateEvent || '').trim();
-    if (!name || !doc.eventVisibility || doc.eventVisibility[name] !== 'internal') return null;
+    if (!name || !core().isInternalOnlyEvent(doc, name)) return null;
     return { code: 'updateEventInternal', level: 'warning', params: { event: name } };
   }
 
@@ -611,7 +611,7 @@
     var $box = $('#scxml-editor-errors');
     $box.empty();
     $('#scxml-states-body tr, #scxml-transitions-body tr').removeClass('scxml-row-error scxml-row-warning');
-    var internalEvents = Object.keys(doc.eventVisibility || {});
+    var internalEvents = core().internalOnlyNames(doc);
     if (!issues.length && !internalEvents.length) {
       $box.attr('hidden', true).hide();
       return;
@@ -675,6 +675,15 @@
     var fields = '';
     if (action.type === 'send') {
       fields += actionField('form.actionEvent', 'event', action.event);
+      var targets = ['', '#_internal'];
+      if (action.target && targets.indexOf(action.target) === -1) targets.push(action.target);
+      fields += '<label>' + esc(t('form.actionSendTarget')) + '<select data-afield="target">' +
+        targets.map(function (target) {
+          var label = target === '' ? t('form.targetExternal')
+            : target === '#_internal' ? t('form.targetInternal') : target;
+          return '<option value="' + esc(target) + '"' +
+            (target === (action.target || '') ? ' selected' : '') + '>' + esc(label) + '</option>';
+        }).join('') + '</select></label>';
       fields += actionField('form.actionDelay', 'delay', action.delay);
       fields += actionField('form.actionId', 'id', action.id);
       fields += actionField('form.actionDataExpr', 'dataExpr', action.dataExpr);
@@ -748,6 +757,10 @@
       var action = actionDraft[i];
       if (action.type === 'send') {
         if (!String(action.event || '').trim()) { actionError(t('message.actionRequired')); return; }
+        if (action.target === '#_internal' && String(action.delay || '').trim()) {
+          actionError(t('message.internalDelayUnsupported'));
+          return;
+        }
         if (action.data !== undefined && action._dataInvalid) { actionError(t('message.actionDataInvalid')); return; }
       } else if (action.type === 'raise') {
         if (!String(action.event || '').trim()) { actionError(t('message.actionRequired')); return; }
@@ -1183,13 +1196,7 @@
       var name = $(this).closest('tr').attr('data-event');
       var doc = node._scxmlEditor.doc;
       if (!name) return;
-      if ($(this).val() === 'internal') {
-        doc.eventVisibility = doc.eventVisibility || {};
-        doc.eventVisibility[name] = 'internal';
-      } else if (doc.eventVisibility) {
-        delete doc.eventVisibility[name];
-        if (!Object.keys(doc.eventVisibility).length) delete doc.eventVisibility;
-      }
+      core().setInternalOnlyEvent(doc, name, $(this).val() === 'internal');
       render(node);
     });
 

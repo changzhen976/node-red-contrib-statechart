@@ -123,10 +123,10 @@ GECKODRIVER=/path/to/geckodriver npm run test:live
 ## Kit 0.13 Internal Events（raise / internal-only）
 
 `internal-events.json` 新增一个 **07 Raise & Internal Events** tab，专门展示
-`statechart-kit@0.13.1` 的新能力：
+`statechart-kit@0.15.0` 的新能力：
 
 - `arm` 转移执行 `raise ping`，在同一个宏步内产生图内内部事件；
-- `ping` 通过 `eventVisibility` 标记为「仅内部」，序列化后生成
+- `ping` 通过 `internalOnlyEvents` 标记为「仅内部」，序列化后生成
   `cond="_event.type === 'internal'"`，外部同名事件不会触发；
 - `raise` 不是 `<send>`，所以 Hub 输出 2 不会出现 `ping`。
 
@@ -137,7 +137,7 @@ GECKODRIVER=/path/to/geckodriver npm run test:live
    `session/handling`，`visits` 变成 1；
 3. 点 **ack**：回到 `idle`；
 4. 打开机器配置 → **打开完整编辑器**，在事件面板把 `ping` 改成「双向」，
-   再点外部 `ping` 即可触发，用于对比 `eventVisibility` 的效果。
+   再点外部 `ping` 即可触发，用于对比「仅内部」的效果。
 
 > 监控侧栏使用展示序列化，不会把 `_event.type === 'internal'` 当作作者条件显示；
 > 完整编辑器/导出 SCXML 仍保留运行时 guard。

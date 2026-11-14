@@ -56,7 +56,9 @@ const STRUCTURE = {
   'structure.transition.missing-target': 'Target state of transition "{id}" does not exist',
   'structure.transition.history-targetless': 'The default transition of history pseudo-state "{id}" must have a target',
   'structure.transition.internal-eventless': 'Internal transition "{id}" has no event and may form a self-triggering loop',
-  'structure.transition.mixed-event-visibility': 'Transition "{id}" listens to both internal-only and external events ({events}); split it into separate transitions',
+  'structure.transition.mixed-event-visibility': 'Transition "{id}" mixes internal-only and bidirectional events ({events}); split it into separate transitions',
+  'structure.event.internal-only-with-external-producer': 'Internal-only event "{event}" has a non-internal producer ({channel}); use raise or send target="#_internal", or clear internal-only',
+  'structure.action.internal-delay-unsupported': 'Event "{event}" uses send target="#_internal" with delay; the engine drops it. Use a delayMs transition or a raise relay',
   'structure.transition.delay-invalid': 'delayMs of transition "{id}" is invalid (must be at least 10)',
   'structure.transition.delay-without-event': 'Transition "{id}" has a delay but no event name',
 }

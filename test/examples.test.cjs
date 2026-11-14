@@ -30,13 +30,13 @@ test('demo suite ProjectDoc example has a valid shape', () => {
   }
 })
 
-test('kit 0.13 internal-events example demonstrates raise and internal-only visibility', async () => {
+test('kit 0.15 internal-events example demonstrates raise and internal-only visibility', async () => {
   const flow = JSON.parse(readFileSync(resolve(__dirname, '../examples/internal-events.json'), 'utf8'))
   const machine = flow.find((node) => node.type === 'statechart-machine' && node.doc)
   assert.ok(machine, 'expected the internal-events ProjectDoc machine')
 
   const doc = JSON.parse(machine.doc)
-  assert.equal(doc.eventVisibility.ping, 'internal')
+  assert.ok(doc.internalOnlyEvents.includes('ping'))
   assert.ok(doc.transitions.some((transition) => transition.actions.includes('raise ping')))
   assert.ok(doc.states.some((state) => state.uid === doc.initial))
   assert.ok(doc.states.some((state) => state.kind === 'compound' && state.initial))
@@ -44,6 +44,7 @@ test('kit 0.13 internal-events example demonstrates raise and internal-only visi
   const { serializeToScxml, serializeToDisplayScxml, validateStructure } = await import('statechart-kit')
   const xml = serializeToScxml(doc)
   assert.match(xml, /<raise event="ping"\/>/)
+  assert.match(xml, /data-kit-internal-events="\[&quot;ping&quot;\]"/)
   assert.match(xml, /data-kit-visibility="internal"/)
   assert.match(xml, /_event\.type === 'internal'/)
   assert.doesNotMatch(serializeToDisplayScxml(doc), /_event\.type === 'internal'/)

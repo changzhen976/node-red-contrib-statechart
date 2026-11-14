@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.9.0 — 2026-11-14
+
+内部事件模型迁移版本：内置 `statechart-kit` 从 0.13.1 升级到 0.15.0，
+`ProjectDoc.eventVisibility` 被 `internalOnlyEvents` 取代；托盘补齐内部发送，
+运行时拒绝非法的混合可见性文档。
+
+### Changed
+
+- 内置 `statechart-kit` 从 0.13.1 升级到 0.15.0：`internalOnlyEvents` 成为仅内部
+  事件的唯一事实源；`eventVisibility` 在 `normalizeDoc()` 中自动迁移，旧
+  `external` 降级为双向。
+- 托盘「事件可见性」表改用 `internalOnlyEvents`；`updateEventInternal` 校验同步。
+- 运行时 doc 路径改用 `serializeChecked()`：混合可见性、仅内部事件存在外部生产者、
+  `send target="#_internal" delay` 会作为配置错误拒绝启动，不再静默生成无守卫转移。
+- 诊断映射补充 `structure.event.internal-only-with-external-producer` 与
+  `structure.action.internal-delay-unsupported`；混合可见性文案改为 error 语义。
+- 完整编辑器事件面板改为 kit 0.15 的「仅内部」复选框 + 定义/约束弹窗；
+  内部发出区块同时覆盖 `raise` 和 `send target="#_internal"`。
+
+### Added
+
+- 托盘动作编辑器支持 `send <event> target="#_internal"`：新增发送目标选择，
+  保存/往返不丢 target；`target="#_internal" + delay` 在托盘直接拒绝。
+
+### Tests
+
+- `test/kit15.test.cjs`：根级 `data-kit-internal-events`、展示序列化、导入往返、
+  混合 error、外部生产者 error、旧字段迁移、raise/internal send DSL。
+- `test/tray-kit15.test.cjs`：事件表、`updateEventInternal`、internal send 行。
+- `test/lifecycle.test.cjs`：运行时拒绝混合可见性文档。
+- `test/browser-kit15.mjs`：托盘事件可见性切换、0.15 复选框、内部发出区块。
+
 ## 0.8.1 — 2026-11-14
 
 维护版本：托盘支持编辑事件可见性，内置 `statechart-kit` 升级到 0.13.1，

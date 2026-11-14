@@ -145,21 +145,21 @@ try {
   const receive = await browser.exec(`
     const row = Array.from(document.querySelectorAll('.sce-events tbody tr')).find(
       (tr) => (tr.querySelector('td.name') || {}).textContent === 'ping'
-        && tr.querySelector('select[aria-label]'),
+        && tr.querySelector('input[type=checkbox]'),
     );
     if (!row) return null;
-    const select = row.querySelector('select[aria-label]');
+    const checkbox = row.querySelector('input[type=checkbox]');
     return {
       name: row.querySelector('td.name').textContent.trim(),
-      visibility: select ? select.value : '',
+      internal: !!checkbox.checked,
+      ariaLabel: checkbox.getAttribute('aria-label') || '',
       source: (row.querySelector('td.source') || {}).textContent || '',
-      options: select ? Array.from(select.options).map((o) => o.value) : [],
     };
   `)
   assert.ok(receive, 'ping row should exist in the event panel')
-  assert.equal(receive.visibility, 'internal')
+  assert.equal(receive.internal, true)
+  assert.match(receive.ariaLabel, /仅内部|internal-only/i)
   assert.match(receive.source, /内部|internal/)
-  assert.deepEqual(receive.options, ['both', 'internal'])
 
   const emission = await browser.exec(`
     const section = Array.from(document.querySelectorAll('.sce-events .sce-event-section')).find(
@@ -167,7 +167,7 @@ try {
     );
     return section ? { text: section.innerText } : null;
   `)
-  assert.ok(emission, 'kit 0.13.1 internal-emission section should exist')
+  assert.ok(emission, 'kit 0.15 internal-emission section should exist')
   assert.match(emission.text, /ping/)
   assert.match(emission.text, /1/)
 

@@ -51,6 +51,8 @@ const CODE_MAP: Record<string, string> = {
   'structure.transition.history-targetless': 'historyTargetless',
   'structure.transition.internal-eventless': 'internalEventless',
   'structure.transition.mixed-event-visibility': 'mixedEventVisibility',
+  'structure.event.internal-only-with-external-producer': 'internalOnlyExternalProducer',
+  'structure.action.internal-delay-unsupported': 'internalDelayUnsupported',
   'structure.transition.duplicate-id': 'transitionDuplicateId',
   'structure.transition.missing-id': 'transitionMissingId',
   'structure.transition.missing-source': 'transitionSourceMissing',

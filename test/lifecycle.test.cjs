@@ -35,6 +35,23 @@ const DELAYED = `<?xml version="1.0" encoding="UTF-8"?>
 
 const BAD = '<scxml xmlns="http://www.w3.org/2005/07/scxml"><state id="a"></scxml>'
 
+/** Invalid under kit 0.15: a transition mixes internal-only and bidirectional events. */
+const MIXED_DOC = JSON.stringify({
+  formatVersion: 1,
+  name: 'doc mixed visibility',
+  initial: 'u1',
+  datamodel: [],
+  states: [
+    { uid: 'u1', id: 'a', label: 'a', kind: 'atomic', parent: null, entryActions: [], exitActions: [] },
+    { uid: 'u2', id: 'b', label: 'b', kind: 'atomic', parent: null, entryActions: [], exitActions: [] },
+  ],
+  transitions: [
+    { id: 't-mixed', source: 'u1', target: 'u2', event: 'ping go', cond: '', actions: [] },
+  ],
+  internalOnlyEvents: ['ping'],
+  layout: {},
+})
+
 const FINAL = `<?xml version="1.0" encoding="UTF-8"?>
 <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="a">
   <state id="a"><transition event="go" target="done"/></state>
@@ -182,6 +199,19 @@ test('invalid document JSON is reported instead of crashing the flow', async () 
 
   helper.getNode('hub').receive({ topic: 'start' })
   await waitFor(() => sink('s-error').length >= 2, 'invalid doc error on input')
+})
+
+
+test('rejects a document with mixed internal-only events before starting', async () => {
+  await load(hubFlow('', { doc: MIXED_DOC }))
+  await waitFor(() => sink('s-error').length > 0, 'invalid structure error')
+  assert.equal(sink('s-state').length, 0, 'invalid doc must not emit state')
+  const error = sink('s-error')[0].error
+  assert.ok(error instanceof Error)
+  assert.ok(
+    error.issues.some((issue) => issue.code === 'structure.transition.mixed-event-visibility'),
+    'the structure issue should be attached to the runtime error',
+  )
 })
 
 test('runtime script errors go to output 3 and later events still work', async () => {

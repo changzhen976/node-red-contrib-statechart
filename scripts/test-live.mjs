@@ -122,7 +122,7 @@ try {
   const liveEnv = { NODERED_URL: base, CASCADE_BASE: base, GECKODRIVER: gecko }
 
   run('browser: tray editor + monitor', 'node', ['test/browser-smoke.mjs'], liveEnv)
-  run('browser: kit 0.13 internal events', 'node', ['test/browser-kit13.mjs'], liveEnv)
+  run('browser: kit 0.15 internal events', 'node', ['test/browser-kit15.mjs'], liveEnv)
   run('browser: standalone editor', 'node', ['test/browser-p4.mjs'], liveEnv)
   run('server: deployed hub flow', 'node', ['test/e2e-server.mjs'], liveEnv)
   run('cascade example', 'node', ['scripts/test-cascade.mjs'], liveEnv)
