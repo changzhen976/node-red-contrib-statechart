@@ -144,7 +144,8 @@ try {
   await sleep(250)
   const receive = await browser.exec(`
     const row = Array.from(document.querySelectorAll('.sce-events tbody tr')).find(
-      (tr) => (tr.querySelector('td.name') || {}).textContent === 'ping',
+      (tr) => (tr.querySelector('td.name') || {}).textContent === 'ping'
+        && tr.querySelector('select[aria-label]'),
     );
     if (!row) return null;
     const select = row.querySelector('select[aria-label]');
@@ -160,7 +161,17 @@ try {
   assert.match(receive.source, /内部|internal/)
   assert.deepEqual(receive.options, ['both', 'internal'])
 
-  console.log(JSON.stringify({ ok: true, tray, dialog, raiseRow, receive }, null, 2))
+  const emission = await browser.exec(`
+    const section = Array.from(document.querySelectorAll('.sce-events .sce-event-section')).find(
+      (el) => ((el.querySelector('h4') || {}).textContent || '').includes('内部发出'),
+    );
+    return section ? { text: section.innerText } : null;
+  `)
+  assert.ok(emission, 'kit 0.13.1 internal-emission section should exist')
+  assert.match(emission.text, /ping/)
+  assert.match(emission.text, /1/)
+
+  console.log(JSON.stringify({ ok: true, tray, dialog, raiseRow, receive, emission }, null, 2))
 } finally {
   await browser.close()
 }

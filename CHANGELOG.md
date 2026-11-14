@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.8.1 — 2026-11-14
+
+维护版本：托盘支持编辑事件可见性，内置 `statechart-kit` 升级到 0.13.1，
+补齐内部发出事件的展示与 `updateEvent` 内部可见性校验。
 
 ### Added
 
@@ -12,7 +15,14 @@
 ### Tests
 
 - `test/tray-kit13.test.cjs` 增加事件表与 `updateEventInternal` 断言；
-  `test/browser-kit13.mjs` 覆盖托盘事件可见性切换与提示。
+  `test/browser-kit13.mjs` 覆盖托盘事件可见性切换、提示和 kit 0.13.1
+  「内部发出」区块。
+
+### Changed
+
+- 内置 `statechart-kit` 从 0.13.0 升级到 0.13.1：事件面板新增「内部发出 / raise」
+  区块；事件改名/删除后自动清理不再使用的 `eventVisibility` 键；修复 internal
+  guard 被截断时的画布选中匹配。
 
 ## 0.8.0 — 2026-11-14
 

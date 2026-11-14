@@ -4,14 +4,14 @@
     "type": "tab",
     "label": "07 Raise & Internal Events",
     "disabled": false,
-    "info": "# Kit 0.13 · 内部事件 / raise\n\n演示 `statechart-kit@0.13.0` 的两个新能力：\n\n- **raise**：`arm` 转移执行 `raise ping`，在同一个宏步内产生图内内部事件；\n- **eventVisibility**：`ping` 标记为「仅内部」，转移生成 SCXML guard\n  `_event.type === 'internal'`；外部同名事件不会触发。\n\n推荐操作：\n\n1. 点「外部 ping（应被忽略）」：状态保持 idle，Hub 输出 2 没有 `ping`；\n2. 点「arm → raise ping」：idle → session/armed，raise ping 后进入 handling，visits +1；\n3. 点「ack」：回到 idle；\n4. 打开机器配置 → 完整编辑器，在事件面板把 ping 改成「双向」，再点外部 ping 就会触发。\n\n注意：`raise` 不是 `<send>`，不会出现在 Hub 输出 2；这是刻意保留的 SCXML 语义。"
+    "info": "# Kit 0.13 · 内部事件 / raise\n\n演示 `statechart-kit@0.13.1` 的两个新能力：\n\n- **raise**：`arm` 转移执行 `raise ping`，在同一个宏步内产生图内内部事件；\n- **eventVisibility**：`ping` 标记为「仅内部」，转移生成 SCXML guard\n  `_event.type === 'internal'`；外部同名事件不会触发。\n\n推荐操作：\n\n1. 点「外部 ping（应被忽略）」：状态保持 idle，Hub 输出 2 没有 `ping`；\n2. 点「arm → raise ping」：idle → session/armed，raise ping 后进入 handling，visits +1；\n3. 点「ack」：回到 idle；\n4. 打开机器配置 → 完整编辑器，在事件面板把 ping 改成「双向」，再点外部 ping 就会触发。\n\n注意：`raise` 不是 `<send>`，不会出现在 Hub 输出 2；这是刻意保留的 SCXML 语义。"
   },
   {
     "id": "note-kit13-internal",
     "type": "comment",
     "z": "tab-kit13-internal",
     "name": "Kit 0.13 · raise + internal-only",
-    "info": "# Kit 0.13 · 内部事件 / raise\n\n演示 `statechart-kit@0.13.0` 的两个新能力：\n\n- **raise**：`arm` 转移执行 `raise ping`，在同一个宏步内产生图内内部事件；\n- **eventVisibility**：`ping` 标记为「仅内部」，转移生成 SCXML guard\n  `_event.type === 'internal'`；外部同名事件不会触发。\n\n推荐操作：\n\n1. 点「外部 ping（应被忽略）」：状态保持 idle，Hub 输出 2 没有 `ping`；\n2. 点「arm → raise ping」：idle → session/armed，raise ping 后进入 handling，visits +1；\n3. 点「ack」：回到 idle；\n4. 打开机器配置 → 完整编辑器，在事件面板把 ping 改成「双向」，再点外部 ping 就会触发。\n\n注意：`raise` 不是 `<send>`，不会出现在 Hub 输出 2；这是刻意保留的 SCXML 语义。",
+    "info": "# Kit 0.13 · 内部事件 / raise\n\n演示 `statechart-kit@0.13.1` 的两个新能力：\n\n- **raise**：`arm` 转移执行 `raise ping`，在同一个宏步内产生图内内部事件；\n- **eventVisibility**：`ping` 标记为「仅内部」，转移生成 SCXML guard\n  `_event.type === 'internal'`；外部同名事件不会触发。\n\n推荐操作：\n\n1. 点「外部 ping（应被忽略）」：状态保持 idle，Hub 输出 2 没有 `ping`；\n2. 点「arm → raise ping」：idle → session/armed，raise ping 后进入 handling，visits +1；\n3. 点「ack」：回到 idle；\n4. 打开机器配置 → 完整编辑器，在事件面板把 ping 改成「双向」，再点外部 ping 就会触发。\n\n注意：`raise` 不是 `<send>`，不会出现在 Hub 输出 2；这是刻意保留的 SCXML 语义。",
     "x": 80,
     "y": 60,
     "w": 520,

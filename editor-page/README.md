@@ -39,7 +39,7 @@ Node-RED 里 Update/Deploy。`ok: false` 时编辑器保持 dirty，不再把失
   structure / validation / variable code 目录。
 - 关闭确认、保存失败提示和加载失败文案在 `main.ts` / `adapter.ts` 内按语言切换。
 - 左右栏启用 `features.resizablePanes`，可拖拽调宽、双击复位和折叠。
-- 已知限制：kit 0.13.0 仍把 kind 徽标、画布缩放提示、action 编辑器和校验弹窗
+- 已知限制：kit 0.13.1 仍把 kind 徽标、画布缩放提示、action 编辑器和校验弹窗
   “定位”等少量深层文案硬编码为中文；英文模式目前覆盖工具栏、结构/属性标签、
   按钮和校验诊断。
 
