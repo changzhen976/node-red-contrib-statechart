@@ -1,6 +1,6 @@
 # statechart-kit 0.15 适配评估
 
-> 状态：**P0 + P1 已实现；P1 staging `0.9.2-dev.0` 已部署，等待发布指令**
+> 状态：**P0 + P1 已完成并发布 `0.9.2`**
 > 宿主：`@changzhen976/node-red-contrib-statechart@0.9.0`
 > 当前 kit：`0.13.1`
 > 目标 kit：`0.15.1`（npm `latest`，2026-11-14）
