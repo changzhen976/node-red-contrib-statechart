@@ -27,6 +27,55 @@ try {
   assert.match(tray.notice, /内部事件/)
   assert.match(tray.notice, /ping/)
 
+  const eventTable = await browser.exec(`
+    const row = document.querySelector('#scxml-events-body tr[data-event="ping"]');
+    return {
+      rows: document.querySelectorAll('#scxml-events-body tr').length,
+      ping: row && row.querySelector('select[data-field=visibility]')
+        ? row.querySelector('select[data-field=visibility]').value
+        : '',
+    }
+  `)
+  assert.ok(eventTable.rows >= 2, 'event visibility table should list arm/ack/ping')
+  assert.equal(eventTable.ping, 'internal')
+
+  const toggled = await browser.exec(`
+    const row = document.querySelector('#scxml-events-body tr[data-event="ping"]');
+    const select = row && row.querySelector('select[data-field=visibility]');
+    if (!select) return { ok: false };
+    select.value = 'both';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    const box = document.querySelector('#scxml-editor-errors');
+    return {
+      ok: true,
+      ping: document.querySelector('#scxml-events-body tr[data-event="ping"] select').value,
+      notice: box && box.offsetParent !== null ? box.innerText : '',
+    };
+  `)
+  assert.equal(toggled.ok, true)
+  assert.equal(toggled.ping, 'both')
+  assert.doesNotMatch(toggled.notice, /内部事件/)
+
+  await browser.exec(`
+    const row = document.querySelector('#scxml-events-body tr[data-event="ping"]');
+    const select = row && row.querySelector('select[data-field=visibility]');
+    if (!select) return false;
+    select.value = 'internal';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  `)
+  await sleep(100)
+  const restored = await browser.exec(`
+    const row = document.querySelector('#scxml-events-body tr[data-event="ping"]');
+    const box = document.querySelector('#scxml-editor-errors');
+    return {
+      ping: row && row.querySelector('select') ? row.querySelector('select').value : '',
+      notice: box && box.offsetParent !== null ? box.innerText : '',
+    };
+  `)
+  assert.equal(restored.ping, 'internal')
+  assert.match(restored.notice, /内部事件/)
+
   const dialog = await browser.exec(`
     const button = document.querySelector('#scxml-transitions-body tr[data-id="t-arm"] .scxml-edit-actions');
     if (!button) return { clicked: false };

@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- 托盘三表编辑器新增「事件可见性」表：可把转移监听的事件切换为「双向」或「仅内部」，
+  不再需要打开完整编辑器或手改 JSON；延迟转移的自动事件不会出现在表中。
+- 托盘保存/校验新增 `updateEventInternal` warning：当自动更新事件被标成「仅内部」时，
+  提示 `set` 之后发送的外部 `update` 不会触发该转移。
+
+### Tests
+
+- `test/tray-kit13.test.cjs` 增加事件表与 `updateEventInternal` 断言；
+  `test/browser-kit13.mjs` 覆盖托盘事件可见性切换与提示。
+
 ## 0.8.0 — 2026-11-14
 
 侧栏体验与 `statechart-kit@0.13.0` 适配版本：新增监控画布相机、侧栏直接编辑入口、

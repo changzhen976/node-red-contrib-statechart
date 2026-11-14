@@ -49,6 +49,10 @@ function run (body, extra = {}) {
   const names = [
     'stateById',
     'ensureInitial',
+    'collectEventNames',
+    'visibilityOptions',
+    'renderEvents',
+    'updateEventIssue',
     'defaultAction',
     'actionTypeOptions',
     'actionField',
@@ -99,4 +103,39 @@ test('tray initial helper repairs a deleted initial child and empty root', () =>
   run('ensureInitial(doc, "p"); ensureInitial(doc, null); return doc', { doc })
   assert.equal(doc.states[0].initial, 'b')
   assert.equal(doc.initial, 'p')
+})
+
+test('tray event table lists listened events and their visibility', () => {
+  const doc = {
+    transitions: [
+      { event: 'arm ping', delayMs: undefined },
+      { event: 'go' },
+      { event: 'timer', delayMs: 1000 },
+    ],
+    eventVisibility: { ping: 'internal', stale: 'internal' },
+  }
+  const rows = run('return renderEvents(doc)', { doc })
+  assert.match(rows, /data-event="ping"/)
+  assert.match(rows, /data-event="go"/)
+  assert.match(rows, /data-event="stale"/)
+  assert.doesNotMatch(rows, /data-event="timer"/)
+  assert.match(rows, /value="internal" selected/)
+})
+
+test('tray warns when the automatic update event is internal-only', () => {
+  const issue = run('return updateEventIssue(doc, updateEvent)', {
+    doc: { eventVisibility: { update: 'internal' } },
+    updateEvent: 'update',
+  })
+  assert.equal(issue.code, 'updateEventInternal')
+  assert.equal(issue.level, 'warning')
+  assert.equal(issue.params.event, 'update')
+  assert.equal(run('return updateEventIssue(doc, updateEvent)', {
+    doc: { eventVisibility: { update: 'internal' } },
+    updateEvent: '',
+  }), null)
+  assert.equal(run('return updateEventIssue(doc, updateEvent)', {
+    doc: { eventVisibility: {} },
+    updateEvent: 'update',
+  }), null)
 })
