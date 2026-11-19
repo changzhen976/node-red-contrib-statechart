@@ -1,7 +1,7 @@
 # 文档索引
 
 > 更新：2026-11-14 · npm 最新发布：`0.9.2` · 当前版本：`0.9.2`
-> 0.9.2 集成 `statechart-kit@0.15.1`；0.9.1 集成 0.15.1；历史变更见 [`CHANGELOG.md`](../CHANGELOG.md)。
+> 0.9.2 集成 `statechart-kit@0.15.1`；当前未发布开发版集成 0.16.0；历史变更见 [`CHANGELOG.md`](../CHANGELOG.md)。
 
 ## 用户文档
 

@@ -28,6 +28,7 @@ const mounted = mountEditor('#app', {
     toolbar: true,
     structure: true,
     canvas: true,
+    canvasTransitionTooltip: true,
     properties: true,
     structuredActions: true,
     variables: true,

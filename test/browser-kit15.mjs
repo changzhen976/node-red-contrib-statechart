@@ -1,5 +1,5 @@
 /**
- * Browser regression for kit 0.13 event visibility / raise.
+ * Browser regression for kit 0.16 internal events and transition tooltip.
  *
  * Requires Firefox + geckodriver and a live Node-RED with the internal-events
  * example imported (test-live.mjs does this).
@@ -171,7 +171,39 @@ try {
   assert.match(emission.text, /ping/)
   assert.match(emission.text, /1/)
 
-  console.log(JSON.stringify({ ok: true, tray, dialog, raiseRow, receive, emission }, null, 2))
+  await browser.waitFor(`return (() => {
+    const view = document.querySelector('scxml-view');
+    const root = view && view.shadowRoot;
+    return !!(root && root.querySelector('[part~="edge-label"]'));
+  })()`, 'transition labels', 15000)
+  await sleep(200)
+
+  const label = await browser.exec(`
+    const view = document.querySelector('scxml-view');
+    const root = view && view.shadowRoot;
+    const labels = root ? Array.from(root.querySelectorAll('[part~="edge-label"]')) : [];
+    const target = labels.find((el) => (el.textContent || '').includes('ping'));
+    if (!target) return { found: false, labels: labels.map((el) => el.textContent || '') };
+    const rect = target.getBoundingClientRect();
+    target.dispatchEvent(new PointerEvent('pointerover', {
+      bubbles: true,
+      composed: true,
+      clientX: rect.left + 4,
+      clientY: rect.top + 4,
+    }));
+    return { found: true, text: target.textContent, title: target.title };
+  `)
+  assert.equal(label.found, true, `ping transition label should exist: ${JSON.stringify(label.labels)}`)
+  await sleep(300)
+  const tooltip = await browser.exec(`
+    const el = document.querySelector('.sce-label-tooltip');
+    return el ? { text: el.textContent, hidden: el.hidden } : null;
+  `)
+  assert.ok(tooltip, 'transition tooltip should be created')
+  assert.equal(tooltip.hidden, false)
+  assert.match(tooltip.text, /visits >= 0/)
+
+  console.log(JSON.stringify({ ok: true, tray, dialog, raiseRow, receive, emission, label, tooltip }, null, 2))
 } finally {
   await browser.close()
 }

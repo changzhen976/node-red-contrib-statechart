@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- 内置 `statechart-kit` 从 0.15.1 升级到 0.16.0：新增转移标签完整条件 tooltip；
+  宿主完整编辑器启用 `features.canvasTransitionTooltip`。
+- `ScxmlLabelTooltip` 使用共享 `canvas-contract` 解析标签事实，支持 hover / focus /
+  触摸 tap / Escape，并在重绘/卸载后恢复原生 `title` 与 `aria-describedby`。
+- 内部事件示例的 `ping` 转移增加 `visits >= 0` 条件，便于浏览器回归验证 tooltip。
+
+### Tests
+
+- `test/browser-kit15.mjs` 增加 tooltip 断言：悬停 `ping` 标签后显示完整条件。
+
 ## 0.9.2 — 2026-11-14
 
 P1 增强版本：补齐 `trySend()` 错误细分、托盘仅内部预检与自动更新事件锁定，
