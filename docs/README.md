@@ -1,7 +1,7 @@
 # 文档索引
 
-> 更新：2026-11-14 · npm 最新发布：`0.9.2` · 当前版本：`0.9.2`
-> 0.9.2 集成 `statechart-kit@0.15.1`；当前未发布开发版集成 0.16.0；历史变更见 [`CHANGELOG.md`](../CHANGELOG.md)。
+> 更新：2026-11-20 · npm 最新发布：`0.9.2` · 当前版本：`0.9.3`（待发布）
+> 0.9.3 集成 `statechart-kit@0.16.0` 并新增转移条件 tooltip；0.9.2 集成 0.15.1；历史变更见 [`CHANGELOG.md`](../CHANGELOG.md)。
 
 ## 用户文档
 
@@ -22,12 +22,13 @@
 | [CONTRIBUTING](../CONTRIBUTING.md) | 本地开发、构建、运行时/浏览器/服务端 E2E、提交约定 | 当前 |
 | [发布流程](releasing.md) | 版本收尾、验证门禁、npm 发布、tag、测试服务器重部署与回滚 | 当前（手动兜底） |
 | [GitHub Actions 自动发布](github-actions-release.md) | Trusted Publishing、tag 触发、dry run、失败重试与验证 | 当前（推荐） |
-| [重构路线](refactor-roadmap.md) | 以 `statechart-kit` 为核心的迁移记录、验收与发布状态 | 当前（0.8.0 / kit 0.13 适配） |
+| [0.9.3 发布说明](release-0.9.3.md) | 0.9.3 亮点、兼容性、验证矩阵与发布前检查 | **草案，待发布** |
+| [重构路线](refactor-roadmap.md) | 以 `statechart-kit` 为核心的迁移记录、验收与发布状态 | 当前（0.9.3 准备） |
 | [资源消耗评估](resource-profile.md) | tarball、浏览器资源、服务端内存/CPU | 当前（2026-11-11 复测） |
 | [完整编辑器宿主](../editor-page/README.md) | `mountEditor` + postMessage adapter、关闭/保存约定 | 当前 |
 | [Kit 需求记录](kit-requirements.md) | 左栏滚动、parallel/history 布局、重复布线、SCXML 导入能力等待修项 | 当前（KIT-001/003/004 已修复；KIT-002/005 待 scxmljs） |
-| [Kit 0.13 适配计划](kit-0.13-adaptation-plan.md) | 0.11 → 0.13 的影响矩阵、工作分解、估时与风险 | **计划，待实施** |
-| [Kit 0.15 适配评估](kit-0.15-adaptation-plan.md) | 0.13.1 → 0.15 的破坏性变更、工作分解与 4–5 人日评估 | **评估，未实施** |
+| [Kit 0.13 适配计划](kit-0.13-adaptation-plan.md) | 0.11 → 0.13 的影响矩阵、工作分解、估时与风险 | **历史，已被 0.15/0.16 取代** |
+| [Kit 0.15 适配评估](kit-0.15-adaptation-plan.md) | 0.13.1 → 0.15 的破坏性变更、工作分解与 4–5 人日评估 | **已实施（0.9.2）；0.16 跟进在 0.9.3** |
 | [P4 设计（历史）](p4-standalone-editor.md) | 0.2.0 之前的 donor SPA 方案 | **历史，不要按本文操作** |
 
 ## 历史与宣传材料
@@ -36,7 +37,7 @@
 | --- | --- |
 | [community-post/](../community-post/) | 0.1.x 社区宣传稿与旧截图；**保留为历史**，不随 0.7 更新，对外宣传需重写 |
 
-截图：`docs/images/hub-demo.png` 是当前 Hub 低代码用法的典型截图；`standalone-editor.png` 仍为 0.2.0 编辑器截图，`monitor-sidebar.png` 为侧栏监控。
+截图：`docs/images/hub-demo.png` 是当前 Hub 低代码用法的典型截图；`standalone-editor.png` 仍为 0.2.0 编辑器截图，`monitor-sidebar.png` 为侧栏监控，`kit-0.15-internal-events.png` 为 0.15 内部事件面板。
 
 ## 开发内部（不随 npm 包发布）
 
@@ -46,7 +47,7 @@
 
 ## 测试与 CI
 
-- 运行时：`npm test`（44 个用例，含生命周期/错误路径）；
+- 运行时：`npm test`（80 个用例，含生命周期/错误路径）；
 - 干净实例 live 套件：`GECKODRIVER=/path/to/geckodriver npm run test:live`，
   自动启动临时 Node-RED 并跑托盘编辑器、独立编辑器、服务端 E2E 和级联示例；
 - GitHub Actions：`.github/workflows/ci.yml` 跑单测/类型/打包门禁；
