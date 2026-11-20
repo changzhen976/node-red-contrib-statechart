@@ -1,6 +1,6 @@
 # 0.9.3 发布说明（草案）
 
-> 状态：发布准备完成，待打 tag / npm publish。
+> 状态：已发布（2026-11-20，npm `latest`）。
 > 日期：2026-11-20
 > npm 包：`@changzhen976/node-red-contrib-statechart`
 > 内置 `statechart-kit@0.16.0`
@@ -50,10 +50,10 @@ npm install @changzhen976/node-red-contrib-statechart@0.9.3
 - `npm test`：80/80；
 - `npm run typecheck`、`check:kit`、`release-check`；
 - `test:live`：托盘编辑器、完整编辑器、tooltip、服务端 E2E、cascade；
-- 测试服务器 staging `0.9.3-dev.6`：1366x768、100% 缩放下 fit 与 vars 覆盖层正常。
+- 测试服务器 npm 发布物 `0.9.3`：浏览器、E2E 7/7、cascade 14/14，1366x768、100% 缩放下 fit 与 vars 覆盖层正常。
 
 ## 已知事项
 
 - Dependabot TypeScript 7 PR (#3) 仍被 `@node-red/util` 的 `typescript ^5` peer 阻塞，
   不属于本版本发布门禁；
-- 测试服务器在正式发布后应改用 npm 发布物重新部署，而不是继续使用 `dev.6` 工作区包。
+- 测试服务器已改用 npm 发布物重新部署，备份为 `.prev-before-0.9.3`。

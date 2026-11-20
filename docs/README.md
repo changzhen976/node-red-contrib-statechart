@@ -1,6 +1,6 @@
 # 文档索引
 
-> 更新：2026-11-20 · npm 最新发布：`0.9.2` · 当前版本：`0.9.3`（待发布）
+> 更新：2026-11-20 · npm 最新发布：`0.9.3` · 当前版本：`0.9.3`
 > 0.9.3 集成 `statechart-kit@0.16.0` 并新增转移条件 tooltip；0.9.2 集成 0.15.1；历史变更见 [`CHANGELOG.md`](../CHANGELOG.md)。
 
 ## 用户文档
@@ -22,7 +22,7 @@
 | [CONTRIBUTING](../CONTRIBUTING.md) | 本地开发、构建、运行时/浏览器/服务端 E2E、提交约定 | 当前 |
 | [发布流程](releasing.md) | 版本收尾、验证门禁、npm 发布、tag、测试服务器重部署与回滚 | 当前（手动兜底） |
 | [GitHub Actions 自动发布](github-actions-release.md) | Trusted Publishing、tag 触发、dry run、失败重试与验证 | 当前（推荐） |
-| [0.9.3 发布说明](release-0.9.3.md) | 0.9.3 亮点、兼容性、验证矩阵与发布前检查 | **草案，待发布** |
+| [0.9.3 发布说明](release-0.9.3.md) | 0.9.3 亮点、兼容性、验证矩阵与发布记录 | 已发布 |
 | [重构路线](refactor-roadmap.md) | 以 `statechart-kit` 为核心的迁移记录、验收与发布状态 | 当前（0.9.3 准备） |
 | [资源消耗评估](resource-profile.md) | tarball、浏览器资源、服务端内存/CPU | 当前（2026-11-11 复测） |
 | [完整编辑器宿主](../editor-page/README.md) | `mountEditor` + postMessage adapter、关闭/保存约定 | 当前 |
