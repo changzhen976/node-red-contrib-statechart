@@ -10,9 +10,22 @@
   触摸 tap / Escape，并在重绘/卸载后恢复原生 `title` 与 `aria-describedby`。
 - 内部事件示例的 `ping` 转移增加 `visits >= 0` 条件，便于浏览器回归验证 tooltip。
 
+### Fixed
+
+- 修复侧栏监控「适应」在较高的状态机上只显示初始状态附近的问题：
+  `contentSize()` 现在取 `offset` 与 `scroll` 的较大值，并把所有状态框、
+  转移标签、连线/初始标记的包围盒纳入 fit，并用该包围盒的 `left/top` 偏移
+  居中（不再以 diagram 的 0,0 角为内容中心）；fit 使用独立的
+  `FIT_MIN_SCALE`（0.02），不再受手动缩放下限 0.3 限制，并在 fit 后重置
+  canvas 滚动偏移；同时观察 canvas 与 window/visualViewport 尺寸变化，浏览器
+  缩放或侧栏控件换行后会自动重新 fit。
+- 修复 Node-RED 侧栏 iframe 高于侧栏可见区域导致底部 vars 覆盖层被裁切的问题：
+  侧栏监控 iframe 现在按 `#red-ui-sidebar` 的可见底边约束高度。
+
 ### Tests
 
 - `test/browser-kit15.mjs` 增加 tooltip 断言：悬停 `ping` 标签后显示完整条件。
+- `test/camera.test.cjs` 增加高内容 fit（低于 30%）与 scroll 溢出边界回归。
 
 ## 0.9.2 — 2026-11-14
 

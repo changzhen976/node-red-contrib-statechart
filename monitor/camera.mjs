@@ -13,6 +13,8 @@
 export const MIN_SCALE = 0.3;
 export const MAX_SCALE = 3;
 export const FIT_MAX_SCALE = 1.5;
+/** Fit is an overview, so it may go far below the manual zoom floor. */
+export const FIT_MIN_SCALE = 0.02;
 export const FIT_PADDING = 16;
 export const DRAG_THRESHOLD = 4;
 
@@ -42,7 +44,7 @@ export function zoomTransform(current, px, py, factor, min = MIN_SCALE, max = MA
 export function fitTransform(contentWidth, contentHeight, viewWidth, viewHeight, options = {}) {
   if (!(contentWidth > 0) || !(contentHeight > 0) || !(viewWidth > 0) || !(viewHeight > 0)) return null;
   const padding = options.padding ?? FIT_PADDING;
-  const min = options.min ?? MIN_SCALE;
+  const min = options.min ?? FIT_MIN_SCALE;
   const max = Math.min(options.max ?? MAX_SCALE, options.maxFit ?? FIT_MAX_SCALE);
   const availableWidth = Math.max(1, viewWidth - padding * 2);
   const availableHeight = Math.max(1, viewHeight - padding * 2);
@@ -67,6 +69,7 @@ export function createCamera(view, options = {}) {
   const minScale = options.minScale ?? MIN_SCALE;
   const maxScale = options.maxScale ?? MAX_SCALE;
   const maxFitScale = options.maxFitScale ?? FIT_MAX_SCALE;
+  const fitMinScale = options.fitMinScale ?? FIT_MIN_SCALE;
   const padding = options.padding ?? FIT_PADDING;
   const onChange = typeof options.onChange === 'function' ? options.onChange : null;
 
@@ -78,6 +81,8 @@ export function createCamera(view, options = {}) {
   let userAdjusted = false;
   let attached = false;
   let resizeObserver = null;
+  let canvasObserver = null;
+  let observedCanvas = null;
   let frame = 0;
   let drag = null;
 
@@ -95,7 +100,19 @@ export function createCamera(view, options = {}) {
       view.style.setProperty('--scxml-min-scale', '1');
       view.style.removeProperty('zoom');
     }
+    observeCanvas();
     return true;
+  }
+
+  /** The header can wrap/zoom independently of `view`; refit when canvas changes. */
+  function observeCanvas() {
+    if (typeof ResizeObserver === 'undefined' || !canvas) return;
+    if (!canvasObserver) canvasObserver = new ResizeObserver(onResize);
+    if (observedCanvas !== canvas) {
+      canvasObserver.disconnect();
+      canvasObserver.observe(canvas);
+      observedCanvas = canvas;
+    }
   }
 
   function apply() {
@@ -109,9 +126,47 @@ export function createCamera(view, options = {}) {
 
   function contentSize() {
     if (!ensure()) return null;
-    const width = diagram.offsetWidth || diagram.scrollWidth;
-    const height = diagram.offsetHeight || diagram.scrollHeight;
-    return width > 0 && height > 0 ? { width, height } : null;
+    // Measure in the diagram's own coordinate space. A chart can render its
+    // initial state inside a small layout box while descendants/edges extend
+    // beyond both offset* and scroll*; that used to make fit zoom in on the
+    // initial state. Temporarily clear the camera transform and include the
+    // union of state boxes, labels, edges and initial markers. Return the
+    // content origin as well: centering must use the visible content bounds,
+    // not the diagram's 0,0 corner.
+    const previousTransform = diagram.style.transform;
+    const previousOrigin = diagram.style.transformOrigin;
+    diagram.style.transform = 'none';
+    diagram.style.transformOrigin = '0 0';
+    const base = typeof diagram.getBoundingClientRect === 'function'
+      ? diagram.getBoundingClientRect()
+      : { left: 0, top: 0 };
+    const nodes = typeof diagram.querySelectorAll === 'function'
+      ? diagram.querySelectorAll('[data-state], [part~="edge-label"], svg.edges, circle.initial')
+      : [];
+    let left = Infinity;
+    let top = Infinity;
+    let right = -Infinity;
+    let bottom = -Infinity;
+    for (const node of nodes) {
+      const rect = node.getBoundingClientRect();
+      if (!rect.width && !rect.height) continue;
+      left = Math.min(left, rect.left - base.left);
+      top = Math.min(top, rect.top - base.top);
+      right = Math.max(right, rect.right - base.left);
+      bottom = Math.max(bottom, rect.bottom - base.top);
+    }
+    if (!Number.isFinite(left) || !Number.isFinite(top) || right <= left || bottom <= top) {
+      // Empty/partially rendered document: fall back to the diagram box.
+      left = 0;
+      top = 0;
+      right = Math.max(diagram.offsetWidth, diagram.scrollWidth);
+      bottom = Math.max(diagram.offsetHeight, diagram.scrollHeight);
+    }
+    diagram.style.transform = previousTransform;
+    diagram.style.transformOrigin = previousOrigin;
+    const width = right - left;
+    const height = bottom - top;
+    return width > 0 && height > 0 ? { width, height, left, top } : null;
   }
 
   function fit() {
@@ -119,15 +174,20 @@ export function createCamera(view, options = {}) {
     if (!content) return false;
     const next = fitTransform(content.width, content.height, canvas.clientWidth, canvas.clientHeight, {
       padding,
-      min: minScale,
+      min: fitMinScale,
       max: maxScale,
       maxFit: maxFitScale,
     });
     if (!next) return false;
     scale = next.scale;
-    tx = next.tx;
-    ty = next.ty;
+    // next.tx/ty centers the content box; shift by its local origin so the
+    // visible union is centered rather than the diagram's empty 0,0 corner.
+    tx = next.tx - content.left * scale;
+    ty = next.ty - content.top * scale;
     userAdjusted = false;
+    // A previous renderer auto-fit may have left canvas scroll offsets behind.
+    canvas.scrollTop = 0;
+    canvas.scrollLeft = 0;
     apply();
     return true;
   }
@@ -136,8 +196,8 @@ export function createCamera(view, options = {}) {
     const content = contentSize();
     if (!content) return false;
     scale = clampScale(nextScale, minScale, maxScale);
-    tx = (canvas.clientWidth - content.width * scale) / 2;
-    ty = (canvas.clientHeight - content.height * scale) / 2;
+    tx = (canvas.clientWidth - content.width * scale) / 2 - content.left * scale;
+    ty = (canvas.clientHeight - content.height * scale) / 2 - content.top * scale;
     apply();
     return true;
   }
@@ -260,6 +320,10 @@ export function createCamera(view, options = {}) {
     schedule(!userAdjusted);
   }
 
+  function onWindowResize() {
+    schedule(true);
+  }
+
   function attach() {
     if (attached) return true;
     if (!ensure()) return false;
@@ -268,6 +332,10 @@ export function createCamera(view, options = {}) {
     view.addEventListener('pointerdown', onPointerDown);
     view.addEventListener('scxml-load', onLoad);
     window.addEventListener('blur', stopDrag);
+    window.addEventListener('resize', onWindowResize);
+    if (typeof window !== 'undefined' && window.visualViewport) {
+      window.visualViewport.addEventListener('resize', onWindowResize);
+    }
     if (typeof ResizeObserver !== 'undefined') {
       resizeObserver = new ResizeObserver(onResize);
       resizeObserver.observe(view);
@@ -284,9 +352,18 @@ export function createCamera(view, options = {}) {
     view.removeEventListener('pointerdown', onPointerDown);
     view.removeEventListener('scxml-load', onLoad);
     window.removeEventListener('blur', stopDrag);
+    window.removeEventListener('resize', onWindowResize);
+    if (typeof window !== 'undefined' && window.visualViewport) {
+      window.visualViewport.removeEventListener('resize', onWindowResize);
+    }
     if (resizeObserver) {
       resizeObserver.disconnect();
       resizeObserver = null;
+    }
+    if (canvasObserver) {
+      canvasObserver.disconnect();
+      canvasObserver = null;
+      observedCanvas = null;
     }
     if (frame) {
       cancelAnimationFrame(frame);

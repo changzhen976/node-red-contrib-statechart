@@ -111,3 +111,141 @@ test('createCamera attaches to an open shadow root and drives the transform', ()
     delete global.ResizeObserver
   }
 })
+
+test('fitTransform can shrink below the manual zoom floor for tall charts', () => {
+  const next = camera.fitTransform(100, 3000, 400, 300, { padding: 0, maxFit: 1.5 })
+  assert.equal(next.scale, 0.1)
+  assert.equal(next.tx, 195)
+  assert.equal(next.ty, 0)
+})
+
+test('createCamera fits scroll overflow instead of the smaller offset box', () => {
+  const listeners = new Map()
+  const style = { setProperty: () => {}, removeProperty: () => {} }
+  const canvas = {
+    style: {},
+    clientWidth: 400,
+    clientHeight: 300,
+    scrollTop: 42,
+    scrollLeft: 17,
+    getBoundingClientRect: () => ({ left: 0, top: 0 }),
+  }
+  const diagram = {
+    style: {},
+    offsetWidth: 200,
+    offsetHeight: 100,
+    scrollWidth: 200,
+    scrollHeight: 3000,
+  }
+  const view = {
+    style,
+    shadowRoot: {
+      querySelector: (selector) => (selector === '.canvas' ? canvas : selector === '.diagram' ? diagram : null),
+    },
+    classList: { add: () => {}, remove: () => {} },
+    addEventListener: (type, fn) => listeners.set(type, fn),
+    removeEventListener: (type) => listeners.delete(type),
+  }
+  global.window = { addEventListener: () => {}, removeEventListener: () => {} }
+  global.requestAnimationFrame = (fn) => { fn(); return 1 }
+  global.cancelAnimationFrame = () => {}
+  global.ResizeObserver = class {
+    observe () {}
+    disconnect () {}
+  }
+  try {
+    const cam = camera.createCamera(view, { padding: 0 })
+    assert.equal(cam.attach(), true)
+    cam.fit()
+    assert.equal(cam.getScale(), 0.1)
+    assert.match(diagram.style.transform, /translate\(190px, 0px\) scale\(0\.1\)/)
+    assert.equal(canvas.scrollTop, 0)
+    assert.equal(canvas.scrollLeft, 0)
+    cam.detach()
+  } finally {
+    delete global.window
+    delete global.requestAnimationFrame
+    delete global.cancelAnimationFrame
+    delete global.ResizeObserver
+  }
+})
+
+test('createCamera includes overflowing descendants in fit bounds', () => {
+  const style = { setProperty: () => {}, removeProperty: () => {} }
+  const canvas = { style: {}, clientWidth: 400, clientHeight: 300, getBoundingClientRect: () => ({ left: 0, top: 0 }) }
+  const child = {
+    getBoundingClientRect: () => ({ left: 0, top: 0, right: 50, bottom: 500, width: 50, height: 500 }),
+  }
+  const diagram = {
+    style: {},
+    offsetWidth: 100,
+    offsetHeight: 100,
+    scrollWidth: 100,
+    scrollHeight: 100,
+    getBoundingClientRect: () => ({ left: 0, top: 0, right: 100, bottom: 100, width: 100, height: 100 }),
+    querySelectorAll: () => [child],
+  }
+  const view = {
+    style,
+    shadowRoot: { querySelector: (selector) => (selector === '.canvas' ? canvas : selector === '.diagram' ? diagram : null) },
+    classList: { add: () => {}, remove: () => {} },
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }
+  global.window = { addEventListener: () => {}, removeEventListener: () => {} }
+  global.requestAnimationFrame = (fn) => { fn(); return 1 }
+  global.cancelAnimationFrame = () => {}
+  global.ResizeObserver = class { observe () {} disconnect () {} }
+  try {
+    const cam = camera.createCamera(view, { padding: 0 })
+    assert.equal(cam.attach(), true)
+    cam.fit()
+    assert.equal(cam.getScale(), 0.6)
+    assert.match(diagram.style.transform, /translate\(185px, 0px\) scale\(0\.6\)/)
+  } finally {
+    delete global.window
+    delete global.requestAnimationFrame
+    delete global.cancelAnimationFrame
+    delete global.ResizeObserver
+  }
+})
+
+test('createCamera centers the visible content origin, not the diagram corner', () => {
+  const style = { setProperty: () => {}, removeProperty: () => {} }
+  const canvas = { style: {}, clientWidth: 400, clientHeight: 300, getBoundingClientRect: () => ({ left: 0, top: 0 }) }
+  const child = {
+    getBoundingClientRect: () => ({ left: 100, top: 50, right: 300, bottom: 250, width: 200, height: 200 }),
+  }
+  const diagram = {
+    style: {},
+    offsetWidth: 100,
+    offsetHeight: 100,
+    scrollWidth: 100,
+    scrollHeight: 100,
+    getBoundingClientRect: () => ({ left: 0, top: 0, right: 100, bottom: 100, width: 100, height: 100 }),
+    querySelectorAll: () => [child],
+  }
+  const view = {
+    style,
+    shadowRoot: { querySelector: (selector) => (selector === '.canvas' ? canvas : selector === '.diagram' ? diagram : null) },
+    classList: { add: () => {}, remove: () => {} },
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }
+  global.window = { addEventListener: () => {}, removeEventListener: () => {} }
+  global.requestAnimationFrame = (fn) => { fn(); return 1 }
+  global.cancelAnimationFrame = () => {}
+  global.ResizeObserver = class { observe () {} disconnect () {} }
+  try {
+    const cam = camera.createCamera(view, { padding: 0 })
+    assert.equal(cam.attach(), true)
+    cam.fit()
+    assert.equal(cam.getScale(), 1.5)
+    assert.match(diagram.style.transform, /translate\(-100px, -75px\) scale\(1\.5\)/)
+  } finally {
+    delete global.window
+    delete global.requestAnimationFrame
+    delete global.cancelAnimationFrame
+    delete global.ResizeObserver
+  }
+})
